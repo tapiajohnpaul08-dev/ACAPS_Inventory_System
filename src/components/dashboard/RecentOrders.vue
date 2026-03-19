@@ -1,0 +1,102 @@
+<template>
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Recent Orders</h2>
+        <p class="text-xs text-gray-400 mt-0.5">Click any row for full details</p>
+      </div>
+      <button class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors">
+        View all
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Orders -->
+    <div class="p-5 space-y-2">
+      <button
+        v-for="order in orders"
+        :key="order.id"
+        class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-blue-50 rounded-xl
+               border border-transparent hover:border-blue-200 transition-all cursor-pointer group text-left"
+      >
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <p class="text-sm font-bold text-gray-900">{{ order.id }}</p>
+            <!-- Status badge -->
+            <span
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+              :class="statusClass(order.status)"
+            >
+              <component :is="statusIcon(order.status)" class="w-3.5 h-3.5" />
+              {{ order.status }}
+            </span>
+          </div>
+          <p class="text-xs text-gray-500 truncate">{{ order.product }} · {{ order.customer }}</p>
+        </div>
+        <div class="flex items-center gap-2 ml-2">
+          <p class="text-sm font-bold text-gray-900">{{ order.amount }}</p>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        </div>
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { h } from 'vue'
+
+// Status icon renderers
+const CheckIcon = () =>
+  h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('path', { d: 'M21.801 10A10 10 0 1 1 17 3.335' }),
+    h('path', { d: 'm9 11 3 3L22 4' }),
+  ])
+
+const PackageIcon = () =>
+  h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('path', { d: 'M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z' }),
+    h('path', { d: 'M12 22V12' }),
+    h('polyline', { points: '3.29 7 12 12 20.71 7' }),
+    h('path', { d: 'm7.5 4.27 9 5.15' }),
+  ])
+
+const ClockIcon = () =>
+  h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('circle', { cx: 12, cy: 12, r: 10 }),
+    h('polyline', { points: '12 6 12 12 16 14' }),
+  ])
+
+function statusClass(status) {
+  return {
+    Completed:     'bg-green-100 text-green-700',
+    'In Production': 'bg-blue-100 text-blue-700',
+    Scheduled:     'bg-purple-100 text-purple-700',
+    Pending:       'bg-yellow-100 text-yellow-700',
+  }[status] ?? 'bg-gray-100 text-gray-600'
+}
+
+function statusIcon(status) {
+  return {
+    Completed:       CheckIcon,
+    'In Production': PackageIcon,
+    Scheduled:       ClockIcon,
+    Pending:         ClockIcon,
+  }[status] ?? ClockIcon
+}
+
+const orders = [
+  { id: 'ORD-001', status: 'Completed',     product: 'PP U-CUPS 16oz',          customer: 'ABC Coffee Shop', amount: '₱2,100'  },
+  { id: 'ORD-002', status: 'In Production', product: 'PET CUPS 16oz',            customer: 'Smoothie Haven',  amount: '₱1,500'  },
+  { id: 'ORD-003', status: 'Scheduled',     product: 'DOUBLE WALL WHITE 12oz',   customer: 'Bean & Brew',     amount: '₱15,600' },
+  { id: 'ORD-004', status: 'Completed',     product: 'HARD CUPS 22oz',           customer: 'Party Central',   amount: '₱3,675'  },
+  { id: 'ORD-005', status: 'Pending',       product: 'SLIM CUPS 22oz',           customer: 'Café Lumière',    amount: '₱4,350'  },
+]
+</script>

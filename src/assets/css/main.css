@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/*
+ * login.css
+ * Companion stylesheet for LoginPage.vue
+ *
+ * Only contains styles that cannot be expressed with Tailwind utility classes:
+ *   - backdrop-filter fallback for older browsers
+ *   - focus-visible ring tweak for password toggle button (no Tailwind equivalent)
+ *   - disabled cursor on submit button (Tailwind's disabled: variant needs JIT / config)
+ */
+
+/* Backdrop blur fallback for browsers that don't support the Tailwind backdrop-blur-sm utility */
+@supports not (backdrop-filter: blur(4px)) {
+  .backdrop-blur-sm {
+    background-color: rgba(255, 255, 255, 0.35) !important;
+  }
+}
+
+/* Remove default focus ring on the password-visibility toggle;
+   Tailwind's focus:outline-none only applies when the class is on the element itself,
+   but browsers can still render an outline on :focus-visible. */
+button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Tailwind's disabled:cursor-not-allowed requires the `disabled` variant to be enabled
+   in tailwind.config.js. This rule ensures it works without any config change. */
+button:disabled {
+  cursor: not-allowed;
+}
