@@ -13,6 +13,7 @@
     </div>
     
     <nav class="flex-1 p-3 space-y-0.5">
+      <!-- Dashboard - Always visible -->
       <router-link
         to="/dashboard"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
@@ -32,6 +33,7 @@
         <span class="text-sm font-medium">Dashboard</span>
       </router-link>
 
+      <!-- Inventory - Always visible -->
       <router-link
         to="/dashboard/inventory"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
@@ -52,6 +54,7 @@
         <span class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">8</span>
       </router-link>
 
+      <!-- Orders - Always visible -->
       <router-link
         to="/dashboard/orders"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
@@ -70,7 +73,9 @@
         <span class="text-sm font-medium">Orders</span>
       </router-link>
 
+      <!-- Messages - Only visible for sales department -->
       <router-link
+        v-if="userRole === 'sales'"
         to="/dashboard/messages"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
         :class="isActive('/dashboard/messages') 
@@ -87,7 +92,25 @@
         <span class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">1</span>
       </router-link>
 
+      <!-- Disabled state for production users (shows as disabled but not clickable) -->
+      <div
+        v-else
+        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed"
+        title="Messages are only available for Sales department"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="lucide lucide-message-square w-4.5 h-4.5 flex-shrink-0"
+          style="width: 18px; height: 18px;">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="text-sm font-medium">Messages</span>
+        <span class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-gray-400 text-white">1</span>
+      </div>
+
+      <!-- Analytics - Only visible for sales department -->
       <router-link
+        v-if="userRole === 'sales'"
         to="/dashboard/analytics"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
         :class="isActive('/dashboard/analytics') 
@@ -105,6 +128,24 @@
         </svg>
         <span class="text-sm font-medium">Analytics</span>
       </router-link>
+
+      <!-- Disabled state for production users -->
+      <div
+        v-else
+        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed"
+        title="Analytics are only available for Sales department"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" class="lucide lucide-chart-column w-4.5 h-4.5 flex-shrink-0"
+          style="width: 18px; height: 18px;">
+          <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+          <path d="M18 17V9"></path>
+          <path d="M13 17V5"></path>
+          <path d="M8 17v-3"></path>
+        </svg>
+        <span class="text-sm font-medium">Analytics</span>
+      </div>
     </nav>
 
     <div class="mx-3 mb-3 p-3 bg-red-50 border border-red-200 rounded-xl">
