@@ -99,14 +99,12 @@
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   @click="showPassword = !showPassword"
                 >
-                  <!-- Eye -->
                   <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
                     <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
                     <circle cx="12" cy="12" r="3"/>
                   </svg>
-                  <!-- Eye-off -->
                   <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -119,22 +117,22 @@
             </div>
 
             <!-- Submit -->
-<button
-  type="submit"
-  :disabled="isLoading"
-  class="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800
-         transition-all flex items-center justify-center gap-2 disabled:opacity-70
-         shadow-md shadow-blue-200 font-medium"
->
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-    stroke-linejoin="round" class="w-4 h-4">
-    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-    <polyline points="10 17 15 12 10 7"/>
-    <line x1="15" x2="3" y1="12" y2="12"/>
-  </svg>
-  {{ isLoading ? 'Signing in…' : 'Sign In' }}
-</button>
+            <button
+              type="submit"
+              :disabled="isLoading"
+              class="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800
+                     transition-all flex items-center justify-center gap-2 disabled:opacity-70
+                     shadow-md shadow-blue-200 font-medium"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="w-4 h-4">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" x2="3" y1="12" y2="12"/>
+              </svg>
+              {{ isLoading ? 'Signing in…' : 'Sign In' }}
+            </button>
 
           </form>
 
@@ -191,8 +189,18 @@ const showPassword = ref(false)
 const isLoading = ref(false)
 
 const demoCredentials = {
-  sales: { email: 'sales@acapshop.com', password: 'sales123', role: 'production' },
-  production: { email: 'prod@acapshop.com', password: 'prod123', role: 'sales' },
+  sales: { 
+    email: 'sales@acapshop.com', 
+    password: 'sales123', 
+    role: 'sales',
+    name: 'Sarah Dela Cruz'
+  },
+  production: { 
+    email: 'prod@acapshop.com', 
+    password: 'prod123', 
+    role: 'production',
+    name: 'Mike Reyes'
+  },
 }
 
 function fillDemo(dept) {
@@ -203,10 +211,30 @@ function fillDemo(dept) {
 
 async function handleSubmit() {
   isLoading.value = true
-  // Replace with your actual auth logic
-  await new Promise((r) => setTimeout(r, 1200))
-  console.log({ department: department.value, email: email.value, password: password.value })
+  
+  // Simulate API call
+  await new Promise((r) => setTimeout(r, 800))
+  
+  // Validate credentials (simple demo validation)
+  const creds = demoCredentials[department.value]
+  if (email.value === creds.email && password.value === creds.password) {
+    // Store user info in localStorage
+    localStorage.setItem('userName', creds.name)
+    localStorage.setItem('userRole', creds.role)
+    localStorage.setItem('userEmail', creds.email)
+    
+    console.log('Login successful:', { 
+      department: department.value, 
+      email: email.value,
+      name: creds.name
+    })
+    
+    // Redirect to dashboard
+    router.push('/dashboard')
+  } else {
+    alert('Invalid credentials. Please use the demo credentials provided.')
+  }
+  
   isLoading.value = false
-  router.push('/dashboard') // ← redirect here
 }
 </script>

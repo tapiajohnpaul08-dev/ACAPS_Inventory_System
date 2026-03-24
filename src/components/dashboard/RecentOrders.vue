@@ -1,6 +1,5 @@
 <template>
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-    <!-- Header -->
     <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
       <div>
         <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Recent Orders</h2>
@@ -15,7 +14,6 @@
       </button>
     </div>
 
-    <!-- Orders -->
     <div class="p-5 space-y-2">
       <button
         v-for="order in orders"
@@ -26,7 +24,6 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <p class="text-sm font-bold text-gray-900">{{ order.id }}</p>
-            <!-- Status badge -->
             <span
               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
               :class="statusClass(order.status)"
@@ -53,7 +50,10 @@
 <script setup>
 import { h } from 'vue'
 
-// Status icon renderers
+const props = defineProps({
+  orders: { type: Array, required: true }
+})
+
 const CheckIcon = () =>
   h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
     h('path', { d: 'M21.801 10A10 10 0 1 1 17 3.335' }),
@@ -91,12 +91,4 @@ function statusIcon(status) {
     Pending:         ClockIcon,
   }[status] ?? ClockIcon
 }
-
-const orders = [
-  { id: 'ORD-001', status: 'Completed',     product: 'PP U-CUPS 16oz',          customer: 'ABC Coffee Shop', amount: '₱2,100'  },
-  { id: 'ORD-002', status: 'In Production', product: 'PET CUPS 16oz',            customer: 'Smoothie Haven',  amount: '₱1,500'  },
-  { id: 'ORD-003', status: 'Scheduled',     product: 'DOUBLE WALL WHITE 12oz',   customer: 'Bean & Brew',     amount: '₱15,600' },
-  { id: 'ORD-004', status: 'Completed',     product: 'HARD CUPS 22oz',           customer: 'Party Central',   amount: '₱3,675'  },
-  { id: 'ORD-005', status: 'Pending',       product: 'SLIM CUPS 22oz',           customer: 'Café Lumière',    amount: '₱4,350'  },
-]
 </script>

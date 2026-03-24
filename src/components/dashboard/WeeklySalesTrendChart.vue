@@ -5,30 +5,26 @@
 
     <div class="w-full">
       <div class="flex gap-2 h-56">
-        <!-- Y labels -->
         <div class="flex flex-col justify-between text-right pr-2 py-1 shrink-0">
           <span v-for="label in yLabels" :key="label" class="text-xs text-slate-400 leading-none">{{ label }}</span>
         </div>
 
-        <!-- Chart area -->
         <div class="flex-1 relative min-w-0">
           <svg
             class="w-full h-full overflow-visible"
-            :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
+            viewBox="0 0 400 200"
             preserveAspectRatio="none"
           >
-            <!-- Grid lines -->
             <g>
               <line
                 v-for="(_, i) in yLabels"
                 :key="i"
-                x1="0" :y1="(i / (yLabels.length - 1)) * svgHeight"
-                :x2="svgWidth" :y2="(i / (yLabels.length - 1)) * svgHeight"
+                x1="0" :y1="(i / (yLabels.length - 1)) * 200"
+                x2="400" :y2="(i / (yLabels.length - 1)) * 200"
                 stroke="#f1f5f9" stroke-dasharray="4 4" stroke-width="1"
               />
             </g>
 
-            <!-- Area fill -->
             <defs>
               <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#10b981" stop-opacity="0.15" />
@@ -37,7 +33,6 @@
             </defs>
             <path :d="areaPath" fill="url(#trendGradient)" />
 
-            <!-- Line -->
             <path
               :d="linePath"
               fill="none"
@@ -47,7 +42,6 @@
               stroke-linejoin="round"
             />
 
-            <!-- Dots -->
             <g v-for="(point, i) in points" :key="i">
               <circle
                 :cx="point.x" :cy="point.y" r="5"
@@ -56,7 +50,6 @@
                 @mouseenter="hoveredPoint = i"
                 @mouseleave="hoveredPoint = null"
               />
-              <!-- Tooltip -->
               <g v-if="hoveredPoint === i">
                 <rect
                   :x="point.x - 28" :y="point.y - 36"
@@ -68,7 +61,7 @@
                   text-anchor="middle" fill="white"
                   font-size="10" font-weight="600"
                 >
-                  ₱{{ chartData[i].displayValue }}
+                  ₱{{ salesData[i].displayValue }}
                 </text>
               </g>
             </g>
@@ -76,7 +69,6 @@
         </div>
       </div>
 
-      <!-- X-axis labels -->
       <div class="flex justify-between mt-2 pl-10">
         <span
           v-for="day in days"
@@ -93,35 +85,25 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+const props = defineProps({
+  salesData: { type: Array, required: true }
+})
+
 const hoveredPoint = ref(null)
-
-const svgWidth  = 400
+const svgWidth = 400
 const svgHeight = 200
-
 const yLabels = ['24k', '18k', '12k', '6k', '0']
-
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-const chartData = [
-  { value: 12000, displayValue: '12,000' },
-  { value: 15000, displayValue: '15,000' },
-  { value: 14000, displayValue: '14,000' },
-  { value: 18000, displayValue: '18,000' },
-  { value: 21000, displayValue: '21,000' },
-  { value: 19500, displayValue: '19,500' },
-  { value: 17000, displayValue: '17,000' },
-]
-
 const maxValue = 24000
 
-const points = computed(() =>
-  chartData.map((d, i) => ({
-    x: (i / (chartData.length - 1)) * svgWidth,
+const points = computed(() => {
+  if (!props.salesData || !props.salesData.length) return []
+  return props.salesData.map((d, i) => ({
+    x: (i / (props.salesData.length - 1)) * svgWidth,
     y: svgHeight - (d.value / maxValue) * svgHeight,
   }))
-)
+})
 
-// Smooth cubic bezier path
 function smoothPath(pts) {
   if (pts.length < 2) return ''
   let d = `M${pts[0].x},${pts[0].y}`

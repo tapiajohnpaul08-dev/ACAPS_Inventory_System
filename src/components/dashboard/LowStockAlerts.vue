@@ -1,6 +1,5 @@
 <template>
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-    <!-- Header -->
     <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
       <div>
         <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Low Stock Alerts</h2>
@@ -11,7 +10,6 @@
       </span>
     </div>
 
-    <!-- List -->
     <div class="p-5 space-y-2.5">
       <button
         v-for="item in items"
@@ -28,14 +26,12 @@
           </p>
         </div>
         <div class="flex items-center gap-2">
-          <!-- Triangle Alert -->
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
             :class="item.severity === 'red' ? 'text-red-500' : 'text-orange-500'">
             <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
             <path d="M12 9v4"/><path d="M12 17h.01"/>
           </svg>
-          <!-- Arrow Right -->
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
             class="group-hover:translate-x-1 transition-transform"
@@ -49,13 +45,7 @@
 </template>
 
 <script setup>
-const items = [
-  { name: 'PP Y-CUPS - 22oz',           stock: '420 units',  threshold: 500, severity: 'red'    },
-  { name: 'PET CUPS - 12oz',             stock: '280 units',  threshold: 500, severity: 'red'    },
-  { name: 'HARD CUPS - 16oz',            stock: '390 units',  threshold: 500, severity: 'red'    },
-  { name: 'DOUBLE WALL BROWN - 12oz',    stock: '460 units',  threshold: 500, severity: 'red'    },
-  { name: 'Paint - Green',               stock: '15 liters',  threshold: 20,  severity: 'orange' },
-  { name: 'Paint - Yellow',              stock: '18 liters',  threshold: 20,  severity: 'orange' },
-  { name: 'Silkscreen - Medium',         stock: '8 units',    threshold: 10,  severity: 'orange' },
-]
+defineProps({
+  items: { type: Array, required: true }
+})
 </script>
