@@ -2,23 +2,27 @@
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <table class="w-full">
       <thead class="bg-gray-50 border-b border-gray-100">
-          <tr>
+         <tr>
           <th v-for="col in columns" :key="col"
             class="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
             {{ col }}
           </th>
-          </tr>
+         </tr>
       </thead>
       <tbody class="divide-y divide-gray-50">
         <tr
           v-for="item in items"
           :key="item.id"
           class="cursor-pointer transition-all"
-          :class="item.status === 'Low Stock'
-            ? 'bg-red-50 hover:bg-red-100'
-            : 'hover:bg-blue-50/50'"
+          :class="[
+            item.status === 'Low Stock'
+              ? 'bg-red-50 hover:bg-red-100'
+              : 'hover:bg-blue-50/50',
+            isHighlighted(item) ? 'animate-pulse bg-yellow-50 border-l-4 border-yellow-400' : ''
+          ]"
           @click="handleSelect(item)"
         >
+          <!-- Rest of your table cells remain the same -->
           <td class="px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -36,18 +40,18 @@
                 <p class="text-xs text-gray-400">{{ item.supplier }}</p>
               </div>
             </div>
-          </td>
+           </td>
           <td class="px-5 py-4">
             <span class="px-2.5 py-1 bg-gray-100 rounded-full text-xs font-semibold text-gray-700">
               {{ item.size }}
             </span>
-          </td>
+           </td>
           <td class="px-5 py-4">
             <p class="text-sm font-bold" :class="item.status === 'Low Stock' ? 'text-red-600' : 'text-gray-900'">
               {{ item.stock.toLocaleString() }}
             </p>
             <p class="text-xs text-gray-400">units</p>
-          </td>
+           </td>
           <td class="px-5 py-4">
             <span class="flex items-center gap-1.5 text-xs font-semibold"
               :class="item.status === 'Low Stock' ? 'text-red-600' : 'text-green-600'">
@@ -65,13 +69,13 @@
               </svg>
               {{ item.status }}
             </span>
-          </td>
+           </td>
           <td class="px-5 py-4">
             <p class="text-sm text-gray-700 font-medium">{{ item.orders }}</p>
-          </td>
+           </td>
           <td class="px-5 py-4">
             <p class="text-sm font-bold text-gray-900">{{ item.revenue }}</p>
-          </td>
+           </td>
           <td class="px-5 py-4">
             <button
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600
@@ -85,25 +89,16 @@
               </svg>
               Edit
             </button>
-          </td>
-        </tr>
+           </td>
+         </tr>
       </tbody>
-    </table>
-
-    <!-- Item Detail Modal -->
-    <ItemDetailModal
-      :is-open="modalOpen"
-      :item="selectedItem"
-      @close="modalOpen = false"
-      @edit="handleEditFromModal"
-      @notify="handleNotify"
-    />
+     </table>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import ItemDetailModal from '../../modals/ItemDetailModal.vue'
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 const props = defineProps({
   items: {
@@ -114,28 +109,51 @@ const props = defineProps({
 
 const emit = defineEmits(['edit', 'select'])
 
+const route = useRoute()
+const highlightedItemId = ref(null)
+
+// Watch for search query to highlight the matched item
+watch(() => route.query.search, (searchQuery) => {
+  if (searchQuery) {
+    const matchedItem = props.items.find(item => 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    if (matchedItem) {
+      highlightedItemId.value = matchedItem.id
+      // Remove highlight after 3 seconds
+      setTimeout(() => {
+        highlightedItemId.value = null
+      }, 3000)
+    }
+  }
+}, { immediate: true })
+
 const columns = ['Product', 'Size', 'Stock', 'Status', 'Orders', 'Revenue', 'Actions']
 
-const modalOpen = ref(false)
-const selectedItem = ref(null)
+function isHighlighted(item) {
+  return highlightedItemId.value === item.id
+}
 
 function handleSelect(item) {
-  selectedItem.value = item
-  modalOpen.value = true
   emit('select', item)
 }
 
 function handleEdit(item) {
-  // Direct edit without modal
   emit('edit', item)
-}
-
-function handleEditFromModal(item) {
-  emit('edit', item)
-}
-
-function handleNotify(item) {
-  console.log('Notify authority about low stock:', item)
-  alert(`Notification sent to authority about ${item.name} (${item.size}) - Only ${item.stock} units remaining!`)
 }
 </script>
+
+<style scoped>
+@keyframes pulse {
+  0%, 100% {
+    background-color: rgb(254, 249, 195);
+  }
+  50% {
+    background-color: rgb(254, 240, 138);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1s ease-in-out 3;
+}
+</style>

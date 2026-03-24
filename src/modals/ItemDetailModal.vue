@@ -68,7 +68,7 @@
               </div>
               <div class="bg-gray-50 rounded-xl p-4">
                 <p class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Reorder At</p>
-                <p class="text-xl font-black text-gray-700">500</p>
+                <p class="text-xl font-black text-gray-700">{{ item.threshold?.toLocaleString() }}</p>
                 <p class="text-xs text-gray-500 mt-0.5">units</p>
               </div>
               <div class="bg-gray-50 rounded-xl p-4">
@@ -202,7 +202,14 @@ function handleNotify() {
 }
 
 function isLowStock(item) {
-  return item && item.stock < 500
+  if (!item) {return false}
+  
+  // If item has a specific threshold, use that
+  if (item.threshold) {    
+    return item.stock < item.threshold
+  }
+  
+
 }
 
 function getSku(item) {

@@ -18,6 +18,7 @@
         :class="item.severity === 'red'
           ? 'bg-red-50 hover:bg-red-100 border-red-200'
           : 'bg-orange-50 hover:bg-orange-100 border-orange-200'"
+        @click="navigateToInventory(item)"
       >
         <div class="text-left">
           <p class="text-sm font-semibold text-gray-900">{{ item.name }}</p>
@@ -45,7 +46,25 @@
 </template>
 
 <script setup>
-defineProps({
+import { useRouter } from 'vue-router'
+
+const props = defineProps({
   items: { type: Array, required: true }
 })
+
+const router = useRouter()
+
+function navigateToInventory(item) {
+  // Determine which tab to activate based on category
+  const activeTab = item.category === 'supplies' ? 'supplies' : 'cups'
+  
+  // Navigate to inventory page with search query and active tab
+  router.push({
+    path: '/dashboard/inventory',
+    query: { 
+      search: item.searchTerm || item.name.split(' - ')[0],
+      tab: activeTab
+    }
+  })
+}
 </script>
