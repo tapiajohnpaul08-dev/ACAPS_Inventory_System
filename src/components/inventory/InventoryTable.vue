@@ -2,12 +2,12 @@
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <table class="w-full">
       <thead class="bg-gray-50 border-b border-gray-100">
-        <tr>
+          <tr>
           <th v-for="col in columns" :key="col"
             class="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
             {{ col }}
           </th>
-        </tr>
+          </tr>
       </thead>
       <tbody class="divide-y divide-gray-50">
         <tr
@@ -17,7 +17,7 @@
           :class="item.status === 'Low Stock'
             ? 'bg-red-50 hover:bg-red-100'
             : 'hover:bg-blue-50/50'"
-          @click="$emit('select', item)"
+          @click="handleSelect(item)"
         >
           <td class="px-5 py-4">
             <div class="flex items-center gap-3">
@@ -76,7 +76,7 @@
             <button
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600
                      hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors"
-              @click.stop="$emit('edit', item)"
+              @click.stop="handleEdit(item)"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -89,18 +89,53 @@
         </tr>
       </tbody>
     </table>
+
+    <!-- Item Detail Modal -->
+    <ItemDetailModal
+      :is-open="modalOpen"
+      :item="selectedItem"
+      @close="modalOpen = false"
+      @edit="handleEditFromModal"
+      @notify="handleNotify"
+    />
   </div>
 </template>
 
 <script setup>
-defineProps({
+import { ref } from 'vue'
+import ItemDetailModal from '../../modals/ItemDetailModal.vue'
+
+const props = defineProps({
   items: {
     type: Array,
     required: true,
   },
 })
 
-defineEmits(['edit', 'select'])
+const emit = defineEmits(['edit', 'select'])
 
 const columns = ['Product', 'Size', 'Stock', 'Status', 'Orders', 'Revenue', 'Actions']
+
+const modalOpen = ref(false)
+const selectedItem = ref(null)
+
+function handleSelect(item) {
+  selectedItem.value = item
+  modalOpen.value = true
+  emit('select', item)
+}
+
+function handleEdit(item) {
+  // Direct edit without modal
+  emit('edit', item)
+}
+
+function handleEditFromModal(item) {
+  emit('edit', item)
+}
+
+function handleNotify(item) {
+  console.log('Notify authority about low stock:', item)
+  alert(`Notification sent to authority about ${item.name} (${item.size}) - Only ${item.stock} units remaining!`)
+}
 </script>

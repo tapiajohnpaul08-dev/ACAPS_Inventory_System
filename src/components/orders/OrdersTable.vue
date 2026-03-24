@@ -19,7 +19,6 @@
           <td class="px-5 py-4">
             <p class="text-sm font-bold text-blue-600 group-hover:text-blue-800">{{ order.id }}</p>
           </td>
-
           <td class="px-5 py-4">
             <div class="flex items-center gap-2">
               <div class="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center
@@ -32,7 +31,6 @@
               </div>
             </div>
           </td>
-
           <td class="px-5 py-4">
             <div class="flex items-center gap-2">
               <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -51,20 +49,16 @@
               </div>
             </div>
           </td>
-
           <td class="px-5 py-4">
             <p class="text-sm text-gray-700 font-medium">{{ order.qty.toLocaleString() }}</p>
             <p class="text-xs text-gray-400">pcs</p>
           </td>
-
           <td class="px-5 py-4">
             <p class="text-sm font-bold text-gray-900">{{ order.amount }}</p>
           </td>
-
           <td class="px-5 py-4">
             <p class="text-sm text-gray-600">{{ order.date }}</p>
           </td>
-
           <td class="px-5 py-4">
             <span
               class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold"
@@ -95,7 +89,6 @@
               {{ order.status }}
             </span>
           </td>
-
           <td class="px-5 py-4">
             <span
               class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-bold capitalize"
@@ -115,7 +108,7 @@ defineProps({
   orders: { type: Array, required: true },
 })
 
-defineEmits(['select'])
+defineEmits(['select', 'edit'])
 
 const columns = ['Order ID', 'Customer', 'Product', 'Qty', 'Amount', 'Date', 'Status', 'Payment']
 

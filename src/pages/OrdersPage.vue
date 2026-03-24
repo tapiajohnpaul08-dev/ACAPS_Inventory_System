@@ -8,7 +8,13 @@
       @update:search="search = $event"
       @update:statusFilter="statusFilter = $event"
     />
-    <OrdersTable :orders="filteredOrders" @select="handleSelect" />
+    <OrdersTable :orders="filteredOrders" @select="handleSelect" @edit="handleEdit" />
+    <OrderDetailModal
+      :show="!!selectedOrder"
+      :order="selectedOrder"
+      @close="selectedOrder = null"
+      @update="handleOrderUpdate"
+    />
   </div>
 </template>
 
@@ -18,10 +24,12 @@ import OrdersStatCards from '@/components/orders/OrdersStatCards.vue'
 import OrdersFilters from '@/components/orders/OrdersFilters.vue'
 import OrdersTable from '@/components/orders/OrdersTable.vue'
 import { orders } from '@/data/dummyData'
+import OrderDetailModal from '@/modals/OrderDetailModal.vue'
 
 const search = ref('')
 const statusFilter = ref('all')
-const allOrders = ref(orders)
+const allOrders = ref([...orders]) // Create a reactive copy
+const selectedOrder = ref(null)
 
 const statusCounts = computed(() => ({
   all: allOrders.value.length,
@@ -64,6 +72,21 @@ const filteredOrders = computed(() => {
 
 function handleSelect(order) {
   console.log('Selected order:', order)
-  alert(`Order Details:\nID: ${order.id}\nCustomer: ${order.customer}\nProduct: ${order.product}\nAmount: ${order.amount}`)
+  selectedOrder.value = order // Open modal with selected order
+}
+
+function handleEdit(order) {
+  console.log('Edit order:', order)
+  // You can also open the modal for editing or handle edit separately
+  selectedOrder.value = order
+}
+
+function handleOrderUpdate(updatedOrder) {
+  // Update the orders list with the updated order
+  const index = allOrders.value.findIndex(o => o.id === updatedOrder.id)
+  if (index !== -1) {
+    allOrders.value[index] = { ...allOrders.value[index], ...updatedOrder }
+  }
+  console.log('Order updated:', updatedOrder)
 }
 </script>

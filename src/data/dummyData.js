@@ -97,14 +97,90 @@ export const lowStockItems = [
   { name: 'Silkscreen - Medium',         stock: '8 units',    threshold: 10,  severity: 'orange' },
 ]
 
-export const recentOrders = [
-  { id: 'ORD-001', status: 'Completed',     product: 'PP U-CUPS 16oz',          customer: 'ABC Coffee Shop', amount: '₱2,100'  },
-  { id: 'ORD-002', status: 'In Production', product: 'PET CUPS 16oz',            customer: 'Smoothie Haven',  amount: '₱1,500'  },
-  { id: 'ORD-003', status: 'Scheduled',     product: 'DOUBLE WALL WHITE 12oz',   customer: 'Bean & Brew',     amount: '₱15,600' },
-  { id: 'ORD-004', status: 'Completed',     product: 'HARD CUPS 22oz',           customer: 'Party Central',   amount: '₱3,675'  },
-  { id: 'ORD-005', status: 'Pending',       product: 'SLIM CUPS 22oz',           customer: 'Café Lumière',    amount: '₱4,350'  },
-]
+// Add to your existing dummyData.js
 
+export const recentOrders = [
+  { 
+    id: 'ORD-001', 
+    status: 'Completed', 
+    product: 'PP U-CUPS 16oz', 
+    customer: 'ABC Coffee Shop', 
+    amount: '₱2,100',
+    email: 'orders@abccoffee.com',
+    date: 'Mar 10, 2026',
+    size: '16oz',
+    qty: 1000,
+    pricePerPc: '₱2.10',
+    payment: 'paid',
+    phone: '(02) 1234-5678',
+    delivery: 'standard',
+    notes: 'Customer requested eco-friendly packaging'
+  },
+  { 
+    id: 'ORD-002', 
+    status: 'In Production', 
+    product: 'PET CUPS 16oz', 
+    customer: 'Smoothie Haven', 
+    amount: '₱1,500',
+    email: 'john@smoothiehaven.com',
+    date: 'Mar 12, 2026',
+    size: '16oz',
+    qty: 500,
+    pricePerPc: '₱3.00',
+    payment: 'partial',
+    phone: '(02) 2345-6789',
+    delivery: 'express',
+    notes: 'Urgent order for weekend event'
+  },
+  { 
+    id: 'ORD-003', 
+    status: 'Scheduled', 
+    product: 'DOUBLE WALL WHITE 12oz', 
+    customer: 'Bean & Brew', 
+    amount: '₱15,600',
+    email: 'lisa@beanandbrew.com',
+    date: 'Mar 15, 2026',
+    size: '12oz',
+    qty: 2000,
+    pricePerPc: '₱7.80',
+    payment: 'unpaid',
+    phone: '(02) 3456-7890',
+    delivery: 'standard',
+    notes: 'Custom logo printing required'
+  },
+  { 
+    id: 'ORD-004', 
+    status: 'Completed', 
+    product: 'HARD CUPS 22oz', 
+    customer: 'Party Central', 
+    amount: '₱3,675',
+    email: 'events@partycentral.ph',
+    date: 'Mar 14, 2026',
+    size: '22oz',
+    qty: 500,
+    pricePerPc: '₱7.35',
+    payment: 'paid',
+    phone: '(02) 4567-8901',
+    delivery: 'express',
+    notes: 'Split delivery to two locations'
+  },
+  { 
+    id: 'ORD-005', 
+    status: 'Pending', 
+    product: 'SLIM CUPS 22oz', 
+    customer: 'Café Lumière', 
+    amount: '₱4,350',
+    email: 'info@cafelumiere.ph',
+    date: 'Mar 17, 2026',
+    size: '22oz',
+    qty: 1000,
+    pricePerPc: '₱4.35',
+    payment: 'unpaid',
+    phone: '(02) 5678-9012',
+    delivery: 'standard',
+    notes: 'Awaiting payment confirmation'
+  },
+]
 export const dashboardStats = [
   { label: 'Total Stock', value: '111,500', sub: 'Cup units in inventory', subColor: 'text-gray-500', icon: 'package', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
   { label: 'Total Orders', value: '8', sub: '+3 in progress', subColor: 'text-emerald-600', icon: 'cart', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
