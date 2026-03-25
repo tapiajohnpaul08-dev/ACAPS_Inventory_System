@@ -1,5 +1,6 @@
 <template>
   <div class="p-8">
+    <div class="mb-8"><h1 class="text-2xl font-black text-gray-900">Orders</h1><p class="text-sm text-gray-500 mt-1">Manage customer orders</p></div>
     <OrdersStatCards :orders="allOrders" />
     <OrdersFilters
       :search="search"

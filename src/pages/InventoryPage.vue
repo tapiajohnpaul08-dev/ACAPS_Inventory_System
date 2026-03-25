@@ -1,5 +1,6 @@
 <template>
   <div class="p-8">
+    <div class="mb-8"><h1 class="text-2xl font-black text-gray-900">Inventory</h1><p class="text-sm text-gray-500 mt-1">Manage your inventory items</p></div>
     <InventorySearch 
       v-model:search="searchQuery" 
       v-model:activeTab="activeTab"

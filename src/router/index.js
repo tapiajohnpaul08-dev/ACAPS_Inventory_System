@@ -7,13 +7,14 @@ import InventoryPage from '@/pages/InventoryPage.vue'
 import OrdersPage from '@/pages/OrdersPage.vue'
 import MessagePage from '@/pages/MessagePage.vue'
 import AnalyticsPage from '@/pages/AnalyticsPage.vue'
+import AccountsPage from '@/pages/AccountsPage.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Login',
     component: LoginPageView,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
     path: '/dashboard',
@@ -28,23 +29,28 @@ const routes = [
       {
         path: 'inventory',
         name: 'Inventory',
-        component: InventoryPage
+        component: InventoryPage,
       },
       {
         path: 'orders',
         name: 'Orders',
-        component: OrdersPage
+        component: OrdersPage,
       },
       {
         path: 'messages',
         name: 'Messages',
-        component: MessagePage
+        component: MessagePage,
       },
       {
         path: 'analytics',
         name: 'Analytics',
-        component: AnalyticsPage
-      }
+        component: AnalyticsPage,
+      },
+      {
+        path: 'accounts',
+        name: 'Accounts',
+        component: AccountsPage,
+      },
     ],
   },
 ]
@@ -57,7 +63,7 @@ const router = createRouter({
 // Navigation guard using modern approach (return value instead of next callback)
 router.beforeEach((to, from) => {
   const isAuthenticated = localStorage.getItem('userRole') !== null
-  
+
   if (to.meta.requiresAuth && !isAuthenticated) {
     // Redirect to login if not authenticated
     return '/'
@@ -65,7 +71,7 @@ router.beforeEach((to, from) => {
     // Redirect to dashboard if already logged in
     return '/dashboard'
   }
-  
+
   // Allow navigation
   return true
 })
