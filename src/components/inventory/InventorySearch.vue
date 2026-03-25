@@ -20,6 +20,31 @@
       </div>
     </div>
 
+    <!-- Status Filter -->
+    <div class="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+      <div class="flex items-center gap-4">
+        <span class="text-xs font-medium text-gray-500">Filter by status:</span>
+        <div class="flex gap-2">
+          <button
+            v-for="status in statusFilters"
+            :key="status.value"
+            @click="setStatusFilter(status.value)"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+            :class="statusFilter === status.value
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+          >
+            {{ status.label }}
+            <span v-if="status.value !== 'all'" class="ml-1 px-1.5 py-0.5 rounded-full text-xs"
+              :class="statusFilter === status.value ? 'bg-white/20' : 'bg-gray-200'">
+              {{ getStatusCount(status.value) }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Tabs -->
     <div class="flex">
       <button
         v-for="tab in tabs"
@@ -60,17 +85,25 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const props = defineProps({
-  search: { type: String, default: '' }
+  search: { type: String, default: '' },
+  statusFilter: { type: String, default: 'all' }
 })
 
-const emit = defineEmits(['update:search', 'update:activeTab'])
+const emit = defineEmits(['update:search', 'update:activeTab', 'update:statusFilter'])
 
 const router = useRouter()
 const route = useRoute()
 const activeTab = ref('cups')
+const statusFilter = ref(props.statusFilter)
 
 // Get user role from localStorage
 const userRole = computed(() => localStorage.getItem('userRole') || 'production')
+
+const statusFilters = [
+  { value: 'all', label: 'All Items' },
+  { value: 'in-stock', label: 'In Stock' },
+  { value: 'low-stock', label: 'Low Stock' }
+]
 
 const tabs = computed(() => [
   { 
@@ -87,7 +120,22 @@ const tabs = computed(() => [
   },
 ])
 
-// Initialize tab from URL on mount
+function getStatusCount(status) {
+  // This will be passed from parent or calculated
+  return 0
+}
+
+function setStatusFilter(value) {
+  statusFilter.value = value
+  emit('update:statusFilter', value)
+  
+  // Update URL
+  router.replace({
+    query: { ...route.query, status: value === 'all' ? undefined : value }
+  })
+}
+
+// Initialize from URL on mount
 onMounted(() => {
   if (route.query.tab && route.query.tab === 'supplies' && !tabs.value[1].disabled) {
     activeTab.value = 'supplies'
@@ -95,6 +143,11 @@ onMounted(() => {
   } else if (route.query.tab === 'cups') {
     activeTab.value = 'cups'
     emit('update:activeTab', 'cups')
+  }
+  
+  if (route.query.status) {
+    statusFilter.value = route.query.status
+    emit('update:statusFilter', route.query.status)
   }
 })
 
@@ -106,6 +159,16 @@ watch(() => route.query.tab, (newTab) => {
   } else if (newTab === 'cups') {
     activeTab.value = 'cups'
     emit('update:activeTab', 'cups')
+  }
+})
+
+watch(() => route.query.status, (newStatus) => {
+  if (newStatus) {
+    statusFilter.value = newStatus
+    emit('update:statusFilter', newStatus)
+  } else {
+    statusFilter.value = 'all'
+    emit('update:statusFilter', 'all')
   }
 })
 

@@ -81,6 +81,15 @@
                 <path d="M8 2v4"/><path d="M16 2v4"/>
                 <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
               </svg>
+              <svg v-else-if="order.status === 'Out for Delivery'" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
+                <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+                <path d="M15 18H9"/>
+                <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
+                <circle cx="17" cy="18" r="2"/>
+                <circle cx="7" cy="18" r="2"/>
+              </svg>
               <svg v-else xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
@@ -97,6 +106,22 @@
               {{ order.payment }}
             </span>
           </td>
+          <td class="px-5 py-4">
+            <div class="flex items-center gap-2">
+              <button
+                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600
+                       hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors"
+                @click.stop="$emit('edit', order)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  style="width:13px;height:13px">
+                  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
+                </svg>
+                Edit
+              </button>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -110,7 +135,7 @@ defineProps({
 
 defineEmits(['select', 'edit'])
 
-const columns = ['Order ID', 'Customer', 'Product', 'Qty', 'Amount', 'Date', 'Status', 'Payment']
+const columns = ['Order ID', 'Customer', 'Product', 'Qty', 'Amount', 'Date', 'Status', 'Payment', 'Actions']
 
 function statusBadge(status) {
   return {
@@ -118,7 +143,7 @@ function statusBadge(status) {
     'In Production': { bg: 'bg-blue-100 text-blue-700'     },
     Scheduled:       { bg: 'bg-purple-100 text-purple-700' },
     Pending:         { bg: 'bg-yellow-100 text-yellow-700' },
-    'To Ship':       { bg: 'bg-cyan-100 text-cyan-700'     },
+    'Out for Delivery': { bg: 'bg-cyan-100 text-cyan-700'  },
     Cancelled:       { bg: 'bg-gray-100 text-gray-500'     },
   }[status] ?? { bg: 'bg-gray-100 text-gray-500' }
 }

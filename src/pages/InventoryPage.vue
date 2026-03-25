@@ -1,10 +1,16 @@
 <template>
   <div class="p-8">
-    <div class="mb-8"><h1 class="text-2xl font-black text-gray-900">Inventory</h1><p class="text-sm text-gray-500 mt-1">Manage your inventory items</p></div>
+    <div class="mb-8">
+      <h1 class="text-2xl font-black text-gray-900">Inventory</h1>
+      <p class="text-sm text-gray-500 mt-1">Manage your inventory items</p>
+    </div>
+    
     <InventorySearch 
       v-model:search="searchQuery" 
       v-model:activeTab="activeTab"
+      v-model:statusFilter="statusFilter"
     />
+    
     <InventoryTable 
       :items="filteredItems" 
       @edit="handleEdit" 
@@ -16,8 +22,26 @@
       :is-open="modalOpen"
       :item="selectedItem"
       @close="closeModal"
-      @edit="handleEditFromModal"
+      @edit="openEditModal"
       @notify="handleNotify"
+    />
+    
+    <!-- Edit Item Modal -->
+    <EditItemModal
+      v-if="editItem"
+      :show="true"
+      :item="editItem"
+      @close="closeEditModal"
+      @update="handleUpdateItem"
+    />
+    
+    <!-- Feedback Modal -->
+    <FeedbackModal
+      :show="feedback.show"
+      :type="feedback.type"
+      :title="feedback.title"
+      :message="feedback.message"
+      @close="closeFeedback"
     />
   </div>
 </template>
@@ -28,13 +52,25 @@ import { useRoute } from 'vue-router'
 import InventorySearch from '@/components/inventory/InventorySearch.vue'
 import InventoryTable from '@/components/inventory/InventoryTable.vue'
 import ItemDetailModal from '@/modals/ItemDetailModal.vue'
+import EditItemModal from '@/modals/EditITemModal.vue'
+import FeedbackModal from '@/modals/FeedbackModal.vue'
 import { allInventoryItems } from '@/data/dummyData'
 
 const route = useRoute()
 const searchQuery = ref('')
 const activeTab = ref('cups')
+const statusFilter = ref('all')
 const modalOpen = ref(false)
 const selectedItem = ref(null)
+const editItem = ref(null)
+
+// Feedback modal state
+const feedback = ref({
+  show: false,
+  type: 'success',
+  title: '',
+  message: ''
+})
 
 // Filter items based on active tab
 const itemsByTab = computed(() => {
@@ -45,15 +81,28 @@ const itemsByTab = computed(() => {
   }
 })
 
-// Filter items based on search query
+// Filter items based on search query and status
 const filteredItems = computed(() => {
+  let items = itemsByTab.value
+  
+  // Apply search filter
   const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return itemsByTab.value
-  return itemsByTab.value.filter(i =>
-    i.name.toLowerCase().includes(q) ||
-    i.size.toLowerCase().includes(q) ||
-    i.supplier.toLowerCase().includes(q)
-  )
+  if (q) {
+    items = items.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      i.size.toLowerCase().includes(q) ||
+      i.supplier.toLowerCase().includes(q)
+    )
+  }
+  
+  // Apply status filter
+  if (statusFilter.value === 'in-stock') {
+    items = items.filter(i => i.status === 'In Stock')
+  } else if (statusFilter.value === 'low-stock') {
+    items = items.filter(i => i.status === 'Low Stock')
+  }
+  
+  return items
 })
 
 // Initialize from URL on mount
@@ -63,6 +112,9 @@ onMounted(() => {
   }
   if (route.query.tab === 'supplies') {
     activeTab.value = 'supplies'
+  }
+  if (route.query.status) {
+    statusFilter.value = route.query.status
   }
 })
 
@@ -83,29 +135,59 @@ watch(() => route.query.tab, (newTab) => {
   }
 })
 
+watch(() => route.query.status, (newStatus) => {
+  if (newStatus) {
+    statusFilter.value = newStatus
+  } else {
+    statusFilter.value = 'all'
+  }
+})
+
 function handleSelect(item) {
-  console.log('Selected item:', item)
   selectedItem.value = item
   modalOpen.value = true
 }
 
 function handleEdit(item) {
-  console.log('Edit from table:', item)
-  // You can open edit modal or emit to parent
-  selectedItem.value = item
-  modalOpen.value = true
+  editItem.value = item
 }
 
-function handleEditFromModal(item) {
-  console.log('Edit from modal:', item)
-  // Implement edit functionality here
-  // You could open another modal for editing or emit to parent
-  alert(`Edit item: ${item.name} (${item.size})`)
+function openEditModal(item) {
+  editItem.value = item
+  modalOpen.value = false
+}
+
+function closeEditModal() {
+  editItem.value = null
+}
+
+function handleUpdateItem(updatedItem) {
+  // Find and update the item in allInventoryItems
+  const index = allInventoryItems.findIndex(i => i.id === updatedItem.id)
+  if (index !== -1) {
+    allInventoryItems[index] = { ...allInventoryItems[index], ...updatedItem }
+    
+    // Show success feedback
+    showFeedback('success', 'Success!', `Item "${updatedItem.name}" has been updated successfully.`)
+  }
 }
 
 function handleNotify(item) {
-  console.log('Notify authority about low stock:', item)
-  alert(`⚠️ Low Stock Alert!\n\nProduct: ${item.name} (${item.size})\nCurrent Stock: ${item.stock} units\nThreshold: ${item.threshold || 500} units\n\nNotification sent to procurement department.`)
+  showFeedback('warning', 'Low Stock Alert', 
+    `Notification sent to procurement department about ${item.name} (${item.size}).\nCurrent Stock: ${item.stock} units\nThreshold: ${item.threshold || 500} units`)
+}
+
+function showFeedback(type, title, message) {
+  feedback.value = {
+    show: true,
+    type,
+    title,
+    message
+  }
+}
+
+function closeFeedback() {
+  feedback.value.show = false
 }
 
 function closeModal() {

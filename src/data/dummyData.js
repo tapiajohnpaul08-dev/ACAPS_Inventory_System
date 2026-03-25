@@ -33,16 +33,7 @@ export const inventoryItems = [
   { id: 30, name: 'DOUBLE WALL BLACK',  supplier: 'PhilPack Industries',  size: '16oz', stock: 4900, status: 'In Stock',  orders: 58,  revenue: '₱41,000', threshold: 1000 },
 ]
 
-export const orders = [
-  { id: 'ORD-001', customer: 'ABC Coffee Shop',  email: 'orders@abccoffee.com',     product: 'PP U-CUPS',        size: '16oz', qty: 1000, amount: '₱2,100',  date: 'Mar 10, 2026', status: 'Completed',     payment: 'paid'    },
-  { id: 'ORD-002', customer: 'Smoothie Haven',   email: 'john@smoothiehaven.com',    product: 'PET CUPS',         size: '16oz', qty:  500, amount: '₱1,500',  date: 'Mar 12, 2026', status: 'In Production', payment: 'partial' },
-  { id: 'ORD-003', customer: 'Bean & Brew',       email: 'lisa@beanandbrew.com',      product: 'DOUBLE WALL WHITE', size: '12oz', qty: 2000, amount: '₱15,600', date: 'Mar 15, 2026', status: 'Scheduled',     payment: 'unpaid'  },
-  { id: 'ORD-004', customer: 'Party Central',    email: 'events@partycentral.ph',    product: 'HARD CUPS',        size: '22oz', qty:  500, amount: '₱3,675',  date: 'Mar 14, 2026', status: 'Completed',     payment: 'paid'    },
-  { id: 'ORD-005', customer: 'Café Lumière',     email: 'info@cafelumiere.ph',       product: 'SLIM CUPS',        size: '22oz', qty: 1000, amount: '₱4,350',  date: 'Mar 17, 2026', status: 'Pending',       payment: 'unpaid'  },
-  { id: 'ORD-006', customer: 'The Daily Grind',  email: 'orders@dailygrind.com',     product: 'PET U-CUPS',       size: '12oz', qty: 3000, amount: '₱22,500', date: 'Mar 18, 2026', status: 'Pending',       payment: 'partial' },
-  { id: 'ORD-007', customer: 'Brew Haven',       email: 'info@brewhaven.com',        product: 'DOUBLE WALL BROWN', size: '12oz', qty: 1500, amount: '₱11,250', date: 'Mar 19, 2026', status: 'Scheduled',     payment: 'unpaid'  },
-  { id: 'ORD-008', customer: 'Cup & Saucer',     email: 'contact@cupandsaucer.com',  product: 'HARD CUPS',        size: '16oz', qty:  800, amount: '₱6,800',  date: 'Mar 20, 2026', status: 'In Production', payment: 'paid'    },
-]
+
 
 export const messages = [
   {
@@ -369,8 +360,18 @@ export const allInventoryItems = [
   ...supplyItems.map(item => ({ ...item, category: 'supplies' }))
 ]
 
-// Add to your existing dummyData.js
+export const orders = [
+  { id: 'ORD-001', customer: 'ABC Coffee Shop',  email: 'orders@abccoffee.com',     product: 'PP U-CUPS',        size: '16oz', qty: 1000, amount: '₱2,100',  date: 'Mar 10, 2026', status: 'Completed',     payment: 'paid'    },
+  { id: 'ORD-002', customer: 'Smoothie Haven',   email: 'john@smoothiehaven.com',    product: 'PET CUPS',         size: '16oz', qty:  500, amount: '₱1,500',  date: 'Mar 12, 2026', status: 'In Production', payment: 'partial' },
+  { id: 'ORD-003', customer: 'Bean & Brew',       email: 'lisa@beanandbrew.com',      product: 'DOUBLE WALL WHITE', size: '12oz', qty: 2000, amount: '₱15,600', date: 'Mar 15, 2026', status: 'Scheduled',     payment: 'unpaid'  },
+  { id: 'ORD-004', customer: 'Party Central',    email: 'events@partycentral.ph',    product: 'HARD CUPS',        size: '22oz', qty:  500, amount: '₱3,675',  date: 'Mar 14, 2026', status: 'Completed',     payment: 'paid'    },
+  { id: 'ORD-005', customer: 'Café Lumière',     email: 'info@cafelumiere.ph',       product: 'SLIM CUPS',        size: '22oz', qty: 1000, amount: '₱4,350',  date: 'Mar 17, 2026', status: 'Pending',       payment: 'unpaid'  },
+  { id: 'ORD-006', customer: 'The Daily Grind',  email: 'orders@dailygrind.com',     product: 'PET U-CUPS',       size: '12oz', qty: 3000, amount: '₱22,500', date: 'Mar 18, 2026', status: 'Pending',       payment: 'partial' },
+  { id: 'ORD-007', customer: 'Brew Haven',       email: 'info@brewhaven.com',        product: 'DOUBLE WALL BROWN', size: '12oz', qty: 1500, amount: '₱11,250', date: 'Mar 19, 2026', status: 'Scheduled',     payment: 'unpaid'  },
+  { id: 'ORD-008', customer: 'Cup & Saucer',     email: 'contact@cupandsaucer.com',  product: 'HARD CUPS',        size: '16oz', qty:  800, amount: '₱6,800',  date: 'Mar 20, 2026', status: 'Out for Delivery', payment: 'paid'    },
+]
 
+// Update recentOrders
 export const recentOrders = [
   { 
     id: 'ORD-001', 
