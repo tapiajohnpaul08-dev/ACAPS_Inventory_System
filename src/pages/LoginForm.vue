@@ -22,7 +22,7 @@
 
             <!-- Department -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
               <div class="grid grid-cols-2 gap-3">
 
                 <!-- Sales -->
@@ -41,7 +41,7 @@
                     <path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>
                     <path d="M6 2v2"/>
                   </svg>
-                  <span>Sales Dept.</span>
+                  <span>Sales Manager</span>
                   <div v-if="department === 'sales'" class="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full"></div>
                 </button>
 
@@ -62,7 +62,7 @@
                     <polyline points="3.29 7 12 12 20.71 7"/>
                     <path d="m7.5 4.27 9 5.15"/>
                   </svg>
-                  <span>Production Dept.</span>
+                  <span>Foreman</span>
                   <div v-if="department === 'production'" class="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full"></div>
                 </button>
 
@@ -149,7 +149,7 @@
                        text-xs border border-transparent hover:border-gray-200"
                 @click="fillDemo('sales')"
               >
-                <span class="text-blue-600 font-medium">Sales Dept. →</span>
+                <span class="text-blue-600 font-medium">Sales Manageger →</span>
                 <span class="text-gray-500 ml-2">sales@acapshop.com / sales123</span>
               </button>
 
@@ -159,7 +159,7 @@
                        text-xs border border-transparent hover:border-gray-200"
                 @click="fillDemo('production')"
               >
-                <span class="text-indigo-600 font-medium">Production Dept. →</span>
+                <span class="text-indigo-600 font-medium">Foreman →</span>
                 <span class="text-gray-500 ml-2">prod@acapshop.com / prod123</span>
               </button>
 

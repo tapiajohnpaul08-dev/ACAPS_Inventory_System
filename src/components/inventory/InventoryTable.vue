@@ -2,16 +2,16 @@
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <table class="w-full">
       <thead class="bg-gray-50 border-b border-gray-100">
-         <tr>
+        <tr>
           <th v-for="col in columns" :key="col"
             class="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
             {{ col }}
           </th>
-         </tr>
+        </tr>
       </thead>
       <tbody class="divide-y divide-gray-50">
         <tr
-          v-for="item in items"
+          v-for="item in paginatedItems"
           :key="item.id"
           class="cursor-pointer transition-all"
           :class="[
@@ -22,7 +22,6 @@
           ]"
           @click="handleSelect(item)"
         >
-          <!-- Rest of your table cells remain the same -->
           <td class="px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -40,18 +39,18 @@
                 <p class="text-xs text-gray-400">{{ item.supplier }}</p>
               </div>
             </div>
-           </td>
+          </td>
           <td class="px-5 py-4">
             <span class="px-2.5 py-1 bg-gray-100 rounded-full text-xs font-semibold text-gray-700">
               {{ item.size }}
             </span>
-           </td>
+          </td>
           <td class="px-5 py-4">
             <p class="text-sm font-bold" :class="item.status === 'Low Stock' ? 'text-red-600' : 'text-gray-900'">
               {{ item.stock.toLocaleString() }}
             </p>
             <p class="text-xs text-gray-400">units</p>
-           </td>
+          </td>
           <td class="px-5 py-4">
             <span class="flex items-center gap-1.5 text-xs font-semibold"
               :class="item.status === 'Low Stock' ? 'text-red-600' : 'text-green-600'">
@@ -69,13 +68,13 @@
               </svg>
               {{ item.status }}
             </span>
-           </td>
+          </td>
           <td class="px-5 py-4">
             <p class="text-sm text-gray-700 font-medium">{{ item.orders }}</p>
-           </td>
+          </td>
           <td class="px-5 py-4">
             <p class="text-sm font-bold text-gray-900">{{ item.revenue }}</p>
-           </td>
+          </td>
           <td class="px-5 py-4">
             <button
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600
@@ -89,15 +88,76 @@
               </svg>
               Edit
             </button>
-           </td>
-         </tr>
+          </td>
+        </tr>
+
+        <!-- Empty state -->
+        <tr v-if="paginatedItems.length === 0">
+          <td :colspan="columns.length" class="px-5 py-10 text-center text-sm text-gray-400">
+            No items found.
+          </td>
+        </tr>
       </tbody>
-     </table>
+    </table>
+
+    <!-- Pagination Footer -->
+    <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50">
+      <!-- Showing X–Y of Z -->
+      <p class="text-xs text-gray-400">
+        Showing
+        <span class="font-semibold text-gray-600">{{ rangeStart }}–{{ rangeEnd }}</span>
+        of
+        <span class="font-semibold text-gray-600">{{ props.items.length }}</span>
+        items
+      </p>
+
+      <!-- Page controls -->
+      <div class="flex items-center gap-1">
+        <!-- Prev -->
+        <button
+          class="pagination-btn"
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="width:14px;height:14px">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+
+        <!-- Page numbers -->
+        <template v-for="page in pageRange" :key="page">
+          <span v-if="page === '...'" class="px-1 text-xs text-gray-400 select-none">…</span>
+          <button
+            v-else
+            class="pagination-btn"
+            :class="{ 'pagination-btn--active': page === currentPage }"
+            @click="currentPage = page"
+          >
+            {{ page }}
+          </button>
+        </template>
+
+        <!-- Next -->
+        <button
+          class="pagination-btn"
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="width:14px;height:14px">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = defineProps({
@@ -111,21 +171,57 @@ const emit = defineEmits(['edit', 'select'])
 
 const route = useRoute()
 const highlightedItemId = ref(null)
+const ITEMS_PER_PAGE = 10
+const currentPage = ref(1)
 
-// Watch for search query to highlight the matched item
+// Paginated items
+const paginatedItems = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE
+  return props.items.slice(start, start + ITEMS_PER_PAGE)
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(props.items.length / ITEMS_PER_PAGE)))
+
+// Range label e.g. "1–10 of 53"
+const rangeStart = computed(() => Math.min((currentPage.value - 1) * ITEMS_PER_PAGE + 1, props.items.length))
+const rangeEnd = computed(() => Math.min(currentPage.value * ITEMS_PER_PAGE, props.items.length))
+
+// Smart page number range with ellipsis
+const pageRange = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+
+  const pages = []
+  const addPage = (p) => pages.push(p)
+  const addDots = () => { if (pages[pages.length - 1] !== '...') pages.push('...') }
+
+  addPage(1)
+  if (current > 3) addDots()
+  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) addPage(p)
+  if (current < total - 2) addDots()
+  addPage(total)
+
+  return pages
+})
+
+// Reset to page 1 whenever items list changes
+watch(() => props.items, () => { currentPage.value = 1 })
+
+// Highlight matched item from route search query
 watch(() => route.query.search, (searchQuery) => {
-  if (searchQuery) {
-    const matchedItem = props.items.find(item => 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    if (matchedItem) {
-      highlightedItemId.value = matchedItem.id
-      // Remove highlight after 3 seconds
-      setTimeout(() => {
-        highlightedItemId.value = null
-      }, 3000)
-    }
-  }
+  if (!searchQuery) return
+  const matched = props.items.find(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  if (!matched) return
+
+  highlightedItemId.value = matched.id
+  // Navigate to the page containing the matched item
+  const idx = props.items.indexOf(matched)
+  currentPage.value = Math.floor(idx / ITEMS_PER_PAGE) + 1
+
+  setTimeout(() => { highlightedItemId.value = null }, 3000)
 }, { immediate: true })
 
 const columns = ['Product', 'Size', 'Stock', 'Status', 'Orders', 'Revenue', 'Actions']
@@ -144,16 +240,5 @@ function handleEdit(item) {
 </script>
 
 <style scoped>
-@keyframes pulse {
-  0%, 100% {
-    background-color: rgb(254, 249, 195);
-  }
-  50% {
-    background-color: rgb(254, 240, 138);
-  }
-}
 
-.animate-pulse {
-  animation: pulse 1s ease-in-out 3;
-}
 </style>

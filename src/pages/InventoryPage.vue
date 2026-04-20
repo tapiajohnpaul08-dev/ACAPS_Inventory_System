@@ -52,7 +52,7 @@ import { useRoute } from 'vue-router'
 import InventorySearch from '@/components/inventory/InventorySearch.vue'
 import InventoryTable from '@/components/inventory/InventoryTable.vue'
 import ItemDetailModal from '@/modals/ItemDetailModal.vue'
-import EditItemModal from '@/modals/EditITemModal.vue'
+import EditItemModal from '@/modals/EditItemModal.vue'
 import FeedbackModal from '@/modals/FeedbackModal.vue'
 import { allInventoryItems } from '@/data/dummyData'
 

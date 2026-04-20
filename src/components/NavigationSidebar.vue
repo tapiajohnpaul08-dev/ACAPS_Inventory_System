@@ -163,7 +163,7 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-gray-900 truncate">{{ userName }}</p>
-            <p class="text-xs text-gray-400 truncate">{{ userRole === 'sales' ? 'Sales Department' : 'Production Department' }}</p>
+            <p class="text-xs text-gray-400 truncate">{{ userRole === 'sales' ? 'Sales Manager' : 'Foreman' }}</p>
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
