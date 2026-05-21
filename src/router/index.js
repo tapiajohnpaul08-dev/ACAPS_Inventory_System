@@ -14,7 +14,7 @@ const routes = [
     path: '/',
     name: 'Login',
     component: LoginPageView,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: false }
   },
   {
     path: '/dashboard',
@@ -25,34 +25,51 @@ const routes = [
         path: '',
         name: 'Dashboard',
         component: DashboardPage,
+        meta: { title: 'Dashboard' }
       },
       {
         path: 'inventory',
         name: 'Inventory',
         component: InventoryPage,
+        meta: { title: 'Inventory' }
       },
       {
         path: 'orders',
         name: 'Orders',
         component: OrdersPage,
+        meta: { title: 'Orders'}
       },
       {
         path: 'messages',
         name: 'Messages',
         component: MessagePage,
+        meta: { title: 'Messages'}
       },
       {
         path: 'analytics',
         name: 'Analytics',
         component: AnalyticsPage,
+        meta: { title: 'Analytics' }
       },
       {
         path: 'accounts',
         name: 'Accounts',
         component: AccountsPage,
-      },
-    ],
+        meta: { title: 'Accounts'}
+      }
+    ]
   },
+  {
+    path: '/unauthorized',
+    name: 'Unauthorized',
+    component: () => import('@/views/UnauthorizedView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/NotFoundView.vue')
+  }
 ]
 
 const router = createRouter({
@@ -60,19 +77,26 @@ const router = createRouter({
   routes,
 })
 
-// Navigation guard using modern approach (return value instead of next callback)
+// Navigation guard
 router.beforeEach((to, from) => {
-  const isAuthenticated = localStorage.getItem('userRole') !== null
+  // Check authentication
+  const adminToken = localStorage.getItem('adminToken')
+  const adminRole = localStorage.getItem('adminRole')
+  const isAuthenticated = !!adminToken
 
+  // Redirect to login if route requires auth and not authenticated
   if (to.meta.requiresAuth && !isAuthenticated) {
-    // Redirect to login if not authenticated
     return '/'
-  } else if (to.path === '/' && isAuthenticated) {
-    // Redirect to dashboard if already logged in
+  }
+
+  // Redirect to dashboard if already logged in and trying to access login page
+  if (to.path === '/' && isAuthenticated) {
     return '/dashboard'
   }
 
-  // Allow navigation
+
+ 
+
   return true
 })
 

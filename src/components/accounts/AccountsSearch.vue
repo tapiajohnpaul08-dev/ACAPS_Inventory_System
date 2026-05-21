@@ -39,7 +39,7 @@
         {{ tab.label }}
         <span 
           class="px-1.5 py-0.5 text-white text-xs rounded-full font-bold"
-          :class="tab.count > 0 ? 'bg-red-500' : 'bg-gray-400'"
+          :class="tab.count > 0 ? 'bg-blue-500' : 'bg-gray-400'"
         >
           {{ tab.count }}
         </span>
@@ -49,13 +49,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { accountsData } from '@/data/accountsData'
 
 const props = defineProps({
   search: { type: String, default: '' },
-  activeTab: { type: String, default: 'customers' }
+  activeTab: { type: String, default: 'customers' },
+  customersCount: { type: Number, default: 0 },
+  salesCount: { type: Number, default: 0 },
+  productionCount: { type: Number, default: 0 }
 })
 
 const emit = defineEmits(['update:search', 'update:activeTab'])
@@ -64,24 +66,9 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = computed(() => [
-  { 
-    key: 'customers', 
-    label: 'Customers', 
-    count: accountsData.customers.length,
-    disabled: false
-  },
-  { 
-    key: 'sales', 
-    label: 'Sales Admin', 
-    count: accountsData.salesAdmins.length,
-    disabled: false
-  },
-  { 
-    key: 'production', 
-    label: 'Production Admin', 
-    count: accountsData.productionAdmins.length,
-    disabled: false
-  },
+  { key: 'customers', label: 'Customers', count: props.customersCount },
+  { key: 'sales', label: 'Sales Admin', count: props.salesCount },
+  { key: 'production', label: 'Production Admin', count: props.productionCount }
 ])
 
 function switchTab(tabKey) {

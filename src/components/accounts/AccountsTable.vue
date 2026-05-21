@@ -3,11 +3,11 @@
     <div class="overflow-x-auto">
       <table class="w-full min-w-[800px]">
         <thead class="bg-gray-50 border-b border-gray-100">
-          <tr>
+          <tr class="text-left text-xs font-bold text-gray-400 uppercase tracking-wider ">
             <th
               v-for="col in columns"
               :key="col"
-              class="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
+              class="px-5 py-3 text-center text-xs font-bold  text-gray-400 uppercase tracking-wider"
             >
               {{ col }}
             </th>
@@ -25,7 +25,7 @@
               <div class="flex items-center gap-3">
                 <div
                   class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                  :class="getAvatarColor(account.type)"
+                  :class="getAvatarColor(type)"
                 >
                   <span class="text-white font-bold text-sm">
                     {{ account.name.charAt(0) }}
@@ -68,9 +68,7 @@
             <td v-if="type === 'customers'" class="px-5 py-4">
               <p class="text-sm font-bold text-blue-600">{{ account.totalSpent || '₱0' }}</p>
             </td>
-            <td v-else class="px-5 py-4">
-              <p class="text-sm text-gray-600">{{ account.lastLogin || 'N/A' }}</p>
-            </td>
+            
 
             <!-- Last Active / Last Login Column -->
             <td class="px-5 py-4">
@@ -79,29 +77,32 @@
 
             <!-- Actions Column -->
             <td class="px-5 py-4">
-              <button
-                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600
-                       hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors"
-                @click.stop="handleEdit(account)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  style="width: 13px; height: 13px"
+              <div class="flex items-center justify-center gap-2">
+                <button
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600
+                         hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors"
+                  @click.stop="handleEdit(account)"
                 >
-                  <path
-                    d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
-                  />
-                </svg>
-                Edit
-              </button>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 13px; height: 13px">
+                    <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
+                  </svg>
+                  Edit
+                </button>
+                <button
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600
+                         hover:bg-red-100 hover:text-red-800 rounded-lg transition-colors"
+                  @click.stop="handleDelete(account)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 13px; height: 13px">
+                    <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
-      </table>
+       </table>
     </div>
   </div>
 </template>
@@ -114,7 +115,7 @@ const props = defineProps({
   type: { type: String, required: true } // 'customers', 'sales', or 'production'
 })
 
-const emit = defineEmits(['select', 'edit'])
+const emit = defineEmits(['select', 'edit', 'delete'])
 
 // Define columns based on account type
 const columns = computed(() => {
@@ -127,11 +128,11 @@ const columns = computed(() => {
 
 function getAvatarColor(type) {
   switch (type) {
-    case 'customer':
+    case 'customers':
       return 'bg-blue-600'
-    case 'sales-admin':
+    case 'sales':
       return 'bg-green-600'
-    case 'production-admin':
+    case 'production':
       return 'bg-purple-600'
     default:
       return 'bg-gray-600'
@@ -145,4 +146,14 @@ function handleSelect(account) {
 function handleEdit(account) {
   emit('edit', account)
 }
+
+function handleDelete(account) {
+  emit('delete', account)
+}
 </script>
+
+<style>
+tr {
+  text-align: center;
+}
+</style>

@@ -1,4 +1,4 @@
-<!-- modals/EditItemModal.vue - Enhanced -->
+<!-- modals/EditInventoryItemModal.vue -->
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">
@@ -15,7 +15,7 @@
           <div v-if="isSubmitting" class="absolute inset-0 bg-white/90 rounded-2xl flex items-center justify-center z-10">
             <div class="text-center">
               <div class="inline-block w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-              <p class="mt-3 text-sm text-gray-600">Updating item...</p>
+              <p class="mt-3 text-sm text-gray-600">Updating inventory...</p>
             </div>
           </div>
 
@@ -35,72 +35,37 @@
           <!-- Form -->
           <div class="flex-1 overflow-y-auto px-6 py-5">
             <form @submit.prevent="handleSubmit" class="space-y-5">
-              <!-- Basic Information -->
-              <div class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center gap-2 mb-4">
-                  <div class="w-1 h-5 bg-blue-600 rounded-full"></div>
-                  <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Basic Information</p>
-                </div>
+              <!-- Item Info Display -->
+              <div class="bg-gray-50 rounded-xl p-4">
                 <div class="grid grid-cols-2 gap-4">
-                  <div class="col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Item Name <span class="text-red-500">*</span></label>
-                    <input
-                      v-model="formData.name"
-                      type="text"
-                      required
-                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    />
+                  <div>
+                    <p class="text-xs text-gray-500">Item Name</p>
+                    <p class="font-semibold text-gray-900">{{ item?.name }}</p>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Category <span class="text-red-500">*</span></label>
-                    <select
-                      v-model="formData.category"
-                      required
-                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 bg-white"
-                    >
-                      <option value="inks">🖨️ Inks</option>
-                      <option value="chemicals">⚗️ Chemicals</option>
-                      <option value="packaging">📦 Packaging</option>
-                      <option value="raw_materials">🏭 Raw Materials</option>
-                      <option value="maintenance">🔧 Maintenance</option>
-                      <option value="other">📎 Other</option>
-                    </select>
+                    <p class="text-xs text-gray-500">Item ID</p>
+                    <p class="font-semibold text-gray-900">{{ item?.itemId }}</p>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
-                    <input
-                      v-model="formData.supplier"
-                      type="text"
-                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                      placeholder="Supplier name"
-                    />
+                    <p class="text-xs text-gray-500">Category</p>
+                    <p class="font-semibold text-gray-900 capitalize">{{ item?.category }}</p>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Unit of Measure</label>
-                    <select
-                      v-model="formData.unit"
-                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 bg-white"
-                    >
-                      <option value="piece">Piece (pc)</option>
-                      <option value="kg">Kilogram (kg)</option>
-                      <option value="liter">Liter (L)</option>
-                      <option value="box">Box (box)</option>
-                      <option value="roll">Roll (roll)</option>
-                      <option value="set">Set (set)</option>
-                    </select>
+                    <p class="text-xs text-gray-500">Supplier</p>
+                    <p class="font-semibold text-gray-900">{{ item?.supplier || 'N/A' }}</p>
                   </div>
                 </div>
               </div>
 
               <!-- Stock Information -->
-              <div class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow duration-200">
+              <div class="bg-white border border-gray-200 rounded-xl p-5">
                 <div class="flex items-center gap-2 mb-4">
                   <div class="w-1 h-5 bg-green-600 rounded-full"></div>
                   <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Stock Information</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Current Stock <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Current Stock</label>
                     <div class="relative">
                       <input
                         v-model.number="formData.stock"
@@ -125,7 +90,21 @@
                     </div>
                     <p class="text-xs text-gray-400 mt-1">Alert when stock falls below this level</p>
                   </div>
-                  <div class="col-span-2">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Unit of Measure</label>
+                    <select
+                      v-model="formData.unit"
+                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 bg-white"
+                    >
+                      <option value="piece">Piece (pc)</option>
+                      <option value="kg">Kilogram (kg)</option>
+                      <option value="liter">Liter (L)</option>
+                      <option value="box">Box</option>
+                      <option value="roll">Roll</option>
+                      <option value="set">Set</option>
+                    </select>
+                  </div>
+                  <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Unit Cost (₱)</label>
                     <div class="relative">
                       <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
@@ -154,17 +133,45 @@
                 </div>
               </div>
 
-              <!-- Additional Notes -->
-              <div class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow duration-200">
+              <!-- Location Information -->
+              <div class="bg-white border border-gray-200 rounded-xl p-5">
                 <div class="flex items-center gap-2 mb-4">
                   <div class="w-1 h-5 bg-purple-600 rounded-full"></div>
-                  <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Additional Notes</p>
+                  <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Location</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse Location</label>
+                    <input
+                      v-model="formData.location"
+                      type="text"
+                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                      placeholder="e.g., Warehouse A"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Bin Location</label>
+                    <input
+                      v-model="formData.binLocation"
+                      type="text"
+                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                      placeholder="e.g., A-12"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="bg-white border border-gray-200 rounded-xl p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="w-1 h-5 bg-gray-600 rounded-full"></div>
+                  <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Notes</p>
                 </div>
                 <textarea
                   v-model="formData.notes"
                   rows="3"
                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 resize-none"
-                  placeholder="Any additional notes about this item..."
+                  placeholder="Additional notes..."
                 ></textarea>
               </div>
 
@@ -201,68 +208,55 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
-  item: { type: Object, required: true },
-  categories: { type: Array, default: () => [] }
+  item: { type: Object, required: true }
 })
 
 const emit = defineEmits(['close', 'update'])
 
 const isSubmitting = ref(false)
 const formData = ref({
-  name: '',
-  category: '',
-  supplier: '',
-  unit: 'piece',
   stock: 0,
   threshold: 100,
+  unit: 'piece',
   unitCost: 0,
+  location: 'Warehouse A',
+  binLocation: '',
   notes: ''
 })
 
 function getStockStatus(stock, threshold) {
-  if (stock <= 0) return 'Out of Stock'
-  if (stock <= threshold) return 'Low Stock'
+  const stockNum = Number(stock) || 0
+  const thresholdNum = Number(threshold) || 0
+  if (stockNum <= 0) return 'Out of Stock'
+  if (stockNum <= thresholdNum) return 'Low Stock'
   return 'In Stock'
 }
 
 function getStockStatusClass(stock, threshold) {
-  if (stock <= 0) return 'bg-red-50 border border-red-200'
-  if (stock <= threshold) return 'bg-yellow-50 border border-yellow-200'
-  return 'bg-green-50 border border-green-200'
+  const stockNum = Number(stock) || 0
+  const thresholdNum = Number(threshold) || 0
+  if (stockNum <= 0) return 'bg-red-50 border border-red-200 text-red-700'
+  if (stockNum <= thresholdNum) return 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+  return 'bg-green-50 border border-green-200 text-green-700'
 }
 
 watch(() => props.item, (newItem) => {
   if (newItem) {
     formData.value = {
-      name: newItem.name || '',
-      category: newItem.category || '',
-      supplier: newItem.supplier || '',
-      unit: newItem.unit || 'piece',
       stock: newItem.stock || 0,
       threshold: newItem.threshold || 100,
+      unit: newItem.unit || 'piece',
       unitCost: newItem.unitCost || 0,
+      location: newItem.location || 'Warehouse A',
+      binLocation: newItem.binLocation || '',
       notes: newItem.notes || ''
     }
   }
 }, { immediate: true })
-
-function handleEscKey(event) {
-  if (event.key === 'Escape' && props.show) {
-    closeModal()
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', handleEscKey)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleEscKey)
-})
 
 function closeModal() {
   emit('close')
@@ -273,13 +267,12 @@ async function handleSubmit() {
   
   const updatedItem = {
     ...props.item,
-    name: formData.value.name,
-    category: formData.value.category,
-    supplier: formData.value.supplier,
-    unit: formData.value.unit,
     stock: formData.value.stock,
     threshold: formData.value.threshold,
+    unit: formData.value.unit,
     unitCost: formData.value.unitCost,
+    location: formData.value.location,
+    binLocation: formData.value.binLocation,
     notes: formData.value.notes
   }
   

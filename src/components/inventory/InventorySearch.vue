@@ -11,7 +11,7 @@
         <input
           :value="search"
           type="text"
-          placeholder="Search by product name, size, or SKU..."
+          placeholder="Search by product name, supplier, or ID..."
           class="w-full pl-10 pr-4 py-2.5 border border-gray-200 bg-gray-50 rounded-xl
                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white
                  transition-all text-sm"
@@ -20,8 +20,8 @@
       </div>
     </div>
 
-    <!-- Status Filter -->
-    <div class="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+    <!-- Status Filter - Only show for supplies tab -->
+    <div v-if="activeTab === 'supplies'" class="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
       <div class="flex items-center gap-4">
         <span class="text-xs font-medium text-gray-500">Filter by status:</span>
         <div class="flex gap-2">
@@ -49,16 +49,10 @@
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        :disabled="tab.disabled"
         class="flex-1 px-6 py-3.5 text-sm font-semibold transition-all flex items-center justify-center gap-2"
-        :class="[
-          activeTab === tab.key && !tab.disabled
-            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/60'
-            : tab.disabled
-              ? 'text-gray-400 cursor-not-allowed bg-gray-50'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50',
-          tab.disabled && activeTab === tab.key ? 'border-b-2 border-gray-300' : ''
-        ]"
+        :class="activeTab === tab.key
+          ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/60'
+          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
         @click="switchTab(tab.key)"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -69,11 +63,8 @@
           <polyline points="3.29 7 12 12 20.71 7"/>
         </svg>
         {{ tab.label }}
-        <span 
-          class="px-1.5 py-0.5 text-white text-xs rounded-full font-bold"
-          :class="tab.disabled ? 'bg-gray-400' : 'bg-red-500'"
-        >
-          {{ tab.lowStockCount }}
+        <span class="px-1.5 py-0.5 text-white text-xs rounded-full font-bold bg-blue-500">
+          {{ tab.count }}
         </span>
       </button>
     </div>
@@ -86,42 +77,39 @@ import { useRouter, useRoute } from 'vue-router'
 
 const props = defineProps({
   search: { type: String, default: '' },
-  statusFilter: { type: String, default: 'all' }
+  activeTab: { type: String, default: 'products' }, // Changed from 'cups' to 'products'
+  statusFilter: { type: String, default: 'all' },
+  itemsCount: { type: Number, default: 0 },
+  lowStockCount: { type: Number, default: 0 },
+  productsCount: { type: Number, default: 0 }
 })
 
 const emit = defineEmits(['update:search', 'update:activeTab', 'update:statusFilter'])
 
 const router = useRouter()
 const route = useRoute()
-const activeTab = ref('cups')
+const activeTab = ref(props.activeTab)
 const statusFilter = ref(props.statusFilter)
-
-// Get user role from localStorage
-const userRole = computed(() => localStorage.getItem('userRole') || 'production')
 
 const statusFilters = [
   { value: 'all', label: 'All Items' },
   { value: 'in-stock', label: 'In Stock' },
-  { value: 'low-stock', label: 'Low Stock' }
+  { value: 'low-stock', label: 'Low Stock' },
+  { value: 'out-of-stock', label: 'Out of Stock' }
 ]
 
 const tabs = computed(() => [
-  { 
-    key: 'cups', 
-    label: 'Cups (30)', 
-    lowStockCount: 4,
-    disabled: false
-  },
-  { 
-    key: 'supplies', 
-    label: 'Supplies (17)', 
-    lowStockCount: 7,
-    disabled: userRole.value === 'sales'
-  },
+  { key: 'products', label: 'Products', count: props.productsCount || 0 },
+  { key: 'supplies', label: 'Supplies', count: props.itemsCount || 0 }
 ])
 
+console.log('Products count:', tabs.value.find(tab => tab.key === 'products')?.count);
+console.log('Supplies count:', tabs.value.find(tab => tab.key === 'supplies')?.count);
+
 function getStatusCount(status) {
-  // This will be passed from parent or calculated
+  if (status === 'low-stock') return props.lowStockCount
+  if (status === 'out-of-stock') return 0 // Will be calculated from parent
+  if (status === 'in-stock') return 0
   return 0
 }
 
@@ -129,36 +117,35 @@ function setStatusFilter(value) {
   statusFilter.value = value
   emit('update:statusFilter', value)
   
-  // Update URL
   router.replace({
     query: { ...route.query, status: value === 'all' ? undefined : value }
   })
 }
 
-// Initialize from URL on mount
 onMounted(() => {
-  if (route.query.tab && route.query.tab === 'supplies' && !tabs.value[1].disabled) {
+  // Handle tab from URL query
+  if (route.query.tab === 'supplies') {
     activeTab.value = 'supplies'
     emit('update:activeTab', 'supplies')
-  } else if (route.query.tab === 'cups') {
-    activeTab.value = 'cups'
-    emit('update:activeTab', 'cups')
+  } else if (route.query.tab === 'products') {
+    activeTab.value = 'products'
+    emit('update:activeTab', 'products')
   }
   
+  // Handle status from URL query
   if (route.query.status) {
     statusFilter.value = route.query.status
     emit('update:statusFilter', route.query.status)
   }
 })
 
-// Watch for route changes
 watch(() => route.query.tab, (newTab) => {
-  if (newTab === 'supplies' && !tabs.value[1].disabled) {
+  if (newTab === 'supplies') {
     activeTab.value = 'supplies'
     emit('update:activeTab', 'supplies')
-  } else if (newTab === 'cups') {
-    activeTab.value = 'cups'
-    emit('update:activeTab', 'cups')
+  } else if (newTab === 'products') {
+    activeTab.value = 'products'
+    emit('update:activeTab', 'products')
   }
 })
 
@@ -177,7 +164,6 @@ function switchTab(tabKey) {
   activeTab.value = tabKey
   emit('update:activeTab', tabKey)
   
-  // Update URL without reloading the page
   router.replace({
     query: { ...route.query, tab: tabKey }
   })
@@ -187,7 +173,6 @@ function handleSearch(event) {
   const value = event.target.value
   emit('update:search', value)
   
-  // Update URL query parameter without reloading the page
   const query = { ...route.query, search: value || undefined }
   if (!value) delete query.search
   router.replace({ query })

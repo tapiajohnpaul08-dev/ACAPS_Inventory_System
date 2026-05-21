@@ -12,9 +12,9 @@
           <div class="flex items-start justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 leading-snug">
-                Edit {{ accountType }} Account
+                Edit {{ accountTypeLabel }} Account
               </h2>
-              <p class="text-sm text-gray-500 mt-0.5">{{ account?.name }} - {{ account?.userId }}</p>
+              <p class="text-sm text-gray-500 mt-0.5">{{ displayName }} - {{ accountId }}</p>
             </div>
             <button @click="closeModal" class="ml-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
@@ -30,24 +30,41 @@
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Basic Information</p>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">First Name *</label>
                     <input
-                      v-model="formData.name"
+                      v-model="formData.firstName"
                       type="text"
                       required
                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                   </div>
                   <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Last Name *</label>
+                    <input
+                      v-model="formData.lastName"
+                      type="text"
+                      required
+                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Middle Name</label>
+                    <input
+                      v-model="formData.middleName"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                  <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">User ID</label>
                     <input
-                      v-model="formData.userId"
+                      :value="accountId"
                       type="text"
                       disabled
                       class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm cursor-not-allowed"
                     />
                   </div>
-                  <div>
+                  <div class="col-span-2">
                     <label class="block text-xs font-medium text-gray-700 mb-1">Email Address *</label>
                     <input
                       v-model="formData.email"
@@ -58,108 +75,46 @@
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
-                    <input
-                      v-model="formData.phone"
-                      type="tel"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-                  <div class="col-span-2">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Address</label>
-                    <textarea
-                      v-model="formData.address"
-                      rows="2"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
-                    ></textarea>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      v-model="formData.status"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
+                    <div class="flex items-center gap-2">
+                      <span class="text-gray-500 border border-gray-200 px-3 py-2 rounded-lg bg-gray-50 text-sm">+63</span>
+                      <input
+                        v-model="formData.phone"
+                        type="tel"
+                        class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
               <!-- Customer Specific Fields -->
-              <div v-if="accountType === 'customer'" class="border border-gray-200 rounded-xl p-4">
+              <div v-if="accountType === 'customers'" class="border border-gray-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Customer Details</p>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Payment Terms</label>
-                    <select
-                      v-model="formData.paymentTerms"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="Net 15">Net 15</option>
-                      <option value="Net 30">Net 30</option>
-                      <option value="Net 45">Net 45</option>
-                      <option value="Net 60">Net 60</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Orders Count</label>
-                    <input
-                      v-model.number="formData.ordersCount"
-                      type="number"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Total Spent</label>
-                    <input
-                      v-model="formData.totalSpent"
-                      type="text"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="₱0"
-                    />
-                  </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Company Name</label>
+                  <input
+                    v-model="formData.companyName"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    placeholder="Company name (optional)"
+                  />
                 </div>
               </div>
 
               <!-- Admin Specific Fields -->
-              <div v-if="accountType !== 'customer'" class="border border-gray-200 rounded-xl p-4">
+              <div v-if="accountType !== 'customers'" class="border border-gray-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Employment Details</p>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Role *</label>
-                    <input
-                      v-model="formData.role"
-                      type="text"
-                      required
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Department</label>
-                    <input
-                      v-model="formData.department"
-                      type="text"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Admin Role</label>
+                  <select
+                    v-model="formData.role"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="Sales">Sales Department</option>
+                    <option value="Production">Production Department</option>
+                  </select>
                 </div>
               </div>
-
-              <!-- Permissions Section (for Admins) -->
-              <!-- <div v-if="accountType !== 'customer'" class="border border-gray-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Permissions</p>
-                <div class="space-y-2">
-                  <label v-for="perm in availablePermissions" :key="perm.value" class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      :value="perm.value"
-                      v-model="formData.permissions"
-                      class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <span class="text-sm text-gray-700">{{ perm.label }}</span>
-                  </label>
-                </div>
-              </div> -->
 
               <!-- Action Buttons -->
               <div class="flex gap-3 pt-4">
@@ -191,49 +146,68 @@
       </div>
     </Transition>
   </Teleport>
+
+  <!-- Feedback Modal -->
+  <FeedbackModal
+    v-model:show="feedback.show"
+    :type="feedback.type"
+    :title="feedback.title"
+    :message="feedback.message"
+    @close="feedback.show = false"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import FeedbackModal from './FeedbackModal.vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
   account: { type: Object, required: true },
-  accountType: { type: String, required: true } // 'customer', 'sales', 'production'
+  accountType: { type: String, required: true } // 'customers', 'sales', 'production'
 })
 
 const emit = defineEmits(['close', 'update'])
 
 const isSubmitting = ref(false)
 
-// Available permissions for admin accounts
-const availablePermissions = [
-  { value: 'view_orders', label: 'View Orders' },
-  { value: 'manage_orders', label: 'Manage Orders' },
-  { value: 'view_inventory', label: 'View Inventory' },
-  { value: 'manage_inventory', label: 'Manage Inventory' },
-  { value: 'view_customers', label: 'View Customers' },
-  { value: 'manage_customers', label: 'Manage Customers' },
-  { value: 'view_analytics', label: 'View Analytics' },
-  { value: 'manage_production', label: 'Manage Production' },
-]
+const feedback = ref({
+  show: false,
+  type: 'success',
+  title: '',
+  message: ''
+})
+
+const accountId = computed(() => {
+  return props.account?.userId || props.account?.customerId || props.account?.adminId || ''
+})
+
+const displayName = computed(() => {
+  const account = props.account
+  if (account.firstName && account.lastName) {
+    return `${account.firstName} ${account.lastName}`
+  }
+  return account.name || account.email || 'Account'
+})
+
+const accountTypeLabel = computed(() => {
+  switch(props.accountType) {
+    case 'customers': return 'Customer'
+    case 'sales': return 'Sales Admin'
+    case 'production': return 'Production Admin'
+    default: return 'Account'
+  }
+})
 
 // Form data
 const formData = ref({
-  name: '',
-  userId: '',
+  firstName: '',
+  middleName: '',
+  lastName: '',
   email: '',
   phone: '',
-  address: '',
-  status: 'Active',
-  // Customer specific
-  ordersCount: 0,
-  totalSpent: '',
-  paymentTerms: 'Net 30',
-  // Admin specific
-  role: '',
-  department: '',
-  permissions: []
+  companyName: '',
+  role: ''
 })
 
 // Watch for account changes to populate form
@@ -245,18 +219,13 @@ watch(() => props.account, (newAccount) => {
 
 function populateForm(account) {
   formData.value = {
-    name: account.name || '',
-    userId: account.userId || '',
+    firstName: account.firstName || '',
+    middleName: account.middleName || '',
+    lastName: account.lastName || '',
     email: account.email || '',
     phone: account.phone || '',
-    address: account.address || '',
-    status: account.status || 'Active',
-    ordersCount: account.ordersCount || 0,
-    totalSpent: account.totalSpent || '₱0',
-    paymentTerms: account.paymentTerms || 'Net 30',
-    role: account.role || '',
-    department: account.department || '',
-    permissions: account.permissions ? [...account.permissions] : []
+    companyName: account.companyName || '',
+    role: account.role || (props.accountType === 'sales' ? 'Sales' : 'Production')
   }
 }
 
@@ -278,41 +247,47 @@ function closeModal() {
   emit('close')
 }
 
+function showFeedback(type, title, message) {
+  feedback.value = {
+    show: true,
+    type,
+    title,
+    message
+  }
+}
+
 async function handleSubmit() {
   isSubmitting.value = true
   
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 800))
-  
-  // Prepare updated account data
+  // Prepare updated account data matching backend structure
   const updatedAccount = {
-    ...props.account,
-    name: formData.value.name,
+    firstName: formData.value.firstName,
+    middleName: formData.value.middleName,
+    lastName: formData.value.lastName,
     email: formData.value.email,
-    phone: formData.value.phone,
-    address: formData.value.address,
-    status: formData.value.status,
+    phone: formData.value.phone
   }
   
   // Add customer specific fields
-  if (props.accountType === 'customer') {
-    updatedAccount.ordersCount = formData.value.ordersCount
-    updatedAccount.totalSpent = formData.value.totalSpent
-    updatedAccount.paymentTerms = formData.value.paymentTerms
+  if (props.accountType === 'customers') {
+    updatedAccount.companyName = formData.value.companyName
   } 
   // Add admin specific fields
   else {
     updatedAccount.role = formData.value.role
-    updatedAccount.department = formData.value.department
-    updatedAccount.permissions = formData.value.permissions
-    updatedAccount.lastLogin = formData.value.lastLogin || props.account.lastLogin
   }
   
   // Emit update event
   emit('update', updatedAccount)
   
+  showFeedback('success', 'Success', `${accountTypeLabel.value} account has been updated successfully!`)
+  
   isSubmitting.value = false
-  closeModal()
+  
+  // Close modal after a short delay
+  setTimeout(() => {
+    closeModal()
+  }, 1500)
 }
 </script>
 
@@ -339,14 +314,9 @@ async function handleSubmit() {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-
 .animate-spin {
   animation: spin 1s linear infinite;
 }

@@ -12,9 +12,11 @@
           <div class="flex items-start justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 leading-snug">
-                {{ account?.name || 'Account Details' }} - {{ account?.userId || 'N/A' }}
+                {{ displayName }} - {{ account?.userId || account?.customerId || 'N/A' }}
               </h2>
-              <p class="text-sm text-gray-500 mt-0.5 capitalize">{{ account?.type?.replace('-', ' ') || 'Account' }}</p>
+              <p class="text-sm text-gray-500 mt-0.5 capitalize">
+                {{ accountType === 'customers' ? 'Customer Account' : accountType === 'sales' ? 'Sales Admin' : 'Production Admin' }}
+              </p>
             </div>
             <button @click="closeModal" class="ml-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
@@ -28,14 +30,13 @@
               <!-- Account ID and Status -->
               <div class="grid grid-cols-2 gap-4">
                 <div class="bg-blue-50 rounded-xl p-4">
-                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Account ID</p>
-                  <p class="text-sm font-bold text-gray-900">{{ account.userId || 'N/A' }}</p>
+                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">{{ accountType === 'customers' ? 'Customer ID' : 'Admin ID' }}</p>
+                  <p class="text-sm font-bold text-gray-900">{{ account.userId || account.customerId || account.adminId || 'N/A' }}</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-4">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Status</p>
-                  <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold"
-                    :class="account.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                    {{ account.status || 'N/A' }}
+                  <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                    Active
                   </span>
                 </div>
               </div>
@@ -57,30 +58,42 @@
                     </svg>
                     <span class="text-gray-700">{{ account.phone || 'No phone number' }}</span>
                   </div>
-                  <div v-if="account.address" class="flex items-start gap-2 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-gray-400 mt-0.5">
-                      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <span class="text-gray-700">{{ account.address }}</span>
+                </div>
+              </div>
+
+              <!-- Name Details -->
+              <div class="border border-gray-200 rounded-xl p-4">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Name Details</p>
+                <div class="grid grid-cols-3 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-400">First Name</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ account.firstName || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400">Middle Name</p>
+                    <p class="text-sm text-gray-700">{{ account.middleName || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400">Last Name</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ account.lastName || 'N/A' }}</p>
                   </div>
                 </div>
               </div>
 
               <!-- Customer Specific Stats -->
-              <div v-if="account.type === 'customer'" class="grid grid-cols-2 gap-4">
+              <div v-if="accountType === 'customers'" class="grid grid-cols-2 gap-4">
                 <div class="bg-green-50 rounded-xl p-4">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Total Orders</p>
                   <p class="text-2xl font-black text-green-700">{{ account.ordersCount || 0 }}</p>
                 </div>
                 <div class="bg-purple-50 rounded-xl p-4">
-                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Total Spent</p>
-                  <p class="text-2xl font-black text-purple-700">{{ account.totalSpent || '₱0' }}</p>
+                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Provider</p>
+                  <p class="text-sm font-semibold text-purple-700 capitalize">{{ account.provider || 'local' }}</p>
                 </div>
               </div>
 
               <!-- Admin Specific Details -->
-              <div v-if="account.type !== 'customer'" class="border border-gray-200 rounded-xl p-4">
+              <div v-if="accountType !== 'customers'" class="border border-gray-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Employment Details</p>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
@@ -89,42 +102,25 @@
                   </div>
                   <div>
                     <p class="text-xs text-gray-400">Department</p>
-                    <p class="text-sm font-semibold text-gray-900">{{ account.department || 'N/A' }}</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ account.department || account.role === 'Sales' ? 'Sales Department' : 'Production Department' }}</p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-400">Created At</p>
-                    <p class="text-sm text-gray-700">{{ account.createdAt || 'N/A' }}</p>
+                    <p class="text-sm text-gray-700">{{ formatDate(account.createdAt) }}</p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-400">Last Login</p>
-                    <p class="text-sm text-gray-700">{{ account.lastLogin || account.lastActive || 'N/A' }}</p>
+                    <p class="text-sm text-gray-700">{{ formatDate(account.lastLogin) || 'Never' }}</p>
                   </div>
                 </div>
               </div>
 
-              <!-- Additional Info for Customers -->
-              <div v-if="account.type === 'customer' && (account.paymentTerms || account.createdAt)" class="border border-gray-200 rounded-xl p-4">
+              <!-- Customer Additional Info -->
+              <div v-if="accountType === 'customers' && account.companyName" class="border border-gray-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Additional Information</p>
-                <div class="grid grid-cols-2 gap-4">
-                  <div v-if="account.paymentTerms">
-                    <p class="text-xs text-gray-400">Payment Terms</p>
-                    <p class="text-sm font-semibold text-gray-900">{{ account.paymentTerms }}</p>
-                  </div>
-                  <div v-if="account.createdAt">
-                    <p class="text-xs text-gray-400">Customer Since</p>
-                    <p class="text-sm text-gray-700">{{ account.createdAt }}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Permissions (for admins) -->
-              <div v-if="account.permissions && account.permissions.length" class="border border-gray-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Permissions</p>
-                <div class="flex flex-wrap gap-2">
-                  <span v-for="perm in account.permissions" :key="perm" 
-                    class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
-                    {{ perm.replace(/_/g, ' ') }}
-                  </span>
+                <div>
+                  <p class="text-xs text-gray-400">Company Name</p>
+                  <p class="text-sm font-semibold text-gray-900">{{ account.companyName }}</p>
                 </div>
               </div>
 
@@ -151,14 +147,29 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
-  account: { type: Object, required: true }
+  account: { type: Object, required: true },
+  accountType: { type: String, required: true } // 'customers', 'sales', 'production'
 })
 
 const emit = defineEmits(['close', 'edit'])
+
+const displayName = computed(() => {
+  const account = props.account
+  if (account.firstName && account.lastName) {
+    return `${account.firstName} ${account.lastName}`
+  }
+  return account.name || account.email || 'Account'
+})
+
+function formatDate(dateString) {
+  if (!dateString) return null
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+}
 
 function handleEscKey(event) {
   if (event.key === 'Escape' && props.show) {

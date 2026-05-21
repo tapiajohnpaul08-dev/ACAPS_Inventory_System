@@ -31,3 +31,11 @@ button:focus-visible {
 button:disabled {
   cursor: not-allowed;
 }
+
+th {
+  text-align: center;
+}
+
+tr {
+  text-align: center;
+}
