@@ -28,18 +28,25 @@ adminAxiosInstance.interceptors.request.use(
 adminAxiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only handle 401 errors, but don't redirect for login requests
     if (error.response?.status === 401) {
-      // Clear admin session
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminUser');
-      localStorage.removeItem('adminName');
-      localStorage.removeItem('adminEmail');
-      localStorage.removeItem('adminRole');
+      // Check if this is a login request (the URL contains '/login')
+      const isLoginRequest = error.config?.url?.includes('/login');
       
-      // Redirect to admin login page
-      if (window.location.pathname !== '/admin/login') {
-        window.location.href = '/admin/login';
+      if (!isLoginRequest) {
+        // Clear admin session only for non-login requests
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('adminName');
+        localStorage.removeItem('adminEmail');
+        localStorage.removeItem('adminRole');
+        
+        // Only redirect if not already on the login page
+        if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+          window.location.href = '/';
+        }
       }
+      // For login requests, just return the error without redirect
     }
     return Promise.reject(error);
   }

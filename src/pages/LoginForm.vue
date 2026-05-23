@@ -44,11 +44,10 @@
                 />
                 <button
                   type="button"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm font-medium"
                   @click="showPassword = !showPassword"
                 >
-                  <span v-if="showPassword">Hide</span>
-                  <span v-else>Show</span>
+                  {{ showPassword ? 'Hide' : 'Show' }}
                 </button>
               </div>
             </div>
@@ -63,7 +62,7 @@
               type="submit"
               :disabled="isLoading"
               class="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-all
-                     flex items-center justify-center gap-2 disabled:opacity-70 font-medium"
+                     flex items-center justify-center gap-2 disabled:opacity-70 font-medium shadow-md hover:shadow-lg"
             >
               <span v-if="isLoading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               {{ isLoading ? 'Signing in...' : 'Sign In' }}
@@ -99,12 +98,11 @@ async function handleLogin() {
   try {
     const response = await adminAuthApi.login(email.value, password.value);
     
-    
     if (response.success && response.data) {
       const admin = response.data.admin;
       const token = response.data.token;
       
-      console.log('Login successful with role of:', admin.role);
+      console.log('Login successful with role:', admin.role);
       
       // Store admin data
       localStorage.setItem('adminToken', token);
@@ -113,12 +111,17 @@ async function handleLogin() {
       localStorage.setItem('adminEmail', admin.email);
       localStorage.setItem('adminRole', admin.role);
       
+      // Redirect to dashboard
       router.push('/dashboard');
     } else {
+      // Show error message, stay on login page
       errorMessage.value = response.message || 'Invalid email or password';
+      // Don't redirect - just show error
     }
   } catch (error) {
+    console.error('Login error:', error);
     errorMessage.value = error.response?.data?.message || 'Login failed. Please try again.';
+    // Don't redirect - just show error
   } finally {
     isLoading.value = false;
   }

@@ -37,13 +37,13 @@ const routes = [
         path: 'orders',
         name: 'Orders',
         component: OrdersPage,
-        meta: { title: 'Orders'}
+        meta: { title: 'Orders' }
       },
       {
         path: 'messages',
         name: 'Messages',
         component: MessagePage,
-        meta: { title: 'Messages'}
+        meta: { title: 'Messages' }
       },
       {
         path: 'analytics',
@@ -55,7 +55,7 @@ const routes = [
         path: 'accounts',
         name: 'Accounts',
         component: AccountsPage,
-        meta: { title: 'Accounts'}
+        meta: { title: 'Accounts' }
       }
     ]
   },
@@ -77,26 +77,22 @@ const router = createRouter({
   routes,
 })
 
-// Navigation guard
+// ✅ MODERN SYNTAX - Return value instead of calling next()
 router.beforeEach((to, from) => {
-  // Check authentication
   const adminToken = localStorage.getItem('adminToken')
-  const adminRole = localStorage.getItem('adminRole')
   const isAuthenticated = !!adminToken
 
-  // Redirect to login if route requires auth and not authenticated
+  // If route requires auth and not authenticated, redirect to login
   if (to.meta.requiresAuth && !isAuthenticated) {
     return '/'
   }
 
-  // Redirect to dashboard if already logged in and trying to access login page
+  // If already authenticated and trying to go to login page, redirect to dashboard
   if (to.path === '/' && isAuthenticated) {
     return '/dashboard'
   }
 
-
- 
-
+  // Allow navigation
   return true
 })
 

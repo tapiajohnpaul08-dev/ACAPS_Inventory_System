@@ -39,3 +39,6 @@ th {
 tr {
   text-align: center;
 }
+
+.toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(12px) scale(0.95); }

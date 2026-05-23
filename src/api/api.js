@@ -359,27 +359,73 @@ export const inventoryApi = {
 // =============================================================================
 
 export const adminOrderApi = {
-  async getAllOrders() {
+  // Get all orders
+  async getAllOrders(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
     return handleResponse(
-      adminAxiosInstance.get('/admin/orders')
+      adminAxiosInstance.get(`/order/admin/all${params ? `?${params}` : ''}`)
     );
   },
 
+  // Get order by ID
   async getOrderById(orderId) {
     return handleResponse(
-      adminAxiosInstance.get(`/admin/orders/${orderId}`)
+      adminAxiosInstance.get(`/order/admin/orders/${orderId}`)
     );
   },
 
-  async updateOrderStatus(orderId, status) {
+  // Update order status - Send status as object with status property
+  async updateOrderStatus(orderId, statusData) {
+    // Handle both string and object input
+    const status = typeof statusData === 'string' ? statusData : statusData.status;
+    const notes = statusData.notes || '';
     return handleResponse(
-      adminAxiosInstance.patch(`/admin/orders/${orderId}/status`, { status })
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/status`, { status, notes })
     );
   },
 
-  async getOrdersByStatus(status) {
+  // Update payment status - Send paymentStatus as object
+  async updatePaymentStatus(orderId, paymentData) {
+    // Handle both string and object input
+    const paymentStatus = typeof paymentData === 'string' ? paymentData : paymentData.paymentStatus;
+    const amountPaid = paymentData.amountPaid || null;
     return handleResponse(
-      adminAxiosInstance.get(`/admin/orders/status/${status}`)
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/payment`, { paymentStatus, amountPaid })
+    );
+  },
+
+  // Update order details
+  async updateOrder(orderId, orderData) {
+    return handleResponse(
+      adminAxiosInstance.put(`/order/admin/orders/${orderId}`, orderData)
+    );
+  },
+
+  // Delete order
+  async deleteOrder(orderId) {
+    return handleResponse(
+      adminAxiosInstance.delete(`/order/admin/orders/${orderId}`)
+    );
+  },
+
+  // Get order statistics
+  async getOrderStatistics() {
+    return handleResponse(
+      adminAxiosInstance.get('/order/admin/statistics')
+    );
+  },
+
+  // Get orders by date range
+  async getOrdersByDateRange(startDate, endDate) {
+    return handleResponse(
+      adminAxiosInstance.get(`/order/admin/date-range?startDate=${startDate}&endDate=${endDate}`)
+    );
+  },
+
+  // Get orders by customer email
+  async getOrdersByCustomer(email) {
+    return handleResponse(
+      adminAxiosInstance.get(`/order/admin/customers/${email}/orders`)
     );
   },
 };
@@ -388,6 +434,7 @@ export const adminOrderApi = {
 // DASHBOARD STATISTICS
 // =============================================================================
 
+
 export const adminDashboardApi = {
   async getStats() {
     return handleResponse(
@@ -395,15 +442,28 @@ export const adminDashboardApi = {
     );
   },
 
-  async getRecentOrders(limit = 10) {
+  async getRecentOrders(limit = 5) {
     return handleResponse(
       adminAxiosInstance.get(`/admin/recent-orders?limit=${limit}`)
     );
   },
 
-  async getSalesReport(startDate, endDate) {
+  // ✅ Fix this - use adminAxiosInstance, not regular axiosInstance
+  async getLowStockItems() {
     return handleResponse(
-      adminAxiosInstance.get('/admin/sales-report', { params: { startDate, endDate } })
+      adminAxiosInstance.get('/inventory/low-stock')
+    );
+  },
+
+  async getRevenueByCategory() {
+    return handleResponse(
+      adminAxiosInstance.get('/admin/revenue-by-category')
+    );
+  },
+
+  async getWeeklySales() {
+    return handleResponse(
+      adminAxiosInstance.get('/admin/weekly-sales')
     );
   },
 };

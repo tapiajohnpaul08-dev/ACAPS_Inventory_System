@@ -114,6 +114,22 @@
       @cancel="closeConfirmModal"
     />
   </div>
+
+  <Transition name="toast">
+    <div
+      v-if="toast.show"
+      class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold max-w-sm"
+      :class="toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'"
+    >
+      <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+      </svg>
+      {{ toast.message }}
+    </div>
+  </Transition>
 </template>
 
 <script setup>
@@ -144,6 +160,8 @@ const showAddProductModal = ref(false)
 const loadingProducts = ref(false)
 const loadingSupplies = ref(false)
 const loadingInventory = ref(false)
+const toast = ref({ show: false, type: 'success', message: '' })
+
 
 // Data from backend
 const products = ref([])  // Products from Product model
@@ -447,10 +465,16 @@ function closeEditInventoryModal() {
   editInventoryItem.value = null
 }
 
+function showToast(type, message) {
+  clearTimeout(toastTimer)
+  toast.value = { show: true, type, message }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
+}
+let toastTimer = null
+
 async function handleAddSupply(supplyData) {
   loadingSupplies.value = true
   try {
-    // First create the supply
     const supplyResponse = await supplyApi.createSupply({
       name: supplyData.name,
       category: supplyData.category,
@@ -464,11 +488,10 @@ async function handleAddSupply(supplyData) {
     })
     
     if (!supplyResponse.success) {
-      showFeedback('error', 'Error', supplyResponse.message || 'Failed to create supply')
+      showToast('error', supplyResponse.message || 'Failed to create supply')
       return
     }
     
-    // Then add to inventory
     const inventoryResponse = await inventoryApi.addSupplyToInventory(
       supplyResponse.data.supplyId,
       {
@@ -483,14 +506,14 @@ async function handleAddSupply(supplyData) {
     
     if (inventoryResponse.success) {
       await Promise.all([loadSupplies(), loadInventory()])
-      showFeedback('success', 'Success', `Supply "${supplyData.name}" has been created and added to inventory.`)
+      showToast('success', `Supply "${supplyData.name}" has been created and added to inventory.`)
       closeAddSupplyModal()
     } else {
-      showFeedback('error', 'Error', inventoryResponse.message || 'Failed to add supply to inventory')
+      showToast('error', inventoryResponse.message || 'Failed to add supply to inventory')
     }
   } catch (error) {
     console.error('Error creating supply:', error)
-    showFeedback('error', 'Error', 'Failed to create supply')
+    showToast('error', 'Failed to create supply')
   } finally {
     loadingSupplies.value = false
   }

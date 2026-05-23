@@ -67,6 +67,33 @@
       <span class="ml-3 text-gray-500">Loading accounts...</span>
     </div>
   </div>
+
+  <ConfirmModal
+    :show="confirmModal.show"
+    :type="confirmModal.type"
+    :title="confirmModal.title"
+    :message="confirmModal.message"
+    :confirm-text="'Delete'"
+    :cancel-text="'Cancel'"
+    @confirm="confirmModal.onConfirm && confirmModal.onConfirm()"
+    @cancel="confirmModal.show = false"
+  />
+
+  <Transition name="toast">
+    <div
+      v-if="toast.show"
+      class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold max-w-sm"
+      :class="toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'"
+    >
+      <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+      </svg>
+      {{ toast.message }}
+    </div>
+  </Transition>
 </template>
 
 <script setup>
@@ -77,6 +104,7 @@ import AccountsTable from '@/components/accounts/AccountsTable.vue'
 import AccountDetailModal from '@/modals/AccountDetailModal.vue'
 import EditAccountModal from '@/modals/EditAccountModal.vue'
 import AddUserModal from '@/modals/AddUserModal.vue'
+import ConfirmModal from '@/modals/ConfirmModal.vue'
 import { adminCustomerApi, adminManagementApi } from '@/api/api'
 
 const route = useRoute()
@@ -91,6 +119,15 @@ const loading = ref(false)
 const customers = ref([])
 const salesAdmins = ref([])
 const productionAdmins = ref([])
+
+const toast = ref({ show: false, type: 'success', message: '' })
+const confirmModal = ref({ show: false, type: 'danger', title: '', message: '', onConfirm: null })
+
+function showToast(type, message) {
+  clearTimeout(toastTimer)
+  toast.value = { show: true, type, message }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
+}
 
 // Initialize from URL on mount
 if (route.query.tab === 'sales') {
@@ -205,7 +242,6 @@ async function handleAddUser(userData) {
   loading.value = true
   try {
     if (activeTab.value === 'customers') {
-      // Register as customer
       const response = await adminCustomerApi.createCustomer({
         firstName: userData.firstName,
         middleName: userData.middleName || '',
@@ -219,13 +255,12 @@ async function handleAddUser(userData) {
       
       if (response.success) {
         await loadData()
-        alert(`Customer "${userData.firstName} ${userData.lastName}" has been created successfully!`)
+        showToast('success', `Customer "${userData.firstName} ${userData.lastName}" has been created successfully!`)
         closeAddModal()
       } else {
-        alert(response.message || 'Failed to create customer')
+        showToast('error', response.message || 'Failed to create customer')
       }
     } else {
-      // Create admin
       const response = await adminManagementApi.createAdmin({
         firstName: userData.firstName,
         middleName: userData.middleName || '',
@@ -239,19 +274,20 @@ async function handleAddUser(userData) {
       
       if (response.success) {
         await loadData()
-        alert(`Admin "${userData.firstName} ${userData.lastName}" has been created successfully!`)
+        showToast('success', `Admin "${userData.firstName} ${userData.lastName}" has been created successfully!`)
         closeAddModal()
       } else {
-        alert(response.message || 'Failed to create admin')
+        showToast('error', response.message || 'Failed to create admin')
       }
     }
   } catch (error) {
     console.error('Error creating user:', error)
-    alert('Failed to create user. Please try again.')
+    showToast('error', 'Failed to create user. Please try again.')
   } finally {
     loading.value = false
   }
 }
+
 
 function handleSelect(account) {
   selectedAccount.value = account
@@ -317,36 +353,46 @@ async function handleUpdateAccount(updatedAccount) {
 }
 
 async function handleDelete(account) {
-  if (!confirm(`Are you sure you want to delete ${account.name}? This action cannot be undone.`)) {
-    return
+  confirmModal.value = {
+    show: true,
+    type: 'danger',
+    title: 'Delete Account',
+    message: `Are you sure you want to delete ${account.name}? This action cannot be undone.`,
+    onConfirm: () => confirmDelete(account)
   }
-  
+}
+
+async function confirmDelete(account) {
+  confirmModal.value.show = false
   loading.value = true
   try {
     if (activeTab.value === 'customers') {
       const response = await adminCustomerApi.deleteCustomer(account.userId)
       if (response.success) {
         await loadData()
-        alert(`Customer "${account.name}" has been deleted successfully!`)
+        showToast('success', `Customer "${account.name}" has been deleted successfully!`)
       } else {
-        alert(response.message || 'Failed to delete customer')
+        showToast('error', response.message || 'Failed to delete customer')
       }
     } else {
       const response = await adminManagementApi.deleteAdmin(account.userId)
       if (response.success) {
         await loadData()
-        alert(`Admin "${account.name}" has been deleted successfully!`)
+        showToast('success', `Admin "${account.name}" has been deleted successfully!`)
       } else {
-        alert(response.message || 'Failed to delete admin')
+        showToast('error', response.message || 'Failed to delete admin')
       }
     }
   } catch (error) {
     console.error('Error deleting account:', error)
-    alert('Failed to delete account. Please try again.')
+    showToast('error', 'Failed to delete account. Please try again.')
   } finally {
     loading.value = false
   }
 }
+
+let toastTimer = null
+
 </script>
 
 <style scoped>

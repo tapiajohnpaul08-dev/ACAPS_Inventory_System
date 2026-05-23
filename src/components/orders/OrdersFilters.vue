@@ -50,8 +50,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
 const props = defineProps({
   search: { type: String, required: true },
   statusFilter: { type: String, required: true },
@@ -72,12 +70,12 @@ const statusOptions = [
 
 function getStatusCount(status) {
   const countMap = {
-    'pending': props.counts.pending,
-    'scheduled': props.counts.scheduled,
-    'in-production': props.counts.inProduction,
-    'out-for-delivery': props.counts.outForDelivery,
-    'completed': props.counts.completed,
-    'cancelled': props.counts.cancelled
+    'pending': props.counts.pending || 0,
+    'scheduled': props.counts.scheduled || 0,
+    'in-production': props.counts.inProduction || 0,
+    'out-for-delivery': props.counts.outForDelivery || 0,
+    'completed': props.counts.completed || 0,
+    'cancelled': props.counts.cancelled || 0
   }
   return countMap[status] || 0
 }

@@ -1,0 +1,83 @@
+// Add to your backend routes (e.g., AdminRoutes.js or a new DashboardRoutes.js)
+
+// Get dashboard stats
+router.get('/admin/stats', verifyAdminToken, async (req, res) => {
+  try {
+    const totalOrders = await Order.countDocuments()
+    const pendingOrders = await Order.countDocuments({ status: 'Pending' })
+    const completedOrders = await Order.countDocuments({ status: 'Completed' })
+    const totalRevenue = await Order.aggregate([
+      { $match: { status: 'Completed', paymentStatus: 'Paid' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ])
+    
+    const productsCount = await Product.countDocuments()
+    const suppliesCount = await Supply.countDocuments()
+    
+    const lowStockProducts = await Product.countDocuments({ 'sizes.stock': { $lt: 100 } })
+    const lowStockSupplies = await InventoryItem.countDocuments({ stock: { $lt: 100 }, itemType: 'supply' })
+    
+    res.json({
+      success: true,
+      data: {
+        totalOrders,
+        pendingOrders,
+        completedOrders,
+        totalRevenue: totalRevenue[0]?.total || 0,
+        productsCount,
+        suppliesCount,
+        lowStockProducts,
+        lowStockSupplies
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+})
+
+// Get recent orders
+router.get('/admin/recent-orders', verifyAdminToken, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5
+    const orders = await Order.find().sort({ orderedAt: -1 }).limit(limit)
+    res.json({ success: true, data: orders })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+})
+
+// Get low stock items
+router.get('/inventory/low-stock', verifyAdminToken, async (req, res) => {
+  try {
+    // Combine low stock products and supplies
+    const lowStockProducts = await Product.find({
+      'sizes.stock': { $lt: 100, $gt: 0 }
+    })
+    
+    const lowStockSupplies = await InventoryItem.find({
+      stock: { $lt: 100, $gt: 0 },
+      itemType: 'supply'
+    }).populate('itemRef')
+    
+    const items = [
+      ...lowStockProducts.map(p => ({
+        name: p.name,
+        stock: p.sizes.reduce((sum, s) => sum + (s.stock || 0), 0),
+        threshold: 100,
+        itemType: 'product',
+        category: 'products'
+      })),
+      ...lowStockSupplies.map(s => ({
+        name: s.itemRef?.name || 'Unknown',
+        stock: s.stock,
+        threshold: s.threshold,
+        itemType: 'supply',
+        category: 'supplies'
+      }))
+    ]
+    
+    res.json({ success: true, data: items })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+})
