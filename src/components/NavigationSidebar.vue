@@ -13,7 +13,7 @@
     </div>
 
     <nav class="flex-1 p-3 space-y-0.5">
-      <!-- Dashboard - Always visible -->
+      <!-- Dashboard -->
       <router-link 
         to="/dashboard" 
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
@@ -32,7 +32,7 @@
         <span class="text-sm font-medium">Dashboard</span>
       </router-link>
 
-      <!-- Inventory - Always visible -->
+      <!-- Inventory -->
       <router-link 
         to="/dashboard/inventory"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
@@ -49,10 +49,13 @@
           <path d="m7.5 4.27 9 5.15"></path>
         </svg>
         <span class="text-sm font-medium">Inventory</span>
-        <span class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">8</span>
+        <!-- Dynamic badge -->
+        <span v-if="lowStockCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
+          {{ lowStockCount }}
+        </span>
       </router-link>
 
-      <!-- Orders - Always visible -->
+      <!-- Orders -->
       <router-link 
         to="/dashboard/orders"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
@@ -70,7 +73,7 @@
         <span class="text-sm font-medium">Orders</span>
       </router-link>
 
-      <!-- Messages - Only visible for sales department -->
+      <!-- Messages - Only for sales department -->
       <router-link 
         v-if="adminRole === 'Sales'" 
         to="/dashboard/messages"
@@ -88,7 +91,7 @@
         <span class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">1</span>
       </router-link>
 
-      <!-- Disabled state for production users (shows as disabled but not clickable) -->
+      <!-- Disabled messages for production -->
       <div 
         v-else 
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed"
@@ -100,10 +103,9 @@
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
         <span class="text-sm font-medium">Messages</span>
-        <span class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-gray-400 text-white">1</span>
       </div>
 
-      <!-- Analytics - Only visible for sales department -->
+      <!-- Analytics - Only for sales department -->
       <router-link 
         v-if="adminRole === 'Sales'" 
         to="/dashboard/analytics"
@@ -123,7 +125,7 @@
         <span class="text-sm font-medium">Analytics</span>
       </router-link>
 
-      <!-- Disabled state for production users -->
+      <!-- Disabled analytics for production -->
       <div 
         v-else 
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed"
@@ -140,7 +142,7 @@
         <span class="text-sm font-medium">Analytics</span>
       </div>
 
-      <!-- Accounts - Always visible -->
+      <!-- Accounts -->
       <router-link
         to="/dashboard/accounts"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
@@ -156,7 +158,12 @@
       </router-link>
     </nav>
 
-    <div class="mx-3 mb-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+    <!-- Low Stock Alert Box -->
+    <div 
+      v-if="lowStockCount > 0" 
+      class="mx-3 mb-3 p-3 bg-red-50 border border-red-200 rounded-xl cursor-pointer hover:bg-red-100 transition-colors"
+      @click="navigateToInventory"
+    >
       <div class="flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -167,11 +174,12 @@
         </svg>
         <div>
           <p class="text-xs font-semibold text-red-800">Low Stock Alert</p>
-          <p class="text-xs text-red-600">8 items running low</p>
+          <p class="text-xs text-red-600">{{ lowStockCount }} item{{ lowStockCount > 1 ? 's' : '' }} running low</p>
         </div>
       </div>
     </div>
 
+    <!-- User Menu -->
     <div class="p-3 border-t border-gray-100">
       <div class="relative">
         <button @click="toggleUserMenu"
@@ -212,16 +220,17 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { adminAuthApi } from '@/api/api'
+import { adminAuthApi, adminDashboardApi, inventoryApi } from '@/api/api'
 
 const route = useRoute()
 const router = useRouter()
 const showUserMenu = ref(false)
+const lowStockCount = ref(0)
+const isLoading = ref(true)
 
-// Get user info from localStorage (set during login)
+// Get user info from localStorage
 const userName = ref(localStorage.getItem('adminName') || 'Admin User')
-const userRole = ref(localStorage.getItem('adminRole') || 'sales')
-
+const userRole = ref(localStorage.getItem('adminRole') || 'production')
 const adminRole = userRole.value
 
 const userNameInitial = computed(() => userName.value.charAt(0).toUpperCase())
@@ -229,8 +238,6 @@ const userNameInitial = computed(() => userName.value.charAt(0).toUpperCase())
 function isActive(path) {
   return route.path === path
 }
-
-
 
 function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value
@@ -242,6 +249,26 @@ async function logout() {
   showUserMenu.value = false
 }
 
+function navigateToInventory() {
+  router.push('/dashboard/inventory?tab=supplies&status=low-stock')
+}
+
+// Fetch low stock count
+async function fetchLowStockCount() {
+  try {
+    const response = await inventoryApi.getLowStockItems()
+    if (response.success && response.data) {
+      lowStockCount.value = response.data.length
+      console.log('Low stock count:', lowStockCount.value)
+    }
+  } catch (error) {
+    console.error('Error fetching low stock count:', error)
+    lowStockCount.value = 0
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // Close dropdown when clicking outside
 function handleClickOutside(event) {
   const userMenu = event.target.closest('.p-3.border-t')
@@ -251,6 +278,7 @@ function handleClickOutside(event) {
 }
 
 onMounted(() => {
+  fetchLowStockCount()
   document.addEventListener('click', handleClickOutside)
 })
 

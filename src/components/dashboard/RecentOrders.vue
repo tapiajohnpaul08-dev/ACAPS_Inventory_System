@@ -56,7 +56,7 @@
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                 :class="paymentBadgeClass(order.payment)"
               >
-                {{ order.payment }}
+                {{ capitalize(order.payment) }}
               </span>
             </div>
             <div class="flex items-center gap-3 mt-1 text-xs text-gray-500">
@@ -125,7 +125,7 @@
 </template>
 
 <script setup>
-import { h, ref } from 'vue'
+import { capitalize, h, ref } from 'vue'
 import OrderDetailModal from '../../modals/OrderDetailModal.vue'
 import EditOrderModal from '../../modals/EditOrderModal.vue'
 

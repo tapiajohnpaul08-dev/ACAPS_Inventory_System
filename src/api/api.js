@@ -553,6 +553,39 @@ export const legacyInventoryApi = {
   }
 };
 
+
+export const analyticsApi = {
+    async getStats() {
+        return handleResponse(
+            adminAxiosInstance.get('/analytics/stats')
+        );
+    },
+    
+    async getTopProducts(limit = 5) {
+        return handleResponse(
+            adminAxiosInstance.get(`/analytics/top-products?limit=${limit}`)
+        );
+    },
+    
+    async getOrderStatusDistribution() {
+        return handleResponse(
+            adminAxiosInstance.get('/analytics/order-status-distribution')
+        );
+    },
+    
+    async getRevenueByCategory() {
+        return handleResponse(
+            adminAxiosInstance.get('/analytics/revenue-by-category')
+        );
+    },
+    
+    async getMonthlyRevenue(months = 12) {
+        return handleResponse(
+            adminAxiosInstance.get(`/analytics/monthly-revenue?months=${months}`)
+        );
+    }
+};
+
 // =============================================================================
 // Export all APIs
 // =============================================================================
@@ -567,4 +600,6 @@ export default {
   inventory: inventoryApi,
   orders: adminOrderApi,
   dashboard: adminDashboardApi,
+  analytics: analyticsApi,
+  legacyInventory: legacyInventoryApi,
 };
