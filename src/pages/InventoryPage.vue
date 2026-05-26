@@ -1,54 +1,78 @@
 <template>
   <div class="p-8">
-    <div class="mb-8 flex justify-between items-center">
+    <div class="mb-8 flex justify-between items-center flex-wrap gap-4">
       <div>
         <h1 class="text-2xl font-black text-gray-900">Inventory</h1>
         <p class="text-sm text-gray-500 mt-1">
           {{ activeTab === 'products' ? 'Manage your products (cups, paper cups)' : 'Manage your supplies & materials' }}
         </p>
       </div>
-      <button
-        v-if="activeTab === 'supplies'"
-        @click="openAddSupplyModal"
-        class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Add New Supply
-      </button>
-      <button
-        v-if="activeTab === 'products'"
-        @click="openAddProductModal"
-        class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Add New Product
-      </button>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button
+          @click="handleScanAll"
+          :disabled="isScanningAll"
+          class="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors shadow-sm text-sm font-semibold"
+        >
+          <svg v-if="isScanningAll" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+            <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+          </svg>
+          {{ isScanningAll ? 'Scanning...' : 'Scan & Notify All' }}
+        </button>
+        <button
+          v-if="activeTab === 'supplies'"
+          @click="openAddSupplyModal"
+          class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Add New Supply
+        </button>
+        <button
+          v-if="activeTab === 'products'"
+          @click="openAddProductModal"
+          class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Add New Product
+        </button>
+      </div>
     </div>
     
     <InventorySearch 
       v-model:search="searchQuery" 
       v-model:activeTab="activeTab"
       v-model:statusFilter="statusFilter"
-      :items-count="filteredItems.length"
+      v-model:categoryFilter="categoryFilter"
+      :items-count="allSupplyItems.length"
       :low-stock-count="lowStockCount"
-      :products-count="products.length"  
+      :out-of-stock-count="outOfStockCount"
+      :in-stock-count="inStockCount"
+      :products-count="products.length"
+      :product-categories="productCategories"
+      :supply-categories="supplyCategoryValues"
+      :category-counts="categoryCounts"
       @update:activeTab="handleTabChange"
     />
     
     <InventoryTable 
-      :items="displayItems" 
+      :items="filteredItems" 
       :loading="loading"
       :type="activeTab"
       @edit="handleEdit" 
       @select="handleSelect"
       @delete="handleDelete"
+      @stock-in="openStockMovementModal"
+      @stock-out="openStockMovementModal"
     />
     
-    <!-- Item Detail Modal -->
+    <!-- Rest of your modals remain the same -->
     <ItemDetailModal
       :is-open="modalOpen"
       :item="selectedItem"
@@ -56,9 +80,10 @@
       @close="closeModal"
       @edit="handleEdit"
       @notify="handleNotify"
+      @stock-in="openStockMovementModal"
+      @stock-out="openStockMovementModal"
     />
     
-    <!-- Edit Inventory Item Modal (for supplies in inventory) -->
     <EditInventoryItemModal
       v-if="editInventoryItem"
       :show="true"
@@ -67,7 +92,6 @@
       @update="handleUpdateInventoryItem"
     />
     
-    <!-- Edit Product Modal -->
     <EditProductModal
       :show="editProductModal"
       :product="editProductData"
@@ -76,7 +100,6 @@
       @update="handleUpdateProduct"
     />
     
-    <!-- Add Supply Modal (creates supply and adds to inventory) -->
     <AddSupplyModal
       v-if="showAddSupplyModal"
       :show="true"
@@ -85,7 +108,6 @@
       @submit="handleAddSupply"
     />
     
-    <!-- Add Product Modal -->
     <AddProductModal
       v-if="showAddProductModal"
       :show="true"
@@ -93,7 +115,6 @@
       @submit="handleAddProduct"
     />
     
-    <!-- Feedback Modal -->
     <FeedbackModal
       :show="feedback.show"
       :type="feedback.type"
@@ -102,7 +123,6 @@
       @close="closeFeedback"
     />
     
-    <!-- Universal Confirm Modal -->
     <ConfirmModal
       :show="confirmModal.show"
       :type="confirmModal.type"
@@ -113,19 +133,31 @@
       @confirm="confirmModal.onConfirm && confirmModal.onConfirm()"
       @cancel="closeConfirmModal"
     />
+    
+    <StockMovementModal
+      :show="stockMovementModal.show"
+      :item="stockMovementModal.item"
+      :type="stockMovementModal.type"
+      :item-type="stockMovementModal.itemType"
+      @close="closeStockMovementModal"
+      @submit="handleStockMovement"
+    />
   </div>
 
   <Transition name="toast">
     <div
       v-if="toast.show"
       class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold max-w-sm"
-      :class="toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'"
+      :class="toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'"
     >
       <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M20 6L9 17l-5-5"/>
       </svg>
-      <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <svg v-else-if="toast.type === 'error'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+      </svg>
+      <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
       </svg>
       {{ toast.message }}
     </div>
@@ -133,7 +165,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick  } from 'vue'
 import { useRoute } from 'vue-router'
 import InventorySearch from '@/components/inventory/InventorySearch.vue'
 import InventoryTable from '@/components/inventory/InventoryTable.vue'
@@ -144,12 +176,14 @@ import AddSupplyModal from '@/modals/AddSupplyModal.vue'
 import AddProductModal from '@/modals/AddProductModal.vue'
 import FeedbackModal from '@/modals/FeedbackModal.vue'
 import ConfirmModal from '@/modals/ConfirmModal.vue'
-import { productApi, supplyApi, inventoryApi } from '@/api/api'
+import { productApi, supplyApi, inventoryApi, alertApi } from '@/api/api'
+import StockMovementModal from '@/modals/StockMovementModal.vue'
 
 const route = useRoute()
 const searchQuery = ref('')
-const activeTab = ref('products') // 'products' or 'supplies'
+const activeTab = ref('products')
 const statusFilter = ref('all')
+const categoryFilter = ref('all')
 const modalOpen = ref(false)
 const selectedItem = ref(null)
 const editInventoryItem = ref(null)
@@ -161,12 +195,14 @@ const loadingProducts = ref(false)
 const loadingSupplies = ref(false)
 const loadingInventory = ref(false)
 const toast = ref({ show: false, type: 'success', message: '' })
-
+const isScanningAll = ref(false)
+const stockMovementModal = ref({ show: false, item: null, type: 'in', itemType: 'supply' })
+const highlightedItemIdFromQuery = ref(null)
 
 // Data from backend
-const products = ref([])  // Products from Product model
-const supplies = ref([])   // Supplies from Supply model
-const inventoryItems = ref([]) // Unified inventory items
+const products = ref([])
+const supplies = ref([])
+const inventoryItems = ref([])
 
 // Categories for supplies
 const supplyCategories = [
@@ -177,6 +213,39 @@ const supplyCategories = [
   { value: 'maintenance', label: 'Maintenance' },
   { value: 'other', label: 'Other' }
 ]
+
+const supplyCategoryValues = computed(() => {
+  return supplyCategories.map(cat => cat.value)
+})
+
+// Extract unique categories from products
+const productCategories = computed(() => {
+  const categories = new Set()
+  products.value.forEach(product => {
+    if (product.category) categories.add(product.category)
+  })
+  return Array.from(categories).sort()
+})
+
+// Calculate category counts
+const categoryCounts = computed(() => {
+  const counts = {}
+  
+  if (activeTab.value === 'products') {
+    // Count products by category
+    productCategories.value.forEach(cat => {
+      counts[cat] = products.value.filter(p => p.category === cat).length
+    })
+  } else {
+    // Count supplies by category
+    supplyCategoryValues.value.forEach(cat => {
+      counts[cat] = allSupplyItems.value.filter(item => item.category === cat).length
+    })
+  }
+  
+  counts['all'] = activeTab.value === 'products' ? products.value.length : allSupplyItems.value.length
+  return counts
+})
 
 const confirmModal = ref({
   show: false,
@@ -194,6 +263,8 @@ const feedback = ref({
   message: ''
 })
 
+let toastTimer = null
+
 // Loading state for current tab
 const loading = computed(() => {
   if (activeTab.value === 'products') return loadingProducts.value
@@ -201,55 +272,77 @@ const loading = computed(() => {
   return loadingInventory.value
 })
 
-// Display items based on active tab
+// All supply items from inventory
+const allSupplyItems = computed(() => {
+  return inventoryItems.value
+    .filter(item => item.itemType === 'supply')
+    .map(item => ({
+      id: item.itemId,
+      itemId: item.itemId,
+      name: item.itemRef?.name || 'Unknown',
+      category: item.itemRef?.category || 'other',
+      supplier: item.itemRef?.supplier || 'No supplier',
+      stock: item.stock,
+      unit: item.unit,
+      threshold: item.threshold,
+      unitCost: item.unitCost,
+      status: item.status,
+      lastRestocked: item.lastRestocked,
+      notes: item.notes,
+      supplyId: item.itemRef?.supplyId
+    }))
+})
+
+// Display items based on active tab with status
 const displayItems = computed(() => {
   if (activeTab.value === 'products') {
-    return products.value.map(p => ({
-      ...p,
-      itemId: p.id,
-      status: p.inStock ? 'In Stock' : 'Out of Stock'
-    }))
+    return products.value.map(p => {
+      const totalStock = p.sizes?.reduce((sum, size) => sum + (size.stock || 0), 0) || 0
+      let status = 'In Stock'
+      if (totalStock === 0) {
+        status = 'Out of Stock'
+      } else if (totalStock <= 500) {
+        status = 'Low Stock'
+      }
+      
+      return {
+        ...p,
+        id: p.id,
+        itemId: p.id,
+        totalStock: totalStock,
+        status: status
+      }
+    })
   } else {
-    // For supplies, show inventory items with populated supply data
-    return inventoryItems.value
-      .filter(item => item.itemType === 'supply')
-      .map(item => ({
-        id: item.itemId,
-        itemId: item.itemId,
-        name: item.itemRef?.name || 'Unknown',
-        category: item.itemRef?.category || 'other',
-        supplier: item.itemRef?.supplier || 'No supplier',
-        stock: item.stock,
-        unit: item.unit,
-        threshold: item.threshold,
-        unitCost: item.unitCost,
-        status: item.status,
-        lastRestocked: item.lastRestocked,
-        notes: item.notes,
-        supplyId: item.itemRef?.supplyId
-      }))
+    return allSupplyItems.value
   }
 })
 
-// Filtered items based on search and status
+// Filter items based on search (name only), category, and status
 const filteredItems = computed(() => {
-  let items = displayItems.value
+  let items = displayItems.value || []
   
-  // Apply search filter
+  // Filter by search (name only)
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase().trim()
     items = items.filter(item => 
-      item.name?.toLowerCase().includes(query) ||
-      item.category?.toLowerCase().includes(query) ||
-      item.supplier?.toLowerCase().includes(query)
+      item.name?.toLowerCase().includes(query)
     )
   }
   
-  // Apply status filter
-  if (statusFilter.value !== 'all' && activeTab.value === 'supplies') {
+  // Filter by category
+  if (categoryFilter.value !== 'all') {
     items = items.filter(item => {
-      if (statusFilter.value === 'low-stock') return item.status === 'Low Stock'
+      const itemCategory = activeTab.value === 'products' ? item.category : item.category
+      return itemCategory === categoryFilter.value
+    })
+  }
+  
+  // Filter by status (for both products and supplies)
+  if (statusFilter.value !== 'all') {
+    items = items.filter(item => {
       if (statusFilter.value === 'in-stock') return item.status === 'In Stock'
+      if (statusFilter.value === 'low-stock') return item.status === 'Low Stock'
       if (statusFilter.value === 'out-of-stock') return item.status === 'Out of Stock'
       return true
     })
@@ -258,35 +351,56 @@ const filteredItems = computed(() => {
   return items
 })
 
-// Low stock count for supplies
-const lowStockCount = computed(() => {
-  if (activeTab.value === 'products') return 0
+// Status counts for products
+const productInStockCount = computed(() => {
+  return displayItems.value.filter(item => item.status === 'In Stock').length
+})
+
+const productLowStockCount = computed(() => {
   return displayItems.value.filter(item => item.status === 'Low Stock').length
 })
 
-// Load products from backend
+const productOutOfStockCount = computed(() => {
+  return displayItems.value.filter(item => item.status === 'Out of Stock').length
+})
+
+// Status counts for supplies
+const supplyInStockCount = computed(() => {
+  return allSupplyItems.value.filter(item => item.status === 'In Stock').length
+})
+
+const supplyLowStockCount = computed(() => {
+  return allSupplyItems.value.filter(item => item.status === 'Low Stock').length
+})
+
+const supplyOutOfStockCount = computed(() => {
+  return allSupplyItems.value.filter(item => item.status === 'Out of Stock').length
+})
+
+// Combined counts based on active tab
+const inStockCount = computed(() => {
+  return activeTab.value === 'products' ? productInStockCount.value : supplyInStockCount.value
+})
+
+const lowStockCount = computed(() => {
+  return activeTab.value === 'products' ? productLowStockCount.value : supplyLowStockCount.value
+})
+
+const outOfStockCount = computed(() => {
+  return activeTab.value === 'products' ? productOutOfStockCount.value : supplyOutOfStockCount.value
+})
+
+// Load data functions
 const loadProducts = async () => {
   loadingProducts.value = true
   try {
     const response = await productApi.getAllProducts()
-    console.log('Products API response:', response)
-    
     if (response.success && response.data) {
       products.value = response.data.map(product => ({
+        ...product,
         id: product.id,
-        name: product.name,
-        category: product.category,
-        subcategory: product.subcategory,
-        description: product.description,
-        image: product.image,
-        sizes: product.sizes?.map(size => ({
-          ...size,
-          bulkPrices: size.bulkPrices || {}
-        })) || [],
-        minOrder: product.minOrder,
-        featured: product.featured,
-        popular: product.popular,
-        inStock: true, // Will be updated from inventory
+        sizes: product.sizes || [],
+        totalStock: (product.sizes || []).reduce((sum, size) => sum + (size.stock || 0), 0),
         unitCost: product.sizes?.[0]?.price || 0
       }))
       console.log('Products loaded:', products.value.length)
@@ -299,13 +413,10 @@ const loadProducts = async () => {
   }
 }
 
-// Load supplies
 const loadSupplies = async () => {
   loadingSupplies.value = true
   try {
     const response = await supplyApi.getAllSupplies()
-    console.log('Supplies API response:', response)
-    
     if (response.success && response.data) {
       supplies.value = response.data
       console.log('Supplies loaded:', supplies.value.length)
@@ -318,16 +429,13 @@ const loadSupplies = async () => {
   }
 }
 
-// Load unified inventory
 const loadInventory = async () => {
   loadingInventory.value = true
   try {
     const response = await inventoryApi.getAllInventory()
-    console.log('Inventory API response:', response)
-    
     if (response.success && response.data) {
       inventoryItems.value = response.data
-      console.log('Inventory items loaded:', inventoryItems.value.length)
+      console.log('Inventory loaded:', inventoryItems.value.length)
     }
   } catch (error) {
     console.error('Error loading inventory:', error)
@@ -337,18 +445,9 @@ const loadInventory = async () => {
   }
 }
 
-// Handle tab change
-const handleTabChange = (tab) => {
-  console.log('Tab changed to:', tab)
-}
-
 // Initialize on mount
 onMounted(async () => {
-  console.log('Loading initial data...')
   await Promise.all([loadProducts(), loadSupplies(), loadInventory()])
-  console.log('Products count:', products.value.length)
-  console.log('Supplies count:', supplies.value.length)
-  console.log('Inventory count:', inventoryItems.value.length)
   
   if (route.query.search) {
     searchQuery.value = route.query.search
@@ -356,24 +455,64 @@ onMounted(async () => {
   if (route.query.status) {
     statusFilter.value = route.query.status
   }
+  if (route.query.category) {
+    categoryFilter.value = route.query.category
+  }
+  if (route.query.highlight) {
+    highlightedItemIdFromQuery.value = route.query.highlight
+    setTimeout(() => {
+      highlightAndScrollToItem(route.query.highlight)
+    }, 1000)
+  }
 })
 
 // Watch for route changes
 watch(() => route.query.search, (newSearch) => {
-  if (newSearch) {
-    searchQuery.value = newSearch
-  } else {
-    searchQuery.value = ''
-  }
+  searchQuery.value = newSearch || ''
 })
 
 watch(() => route.query.status, (newStatus) => {
-  if (newStatus) {
-    statusFilter.value = newStatus
-  } else {
-    statusFilter.value = 'all'
-  }
+  statusFilter.value = newStatus || 'all'
 })
+
+watch(() => route.query.category, (newCategory) => {
+  categoryFilter.value = newCategory || 'all'
+})
+
+// Helper functions
+
+async function highlightAndScrollToItem(itemId) {
+  if (!itemId) return
+  
+  // Find the item in the current filtered items
+  const item = filteredItems.value.find(i => (i.id === itemId || i.itemId === itemId))
+  if (item) {
+    highlightedItemIdFromQuery.value = itemId
+    
+    // Scroll to the item after a short delay
+    await nextTick()
+    const element = document.querySelector(`[data-item-id="${itemId}"]`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      element.classList.add('highlight-pulse')
+      setTimeout(() => {
+        element.classList.remove('highlight-pulse')
+      }, 3000)
+    }
+    
+    setTimeout(() => {
+      highlightedItemIdFromQuery.value = null
+    }, 5000)
+  }
+}
+
+function handleTabChange(tab) {
+  console.log('Tab changed to:', tab)
+  // Reset filters when tab changes
+  statusFilter.value = 'all'
+  categoryFilter.value = 'all'
+  searchQuery.value = ''
+}
 
 function handleSelect(item) {
   selectedItem.value = item
@@ -381,16 +520,129 @@ function handleSelect(item) {
 }
 
 function handleEdit(item) {
-  console.log('handleEdit called with:', item)
-  console.log('activeTab:', activeTab.value)
-  
   if (activeTab.value === 'products') {
-    console.log('Opening EditProductModal for product:', item)
     editProductData.value = item
     editProductModal.value = true
   } else {
-    console.log('Opening EditInventoryItemModal for supply:', item)
     editInventoryItem.value = item
+  }
+}
+
+function openStockMovementModal(data) {
+  const { item, type, itemType } = data
+  
+  if (itemType === 'supply' && type === 'out' && item.stock === 0) {
+    showToast('error', 'Cannot remove stock from out of stock item')
+    return
+  }
+  
+  stockMovementModal.value = { 
+    show: true, 
+    item, 
+    type, 
+    itemType 
+  }
+}
+
+
+function closeStockMovementModal() {
+  stockMovementModal.value = { show: false, item: null, type: 'in', itemType: 'supply' }
+}
+
+async function handleStockMovement(data) {
+  const { 
+    item, 
+    itemType, 
+    sizeName, 
+    quantity, 
+    type, 
+    reference,
+    newStock: newStockValue
+  } = data
+  
+  if (!quantity || quantity <= 0) {
+    showToast('error', 'Invalid quantity')
+    closeStockMovementModal()
+    return
+  }
+  
+  try {
+    showToast('info', 'Updating stock...')
+    
+    if (itemType === 'product') {
+      if (!sizeName) {
+        showToast('error', 'Please select a size')
+        closeStockMovementModal()
+        return
+      }
+      
+      const productCustomId = item.id
+      
+      if (!productCustomId) {
+        showToast('error', 'Invalid product ID')
+        closeStockMovementModal()
+        return
+      }
+      
+      let response
+      if (type === 'in') {
+        response = await productApi.updateSizeStock(productCustomId, sizeName, newStockValue)
+      } else {
+        response = await productApi.reduceSizeStock(productCustomId, sizeName, quantity)
+      }
+      
+      if (response.success) {
+        await loadProducts()
+        showToast('success', `${type === 'in' ? 'Added' : 'Removed'} ${quantity} pcs from ${item.name} (${sizeName})`)
+        
+        const updatedProduct = products.value.find(p => p.id === productCustomId)
+        const updatedSize = updatedProduct?.sizes?.find(s => s.name === sizeName)
+        if (updatedSize && (updatedSize.stock === 0 || updatedSize.stock <= 100)) {
+          await alertApi.sendProductSizeAlert(productCustomId, sizeName).catch(err => console.error('Alert error:', err))
+        }
+      } else {
+        showToast('error', response.message || 'Failed to update stock')
+      }
+    } else {
+      const itemId = item.itemId || item.id
+      const threshold = item.threshold || 100
+      
+      let newStatus = 'In Stock'
+      if (newStockValue <= 0) {
+        newStatus = 'Out of Stock'
+      } else if (newStockValue <= threshold) {
+        newStatus = 'Low Stock'
+      }
+      
+      const notes = reference 
+        ? `${type === 'in' ? 'Stock In' : 'Stock Out'}: ${reference}${item.notes ? '\n' + item.notes : ''}`
+        : item.notes
+      
+      const response = await inventoryApi.updateInventoryItem(itemId, {
+        stock: newStockValue,
+        unitCost: item.unitCost,
+        unit: item.unit,
+        threshold: threshold,
+        notes: notes,
+        status: newStatus
+      })
+      
+      if (response.success) {
+        await loadInventory()
+        showToast('success', `${type === 'in' ? 'Added' : 'Removed'} ${quantity} ${item.unit || 'units'} from ${item.name}`)
+        
+        if (newStatus === 'Low Stock' || newStatus === 'Out of Stock') {
+          await alertApi.sendItemAlert(itemId).catch(err => console.error('Alert error:', err))
+        }
+      } else {
+        showToast('error', response.message || 'Failed to update stock')
+      }
+    }
+  } catch (error) {
+    console.error('Stock movement error:', error)
+    showToast('error', error.response?.data?.message || error.message || 'Failed to update stock')
+  } finally {
+    closeStockMovementModal()
   }
 }
 
@@ -470,7 +722,6 @@ function showToast(type, message) {
   toast.value = { show: true, type, message }
   toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
 }
-let toastTimer = null
 
 async function handleAddSupply(supplyData) {
   loadingSupplies.value = true
@@ -588,13 +839,23 @@ async function confirmDelete(item) {
 }
 
 async function handleNotify(item) {
+  showToast('success', `Alert emailed for ${item.name}`)
+}
+
+async function handleScanAll() {
+  isScanningAll.value = true
   try {
-    // Implement notification logic
-    showFeedback('warning', 'Low Stock Alert', 
-      `Notification would be sent to procurement department about ${item.name}.\nCurrent Stock: ${item.stock} units\nThreshold: ${item.threshold} units`)
-  } catch (error) {
-    console.error('Error sending notification:', error)
-    showFeedback('error', 'Error', 'Failed to send notification')
+    const result = await alertApi.scanAndAlertAll()
+    if (result.success) {
+      showToast('success', `Scan complete — ${result.alertsSent} alert(s) sent`)
+    } else {
+      showToast('error', result.message || 'Scan failed')
+    }
+  } catch (err) {
+    console.error('Scan all error:', err)
+    showToast('error', 'Failed to scan inventory')
+  } finally {
+    isScanningAll.value = false
   }
 }
 
@@ -616,3 +877,29 @@ function closeModal() {
   selectedItem.value = null
 }
 </script>
+
+<style scoped>
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+</style>

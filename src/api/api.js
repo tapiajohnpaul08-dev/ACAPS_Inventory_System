@@ -172,6 +172,18 @@ export const adminProductApi = {
       adminAxiosInstance.delete(`/product/delete/${productId}`)
     );
   },
+  async updateSizeStock(productId, sizeName, stock) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/product/${productId}/size/${sizeName}/stock`, { stock })
+    );
+  },
+
+  // Reduce product size stock (for sales/usage)
+  async reduceSizeStock(productId, sizeName, quantity) {
+    return handleResponse(
+      adminAxiosInstance.post(`/product/${productId}/size/${sizeName}/reduce-stock`, { quantity })
+    );
+  },
 };
 
 // =============================================================================
@@ -473,15 +485,21 @@ export const adminDashboardApi = {
 // =============================================================================
 
 // For backward compatibility with existing productApi calls
+// Fix the productApi in api.js
+
 export const productApi = {
   async getAllProducts() {
     return adminProductApi.getAllProducts();
   },
+  
   async getProductById(id) {
-    return adminProductApi.getProductById(id);
+    // Try both id types
+    return handleResponse(
+      adminAxiosInstance.get(`/product/${id}`)
+    );
   },
+  
   async createProduct(productData) {
-    // Check if FormData is being passed (file upload)
     if (productData instanceof FormData) {
       return handleResponse(
         adminAxiosInstance.post('/product/create', productData, {
@@ -491,11 +509,11 @@ export const productApi = {
         })
       );
     }
-    // Regular JSON data
     return handleResponse(
       adminAxiosInstance.post('/product/create', productData)
     );
   },
+  
   async updateProduct(productId, productData) {
     if (productData instanceof FormData) {
       return handleResponse(
@@ -510,8 +528,35 @@ export const productApi = {
       adminAxiosInstance.put(`/product/update/${productId}`, productData)
     );
   },
+  
   async deleteProduct(id) {
     return adminProductApi.deleteProduct(id);
+  },
+
+  async updateSizeStock(productId, sizeName, stock) {
+    console.log(`Updating stock for product ${productId}, size ${sizeName} to ${stock}`);
+    return handleResponse(
+      adminAxiosInstance.patch(`/product/${productId}/size/${sizeName}/stock`, { stock })
+    );
+  },
+
+  // FIXED: Reduce stock by getting current stock first
+  async reduceSizeStock(productId, sizeName, quantity) {
+    try {
+      // First get the current product to find the size stock
+      const product = await this.getProductById(productId);
+      if (product.success && product.data) {
+        const size = product.data.sizes?.find(s => s.name === sizeName);
+        if (size) {
+          const newStock = Math.max(0, (size.stock || 0) - quantity);
+          return this.updateSizeStock(productId, sizeName, newStock);
+        }
+      }
+      return { success: false, message: 'Size not found' };
+    } catch (error) {
+      console.error('Error reducing stock:', error);
+      return { success: false, message: error.message };
+    }
   },
 };
 
@@ -548,8 +593,9 @@ export const legacyInventoryApi = {
     return inventoryApi.getInventoryStatistics();
   },
   async notifyLowStock(itemId) {
-    // Implement notification logic
-    return { success: true, message: 'Notification sent' };
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/item', { itemId, forceSend: true })
+    );
   }
 };
 
@@ -586,6 +632,52 @@ export const analyticsApi = {
     }
 };
 
+export const alertApi = {
+  // Send alert for specific inventory item
+  async sendItemAlert(itemId, forceSend = false) {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/item', { itemId, forceSend })
+    );
+  },
+
+  // Send alert for product size
+  async sendProductSizeAlert(productId, sizeName) {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/product-size', { productId, sizeName })
+    );
+  },
+
+  // Scan all inventory and send alerts for low/out of stock items
+  async scanAndAlertAll() {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/scan-all')
+    );
+  },
+
+  // Send summary report of all problematic items
+  async sendSummaryReport() {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/summary')
+    );
+  },
+};
+
+export const stockMovementApi = {
+  // Get stock movement history for an item
+  async getMovementHistory(itemId, limit = 50) {
+    return handleResponse(
+      adminAxiosInstance.get(`/inventory/${itemId}/movements?limit=${limit}`)
+    );
+  },
+
+  // Record stock movement
+  async recordMovement(itemId, movementData) {
+    return handleResponse(
+      adminAxiosInstance.post(`/inventory/${itemId}/movements`, movementData)
+    );
+  }
+};
+
 // =============================================================================
 // Export all APIs
 // =============================================================================
@@ -601,5 +693,7 @@ export default {
   orders: adminOrderApi,
   dashboard: adminDashboardApi,
   analytics: analyticsApi,
+  alerts: alertApi,
+  stockMovement: stockMovementApi,
   legacyInventory: legacyInventoryApi,
 };

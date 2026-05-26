@@ -70,7 +70,7 @@
               <div class="border border-gray-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Stock Information</p>
                 <div class="grid grid-cols-2 gap-4">
-                  <div class="p-3 rounded-lg" :class="getStockStatusClass(calculateTotalStock(item.sizes), item.threshold)">
+                  <div class="p-3 rounded-lg" :class="getStockStatusClass(calculateTotalStock(item.sizes), 800)">
                     <p class="text-xs text-gray-500 mb-1">Total Stock</p>
                     <p class="text-xl font-black">{{ formatNumber(calculateTotalStock(item.sizes)) }} <span class="text-sm font-normal">pcs</span></p>
                   </div>
@@ -132,7 +132,7 @@
                         <span v-if="isSizeOutOfStock(size.stock)" class="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
                           ⚠️ Out of Stock
                         </span>
-                        <span v-else-if="isSizeLowStock(size.stock, item.threshold || 100)" class="text-xs font-semibold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">
+                        <span v-else-if="isSizeLowStock(size.stock, item.threshold || 800)" class="text-xs font-semibold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">
                           ⚠️ Low Stock
                         </span>
                         <span v-else class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
@@ -142,7 +142,7 @@
                       
                       <!-- Notify button for out of stock or low stock -->
                       <button 
-                        v-if="needsUrgentAttention(size.stock, item.threshold || 100)"
+                        v-if="needsUrgentAttention(size.stock, item.threshold || 800)"
                         @click="handleNotifyForSize(size)"
                         :class="isSizeOutOfStock(size.stock) 
                           ? 'bg-red-500 hover:bg-red-600' 
@@ -268,18 +268,24 @@
               <button 
                 v-if="type !== 'products' && needsUrgentAttention(item.stock, item.threshold)"
                 @click="handleNotify"
+                :disabled="notifyingSupply"
                 :class="isSizeOutOfStock(item.stock) 
                   ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800' 
                   : 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800'"
-                class="flex-1 flex items-center justify-center gap-2 py-3 text-white rounded-xl transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                class="flex-1 flex items-center justify-center gap-2 py-3 text-white rounded-xl transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-if="notifyingSupply" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
                   <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path>
-                </svg> 
-                {{ isSizeOutOfStock(item.stock) ? 'Notify - Out of Stock' : 'Notify - Low Stock' }}
+                </svg>
+                {{ notifyingSupply ? 'Sending...' : (isSizeOutOfStock(item.stock) ? 'Notify - Out of Stock' : 'Notify - Low Stock') }}
               </button>
             </div>
+
+           
           </div>
         </div>
       </div>
@@ -300,6 +306,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { alertApi } from '@/api/api'
 
 const props = defineProps({
   isOpen: { type: Boolean, required: true, default: false },
@@ -307,10 +314,12 @@ const props = defineProps({
   type: { type: String, default: 'products' }
 })
 
-const emit = defineEmits(['close', 'edit', 'notify'])
+const emit = defineEmits(['close', 'edit', 'notify', 'stockIn', 'stockOut'])
 
 // Toast notification
 const toast = ref({ show: false, type: 'success', message: '' })
+const notifyingSupply = ref(false)
+
 let toastTimeout = null
 
 function showToast(type, message) {
@@ -355,6 +364,8 @@ function needsAttention(stock, threshold) {
   // In Stock (stock > threshold)
   return 'in-stock'
 }
+
+
 
 // Check if size is low stock (for displaying warning)
 function isSizeLowStock(stock, threshold) {
@@ -496,16 +507,33 @@ function handleEdit() {
   closeModal()
 }
 
-function handleNotify() {
-  if (!props.item) return
-  const isOutOfStock = isSizeOutOfStock(props.item.stock)
-  const status = isOutOfStock ? 'OUT OF STOCK' : 'LOW STOCK'
-  const message = `🔴 ${status} ALERT 🔴\n\nItem: ${props.item?.name}\nCurrent Stock: ${props.item?.stock || 0} ${props.item?.unit || 'units'}\nThreshold: ${props.item?.threshold || 100} ${props.item?.unit || 'units'}\n\nPlease restock immediately!`
-  
-  emit('notify', props.item)
-  showToast('success', `${isOutOfStock ? 'Out of stock' : 'Low stock'} notification sent for ${props.item?.name}`)
-  console.log('Notification:', message)
-  closeModal()
+async function handleNotify() {
+  if (!props.item || notifyingSupply.value) return
+  notifyingSupply.value = true
+  try {
+    const result = await alertApi.sendItemAlert(props.item.itemId, true)
+    if (result.success) {
+      const isOutOfStock = isSizeOutOfStock(props.item.stock)
+      emit('notify', props.item)
+      showToast('success', `${isOutOfStock ? 'Out of stock' : 'Low stock'} alert emailed for ${props.item?.name}`)
+    } else {
+      showToast('error', result.message || 'Failed to send notification')
+    }
+  } catch (err) {
+    console.error('Notify error:', err)
+    showToast('error', 'Failed to send notification')
+  } finally {
+    notifyingSupply.value = false
+  }
+}
+
+function handleStockIn() {
+  emit('stockIn', props.item)
+}
+
+function handleStockOut() {
+  if (props.item?.stock === 0) return
+  emit('stockOut', props.item)
 }
 </script>
 

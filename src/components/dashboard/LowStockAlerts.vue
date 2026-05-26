@@ -1,114 +1,139 @@
 <template>
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            Low Stock Alerts
-          </h2>
-          <p class="text-xs text-gray-400 mt-0.5">{{ items.length }} items below threshold</p>
+    <!-- Header remains the same -->
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="text-red-600" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+            <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+          </svg>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full animate-pulse">
-            {{ items.length }}
-          </span>
+        <h3 class="text-sm font-bold text-gray-900">Low Stock Alerts</h3>
+        <span v-if="items.length > 0" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+          {{ items.length }}
+        </span>
+      </div>
+      <button
+        @click="$emit('view-all')"
+        class="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
+      >
+        Manage Inventory
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="divide-y divide-gray-50">
+      <div
+        v-for="item in items.slice(0, 5)"
+        :key="item.id"
+        class="px-5 py-4 hover:bg-red-50/50 transition-all cursor-pointer"
+        @click="$emit('item-click', item)"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <!-- Icon based on type -->
+              <div class="w-6 h-6 rounded-lg flex items-center justify-center" :class="item.type === 'product' ? 'bg-green-100' : 'bg-blue-100'">
+                <svg v-if="item.type === 'product'" xmlns="http://www.w3.org/2000/svg" class="text-green-600" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/>
+                  <path d="M12 22V12"/>
+                  <polyline points="3.29 7 12 12 20.71 7"/>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="text-blue-600" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+              </div>
+              <!-- Clean product name (no size) -->
+              <span class="text-sm font-bold text-gray-900">{{ item.name }}</span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold" :class="getStockBadgeClass(item)">
+                {{ item.status }}
+              </span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold" :class="item.type === 'product' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'">
+                {{ item.type === 'product' ? 'Product' : 'Supply' }}
+              </span>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-gray-500">
+              <span class="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+                Stock: {{ item.stock?.toLocaleString() || 0 }} {{ item.unit }}
+              </span>
+              <span class="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 8v8"/>
+                  <path d="M8 12h8"/>
+                </svg>
+                Threshold: {{ item.threshold }}
+              </span>
+              <!-- Show size info if product has multiple sizes -->
+              <span v-if="item.type === 'product' && item.sizes && item.sizes.length > 1" class="flex items-center gap-1 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 8v8"/>
+                  <path d="M8 12h8"/>
+                </svg>
+                {{ item.sizes.length }} sizes available
+              </span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button
+              @click.stop="$emit('notify', item)"
+              class="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              Notify
+            </button>
+          </div>
         </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-if="items.length === 0" class="px-5 py-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-gray-300 mb-3">
+          <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+          <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+        </svg>
+        <p class="text-gray-400 text-sm">No low stock items</p>
+        <p class="text-xs text-gray-400 mt-1">All inventory levels are healthy</p>
       </div>
     </div>
 
-    <div class="p-5 space-y-2.5 max-h-[400px] overflow-y-auto">
-      <div v-if="items.length === 0" class="text-center py-12">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-green-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p class="text-gray-400 text-sm">All stock levels are healthy</p>
-      </div>
-      
-      <div
-        v-for="item in items"
-        :key="item.name"
-        class="group p-4 rounded-xl border transition-all duration-300 cursor-pointer transform hover:scale-[1.02]"
-        :class="item.severity === 'red'
-          ? 'bg-gradient-to-r from-red-50 to-white border-red-200 hover:shadow-md'
-          : 'bg-gradient-to-r from-orange-50 to-white border-orange-200 hover:shadow-md'"
-        @click="navigateToInventory(item)"
+    <!-- Footer -->
+    <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
+      <button
+        @click="$emit('view-all')"
+        class="w-full text-center text-xs text-blue-600 hover:text-blue-800 transition-colors flex items-center justify-center gap-1"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
-              <div class="w-2 h-2 rounded-full animate-pulse" :class="item.severity === 'red' ? 'bg-red-500' : 'bg-orange-500'"></div>
-              <p class="text-sm font-semibold text-gray-900">{{ item.name }}</p>
-            </div>
-            <div class="flex items-center gap-4 text-xs mt-2">
-              <div class="flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-                <span class="font-medium" :class="item.severity === 'red' ? 'text-red-600' : 'text-orange-600'">
-                  {{ item.stock.toLocaleString() }}
-                </span>
-                <span class="text-gray-400">units left</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M6 14h12M6 18h12M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
-                </svg>
-                <span class="text-gray-600">Threshold: {{ item.threshold.toLocaleString() }}</span>
-              </div>
-            </div>
-            <!-- Progress bar -->
-            <div class="mt-3 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-              <div 
-                class="h-1.5 rounded-full transition-all duration-500"
-                :class="item.severity === 'red' ? 'bg-red-500' : 'bg-orange-500'"
-                :style="{ width: `${Math.min(100, (item.stock / item.threshold) * 100)}%` }"
-              ></div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 ml-3">
-            <button
-              @click.stop="$emit('notify', item)"
-              class="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-100 transition-all opacity-0 group-hover:opacity-100"
-              title="Send Notification"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2"
-              class="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all">
-              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-            </svg>
-          </div>
-        </div>
-      </div>
+        Go to Inventory
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-
 const props = defineProps({
   items: { type: Array, required: true }
 })
 
-const emit = defineEmits(['notify'])
+const emit = defineEmits(['notify', 'view-all', 'item-click'])
 
-const router = useRouter()
-
-function navigateToInventory(item) {
-  const activeTab = item.category === 'supplies' ? 'supplies' : 'products'
-  router.push({
-    path: '/dashboard/inventory',
-    query: { 
-      search: item.searchTerm || item.name.split(' ')[0],
-      tab: activeTab
-    }
-  })
+function getStockBadgeClass(item) {
+  if (item.stock === 0) return 'bg-red-100 text-red-700'
+  if (item.stock <= item.threshold) return 'bg-yellow-100 text-yellow-700'
+  return 'bg-green-100 text-green-700'
 }
 </script>

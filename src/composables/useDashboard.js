@@ -1,6 +1,6 @@
 // src/composables/useDashboard.js
 import { ref, computed } from 'vue'
-import { adminDashboardApi, adminOrderApi } from '@/api/api'
+import { adminDashboardApi, adminOrderApi, inventoryApi } from '@/api/api'
 
 export function useDashboard() {
   const stats = ref([])
@@ -44,7 +44,6 @@ export function useDashboard() {
         
         const statsArray = []
         
-        // Only show revenue stats for sales role
         if (userRole.value === 'sales') {
           statsArray.push({
             label: 'Total Revenue',
@@ -91,7 +90,6 @@ export function useDashboard() {
       }
     } catch (err) {
       console.error('Error loading stats:', err)
-      // Set default stats
       stats.value = [
         { label: 'Total Orders', value: '0', sub: '0 pending', subColor: 'text-gray-400', icon: 'cart', iconBg: 'bg-gray-100', iconColor: 'text-gray-400' },
         { label: 'In Production', value: '0', sub: '0 scheduled', subColor: 'text-gray-400', icon: 'package', iconBg: 'bg-gray-100', iconColor: 'text-gray-400' },
@@ -138,62 +136,98 @@ export function useDashboard() {
     }
   }
 
-  // Load low stock items from inventory
+  // Load low stock items - SINGLE SOURCE, NO DUPLICATES
   const loadLowStockItems = async () => {
-  try {
-    // Check if token exists
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      console.log('No admin token found, skipping low stock fetch');
-      lowStockItems.value = [];
-      return;
-    }
-    
-    console.log('Fetching low stock items from API...');
-    const response = await adminDashboardApi.getLowStockItems()
-    console.log('Low stock items API response:', response)
-    
-    if (response.success && response.data && response.data.length > 0) {
-      lowStockItems.value = response.data.map(item => {
-        const itemRef = item.itemRef || {}
-        
-        // Get name from different sources
-        let itemName = itemRef.name || item.name || 'Unknown Item'
-        
-        // For products, include size info in name if needed
-        if (item.itemType === 'product' && itemRef.sizes) {
-          const lowStockSizes = itemRef.sizes.filter(s => s.stock > 0 && s.stock < 100);
-          if (lowStockSizes.length > 0) {
-            itemName = `${itemRef.name} (${lowStockSizes.map(s => `${s.name}: ${s.stock}`).join(', ')})`;
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        console.log('No admin token found, skipping low stock fetch');
+        lowStockItems.value = [];
+        return;
+      }
+      
+      console.log('Fetching low stock items from inventory API...');
+      
+      // Get all inventory items (both products and supplies)
+      const inventoryResponse = await inventoryApi.getAllInventory();
+      
+      const itemsMap = new Map(); // Use Map to prevent duplicates by product ID
+      const PRODUCT_LOW_STOCK_THRESHOLD = 800;
+      const SUPPLY_LOW_STOCK_THRESHOLD = 100;
+      
+      if (inventoryResponse.success && inventoryResponse.data) {
+        for (const invItem of inventoryResponse.data) {
+          // Skip if no reference
+          if (!invItem.itemRef) continue;
+          
+          const isProduct = invItem.itemType === 'product';
+          const productId = invItem.itemRef._id || invItem.itemRef.id;
+          
+          // Skip if we already processed this product (prevents duplicates)
+          if (itemsMap.has(productId)) continue;
+          
+          // Get current stock
+          let currentStock = invItem.stock || 0;
+          let displayStock = currentStock;
+          let threshold = isProduct ? PRODUCT_LOW_STOCK_THRESHOLD : SUPPLY_LOW_STOCK_THRESHOLD;
+          let productName = invItem.itemRef.name || 'Unknown';
+          
+          // For products, calculate total stock from sizes
+          if (isProduct && invItem.itemRef.sizes && invItem.itemRef.sizes.length > 0) {
+            const totalStock = invItem.itemRef.sizes.reduce((sum, size) => sum + (size.stock || 0), 0);
+            currentStock = totalStock;
+            displayStock = totalStock;
+          }
+          
+          // Determine if low stock
+          let isLowStock = false;
+          if (isProduct) {
+            // Product is low stock if total stock > 0 AND <= threshold
+            isLowStock = currentStock > 0 && currentStock <= threshold;
+          } else {
+            // Supply is low stock if stock > 0 AND <= threshold
+            isLowStock = currentStock > 0 && currentStock <= threshold;
+          }
+          
+          // Only add if low stock
+          if (isLowStock) {
+            itemsMap.set(productId, {
+              id: invItem.itemId,
+              name: productName, // Clean name without size
+              stock: displayStock,
+              threshold: threshold,
+              unit: isProduct ? 'pcs' : (invItem.unit || 'units'),
+              status: currentStock === 0 ? 'Out of Stock' : 'Low Stock',
+              type: isProduct ? 'product' : 'supply',
+              category: invItem.itemRef.category || (isProduct ? 'Uncategorized' : 'other'),
+              supplier: invItem.itemRef.supplier || 'No supplier',
+              minOrder: invItem.itemRef.minOrder || 500,
+              sizes: invItem.itemRef.sizes,
+              lastRestocked: invItem.lastRestocked,
+              // Store the original product/supply ID for navigation
+              originalId: isProduct ? invItem.itemRef.id : invItem.itemRef.supplyId
+            });
           }
         }
-        
-        return {
-          name: itemName,
-          stock: item.stock || 0,
-          threshold: item.threshold || 100,
-          severity: item.stock === 0 ? 'red' : 'orange',
-          category: item.itemType === 'product' ? 'products' : 'supplies',
-          searchTerm: (itemRef.name || item.name || '').split(' ')[0]
-        }
-      })
-      console.log('Processed low stock items:', lowStockItems.value)
-    } else {
-      console.log('No low stock items found or API returned empty')
-      lowStockItems.value = []
+      }
+      
+      // Convert Map to array and sort by stock
+      const items = Array.from(itemsMap.values());
+      items.sort((a, b) => a.stock - b.stock);
+      
+      lowStockItems.value = items;
+      console.log('Processed low stock items (no duplicates, clean names):', lowStockItems.value);
+      
+    } catch (err) {
+      console.error('Error loading low stock items:', err);
+      lowStockItems.value = [];
     }
-  } catch (err) {
-    console.error('Error loading low stock items:', err)
-    // Don't set error state for this, just set empty array
-    lowStockItems.value = []
   }
-}
 
   // Load recent orders with complete data
   const loadRecentOrders = async () => {
     try {
       const response = await adminDashboardApi.getRecentOrders(5)
-      console.log('Recent orders response:', response)
       
       if (response.success && response.data) {
         recentOrders.value = response.data.map(order => ({
@@ -218,7 +252,6 @@ export function useDashboard() {
           statusHistory: order.statusHistory || [],
           items: order.items || []
         }))
-        console.log('Processed recent orders:', recentOrders.value)
       } else {
         recentOrders.value = []
       }

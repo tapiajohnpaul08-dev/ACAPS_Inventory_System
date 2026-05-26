@@ -35,12 +35,12 @@
         @update:statusFilter="statusFilter = $event"
       />
       <OrdersTable
-        :orders="filteredOrders"
-        :is-loading="isLoading"
-        @select="handleSelect"
-        @edit="handleEdit"
-        @delete="handleDelete"
-      />
+  :orders="filteredOrders"
+  :is-loading="isLoading"
+  @select="handleSelect"
+  @edit="handleEdit"
+  @delete="handleDelete"
+/>
     </template>
 
     <OrderDetailModal
