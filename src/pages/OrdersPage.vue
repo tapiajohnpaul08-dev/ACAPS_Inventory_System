@@ -143,7 +143,7 @@ function transformOrder(order) {
     deliveryAddress: order.fulfillment?.deliveryAddress || order.address || '',
     supplyType: order.isProvided ? 'Own Cups' : 'Company Cups',
     expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
-
+    receivingMode: order.receivingMode ,
     // Dates
     date: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
     orderedAt: order.orderedAt,
@@ -227,20 +227,26 @@ function handleEdit(order) {
 function closeEditModal() { editOrder.value = null }
 
 // Called from OrderDetailModal when admin clicks a status step
-async function handleStatusUpdate({ orderId, status, notes }) {
+async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails }) {
   try {
-    // Ensure status matches backend enum exactly
     const validStatuses = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed', 'Cancelled'];
     const normalizedStatus = validStatuses.find(s => s.toLowerCase() === status.toLowerCase()) || status;
     
-    console.log('Updating status:', { orderId, status: normalizedStatus, notes });
-    
-    const response = await adminOrderApi.updateOrderStatus(orderId, { 
+    const payload = { 
       status: normalizedStatus, 
-      notes: notes || '' 
-    })
+      notes: notes || ''
+    }
     
-    console.log('Status update response:', response)
+    if (productionSchedule) {
+      payload.productionSchedule = productionSchedule
+    }
+    
+    if (driverDetails) {
+      payload.driverDetails = driverDetails
+    }
+    
+    const response = await adminOrderApi.updateOrderStatus(orderId, payload)
+    
     if (response.success) {
       patchLocalOrder(orderId, transformOrder(response.data))
       if (selectedOrder.value?.id === orderId) {

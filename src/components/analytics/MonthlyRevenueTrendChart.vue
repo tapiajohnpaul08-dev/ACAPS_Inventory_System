@@ -29,14 +29,14 @@
       <!-- Line Chart -->
       <div class="relative h-80">
 
-        <!-- Y-axis Labels — iterate reversed copy so max is at top, 0 at bottom -->
+        <!-- Y-axis Labels -->
         <div class="absolute -left-5 top-0 bottom-0 w-12 flex flex-col justify-between text-right pr-1">
           <div v-for="tick in reversedTicks" :key="'label-' + tick" class="text-xs text-gray-600">
             {{ formatYValue(tick) }}
           </div>
         </div>
 
-        <!-- Grid Lines — use original yTicks order; position from top via getYPercent -->
+        <!-- Grid Lines -->
         <div class="absolute left-10 right-0 top-0 bottom-5">
           <div
             v-for="tick in yTicks"
@@ -46,8 +46,9 @@
           />
         </div>
 
-        <!-- Chart SVG — same coordinate system as getYPercent -->
+        <!-- Chart SVG -->
         <svg
+          v-if="linePoints && areaPoints && chartPoints.length > 0"
           class="absolute left-10 top-0 bottom-0 w-[calc(100%-2.5rem)] h-full"
           :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
           preserveAspectRatio="none"
@@ -60,11 +61,10 @@
           </defs>
 
           <!-- Area under line -->
-          <polygon v-if="areaPoints" :points="areaPoints" fill="url(#revenueGradient)" />
+          <polygon :points="areaPoints" fill="url(#revenueGradient)" />
 
           <!-- Line -->
           <polyline
-            v-if="linePoints"
             :points="linePoints"
             fill="none"
             stroke="#3b82f6"
@@ -73,7 +73,7 @@
             stroke-linejoin="round"
           />
 
-          <!-- Data Points + Tooltips -->
+          <!-- Data Points -->
           <g v-for="(point, i) in chartPoints" :key="i">
             <circle
               :cx="point.x"
@@ -110,6 +110,11 @@
             </g>
           </g>
         </svg>
+
+        <!-- Fallback for no data points -->
+        <div v-else class="absolute left-10 right-0 top-0 bottom-5 flex items-center justify-center">
+          <p class="text-sm text-gray-400">Insufficient data for chart</p>
+        </div>
 
         <!-- X-axis Labels -->
         <div class="absolute left-10 right-0 bottom-[-24px] flex">
@@ -150,103 +155,135 @@
 import { ref, computed } from 'vue'
 
 const props = defineProps({
-  months: { type: Array, required: true }
+  months: { type: Array, required: true },
+  forecast: { type: Array, default: () => [] }
 })
 
 const hoveredMonth = ref(null)
 
-// ── SVG coordinate constants ───────────────────────────────────────────────
+// SVG coordinate constants
 const svgWidth  = 800
 const svgHeight = 280
-// Padding keeps points/tooltips from clipping at the very edges
-const padTop    = 16   // room for tooltip above highest point
-const padBottom = 16   // room so 0-value circle isn't clipped
+const padTop    = 16
+const padBottom = 16
 
-// ── Data ───────────────────────────────────────────────────────────────────
+// Data
 const displayMonths = computed(() => {
   const order = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   return [...props.months].sort((a, b) => order.indexOf(a.month) - order.indexOf(b.month))
 })
 
-const totalRevenue    = computed(() => props.months.reduce((s, m) => s + (m.revenue || 0), 0))
-const totalOrders     = computed(() => props.months.reduce((s, m) => s + (m.orders  || 0), 0))
-const avgMonthlyRevenue = computed(() => Math.round(totalRevenue.value / 12))
-const maxRevenue      = computed(() => Math.max(...props.months.map(m => m.revenue || 0), 1))
-const yMax            = computed(() => Math.ceil(maxRevenue.value * 1.15))
+const totalRevenue = computed(() => {
+  const sum = props.months.reduce((s, m) => s + (m.revenue || 0), 0)
+  return isNaN(sum) ? 0 : sum
+})
 
-const bestMonth = computed(() =>
-  props.months.reduce(
+const totalOrders = computed(() => {
+  const sum = props.months.reduce((s, m) => s + (m.orders || 0), 0)
+  return isNaN(sum) ? 0 : sum
+})
+
+const avgMonthlyRevenue = computed(() => {
+  const avg = totalRevenue.value / 12
+  return isNaN(avg) ? 0 : Math.round(avg)
+})
+
+const maxRevenue = computed(() => {
+  const max = Math.max(...props.months.map(m => m.revenue || 0), 1)
+  return isNaN(max) ? 1 : max
+})
+
+const yMax = computed(() => {
+  const y = Math.ceil(maxRevenue.value * 1.15)
+  return isNaN(y) ? 1000 : y
+})
+
+const bestMonth = computed(() => {
+  const best = props.months.reduce(
     (best, cur) => (cur.revenue || 0) > (best.revenue || 0) ? cur : best,
     { month: 'N/A', revenue: 0 }
   )
-)
-
-// ── Y-axis ticks — produced lowest→highest, never mutated ─────────────────
-const yTicks = computed(() => {
-  const max  = yMax.value
-  if (max === 0) return [0]
-  const step = Math.ceil(max / 4)
-  return [0, step, step * 2, step * 3, max]
+  return best
 })
 
-// Reversed copy for the label column (highest label at the top of the flex column)
+// Y-axis ticks
+const yTicks = computed(() => {
+  const max = yMax.value
+  if (max === 0) return [0]
+  const step = Math.ceil(max / 4)
+  const ticks = [0, step, step * 2, step * 3, max]
+  return ticks.filter(t => !isNaN(t))
+})
+
 const reversedTicks = computed(() => [...yTicks.value].reverse())
 
-// ── Coordinate helpers — single source of truth ───────────────────────────
-// SVG y for a revenue value: max → padTop, 0 → svgHeight - padBottom
+// Coordinate helpers
 function valueToSvgY(value) {
-  const ratio = yMax.value === 0 ? 0 : value / yMax.value
-  return svgHeight - padBottom - ratio * (svgHeight - padTop - padBottom)
+  const safeValue = isNaN(value) ? 0 : value
+  const safeMax = yMax.value === 0 ? 1 : yMax.value
+  const ratio = safeValue / safeMax
+  const y = svgHeight - padBottom - ratio * (svgHeight - padTop - padBottom)
+  return isNaN(y) ? svgHeight / 2 : y
 }
 
-// CSS top% for grid lines (0% = top of container = max value)
 function getYPercent(value) {
-  return yMax.value === 0 ? 100 : 100 - (value / yMax.value) * 100
+  const safeValue = isNaN(value) ? 0 : value
+  const safeMax = yMax.value === 0 ? 1 : yMax.value
+  const percent = 100 - (safeValue / safeMax) * 100
+  return isNaN(percent) ? 0 : percent
 }
 
-// ── Chart points ───────────────────────────────────────────────────────────
+// Chart points
 const chartPoints = computed(() => {
   const count = displayMonths.value.length
   if (count === 0) return []
-  // Place each point at the center of its equal-width slot so it lines up
-  // with the center of the corresponding flex-1 month label beneath the SVG.
+  
   const slotWidth = svgWidth / count
-  return displayMonths.value.map((month, i) => ({
-    x: slotWidth * i + slotWidth / 2,
-    y: valueToSvgY(month.revenue || 0),
-  }))
+  
+  return displayMonths.value.map((month, i) => {
+    const revenue = month.revenue || 0
+    const x = slotWidth * i + slotWidth / 2
+    const y = valueToSvgY(revenue)
+    return { x, y }
+  }).filter(p => !isNaN(p.x) && !isNaN(p.y))
 })
 
-const linePoints = computed(() =>
-  chartPoints.value.map(p => `${p.x},${p.y}`).join(' ')
-)
+const linePoints = computed(() => {
+  if (!chartPoints.value.length) return ''
+  const points = chartPoints.value.map(p => `${p.x},${p.y}`).join(' ')
+  return points || ''
+})
 
 const areaPoints = computed(() => {
   if (!chartPoints.value.length) return ''
   const first = chartPoints.value[0]
-  const last  = chartPoints.value[chartPoints.value.length - 1]
+  const last = chartPoints.value[chartPoints.value.length - 1]
+  if (!first || !last) return ''
   const bottom = svgHeight - padBottom
-  return `${linePoints.value} L${last.x},${bottom} L${first.x},${bottom} Z`
+  const points = `${linePoints.value} L${last.x},${bottom} L${first.x},${bottom} Z`
+  return points || ''
 })
 
-// Prevent tooltip rect from overflowing SVG left/right edge
 function clampTooltipX(x) {
+  if (isNaN(x)) return 10
   return Math.max(2, Math.min(x, svgWidth - 92))
 }
 
-// ── Formatting ─────────────────────────────────────────────────────────────
 function formatYValue(value) {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000)     return `${(value / 1_000).toFixed(0)}k`
-  return value.toString()
+  const safeValue = isNaN(value) ? 0 : value
+  if (safeValue >= 1_000_000) return `${(safeValue / 1_000_000).toFixed(1)}M`
+  if (safeValue >= 1_000) return `${(safeValue / 1_000).toFixed(0)}k`
+  return safeValue.toString()
 }
 
 function showMonthDetail(month) {
+  const revenue = month.revenue || 0
+  const orders = month.orders || 0
   alert(
     `${month.month} ${month.year || new Date().getFullYear()}\n` +
-    `Revenue: ₱${(month.revenue || 0).toLocaleString()}\n` +
-    `Orders: ${(month.orders || 0).toLocaleString()}\n` +
-    `Avg per order: ₱${month.orders > 0 ? Math.round(month.revenue / month.orders).toLocaleString() : 0}`
+    `Revenue: ₱${revenue.toLocaleString()}\n` +
+    `Orders: ${orders.toLocaleString()}\n` +
+    `Avg per order: ₱${orders > 0 ? Math.round(revenue / orders).toLocaleString() : 0}`
   )
 }
 </script>

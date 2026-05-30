@@ -1,83 +1,38 @@
-// Add to your backend routes (e.g., AdminRoutes.js or a new DashboardRoutes.js)
-
-// Get dashboard stats
-router.get('/admin/stats', verifyAdminToken, async (req, res) => {
-  try {
-    const totalOrders = await Order.countDocuments()
-    const pendingOrders = await Order.countDocuments({ status: 'Pending' })
-    const completedOrders = await Order.countDocuments({ status: 'Completed' })
-    const totalRevenue = await Order.aggregate([
-      { $match: { status: 'Completed', paymentStatus: 'Paid' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ])
-    
-    const productsCount = await Product.countDocuments()
-    const suppliesCount = await Supply.countDocuments()
-    
-    const lowStockProducts = await Product.countDocuments({ 'sizes.stock': { $lt: 100 } })
-    const lowStockSupplies = await InventoryItem.countDocuments({ stock: { $lt: 100 }, itemType: 'supply' })
-    
-    res.json({
-      success: true,
-      data: {
-        totalOrders,
-        pendingOrders,
-        completedOrders,
-        totalRevenue: totalRevenue[0]?.total || 0,
-        productsCount,
-        suppliesCount,
-        lowStockProducts,
-        lowStockSupplies
+=== 🔵 CREATE ORDER STARTED ===
+Payload: {
+  "items": [
+    {
+      "productId": null,
+      "name": "Tumblers",
+      "category": "Customer Provided",
+      "size": "1L",
+      "quantity": 500,
+      "designSource": "saved",
+      "designImage": "/uploads/templates/template-1779962176509-84325029.png",
+      "printSize": "3x3",
+      "printPlacement": "Full-Wrap",
+      "designNotes": "",
+      "files": [],
+      "selectedTemplateId": "8720136759",
+      "selectedTemplate": {
+        "id": "8720136759",
+        "name": "Design Design",
+        "thumbnail": "/uploads/templates/template-1779962176509-84325029.png",
+        "printSize": "3x3",
+        "placement": "Full-Wrap",
+        "notes": ""
       }
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
-  }
-})
-
-// Get recent orders
-router.get('/admin/recent-orders', verifyAdminToken, async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 5
-    const orders = await Order.find().sort({ orderedAt: -1 }).limit(limit)
-    res.json({ success: true, data: orders })
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
-  }
-})
-
-// Get low stock items
-router.get('/inventory/low-stock', verifyAdminToken, async (req, res) => {
-  try {
-    // Combine low stock products and supplies
-    const lowStockProducts = await Product.find({
-      'sizes.stock': { $lt: 100, $gt: 0 }
-    })
-    
-    const lowStockSupplies = await InventoryItem.find({
-      stock: { $lt: 100, $gt: 0 },
-      itemType: 'supply'
-    }).populate('itemRef')
-    
-    const items = [
-      ...lowStockProducts.map(p => ({
-        name: p.name,
-        stock: p.sizes.reduce((sum, s) => sum + (s.stock || 0), 0),
-        threshold: 100,
-        itemType: 'product',
-        category: 'products'
-      })),
-      ...lowStockSupplies.map(s => ({
-        name: s.itemRef?.name || 'Unknown',
-        stock: s.stock,
-        threshold: s.threshold,
-        itemType: 'supply',
-        category: 'supplies'
-      }))
-    ]
-    
-    res.json({ success: true, data: items })
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
-  }
-})
+    }
+  ],
+  "quantity": 500,
+  "address": "Bustos Bulacan",
+  "receivingMode": "Pick-up",
+  "paymentMethod": "cod",
+  "paymentDetails": null,
+  "isProvided": true,
+  "amount": 0,
+  "customerName": "Junebert Hachero",
+  "customerEmail": "braceroroxanne@gmail.com",
+  "customerPhone": "09709406573",
+  "notes": "Customer Provided Items: Tumblers"
+}

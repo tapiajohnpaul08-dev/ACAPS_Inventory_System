@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300 flex flex-col h-full">
     <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
       <div class="flex items-center justify-between">
         <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Top Selling Products</h2>
@@ -9,14 +9,14 @@
       </div>
     </div>
 
-    <div v-if="products.length === 0" class="text-center py-16 text-gray-400">
+    <div v-if="products.length === 0" class="text-center py-16 text-gray-400 flex-1">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
       </svg>
       <p class="text-sm">No product sales data available</p>
     </div>
 
-    <div v-else class="divide-y divide-gray-100">
+    <div v-else class="divide-y divide-gray-100 flex-1 overflow-y-auto">
       <div 
         v-for="(item, index) in sortedProducts" 
         :key="item.name"
@@ -68,23 +68,23 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Total Summary -->
-      <div class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-semibold text-gray-800">Total Units Sold</p>
-          </div>
+    <!-- Total Summary - fixed at bottom -->
+    <div class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white border-t border-gray-100 mt-auto">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
         </div>
-        <div class="text-right">
-          <p class="text-xl font-bold text-blue-600">{{ totalUnits.toLocaleString() }}</p>
-          <p class="text-xs text-gray-400">across all products</p>
+        <div>
+          <p class="text-sm font-semibold text-gray-800">Total Units Sold</p>
         </div>
+      </div>
+      <div class="text-right">
+        <p class="text-xl font-bold text-blue-600">{{ totalUnits.toLocaleString() }}</p>
+        <p class="text-xs text-gray-400">across all products</p>
       </div>
     </div>
   </div>
@@ -128,6 +128,6 @@ function truncateText(text, maxLength) {
 }
 
 function handleProductClick(item, index) {
-  alert(`${index === 0 ? '🏆 Top Product!' : '📦 Product'}\n\nName: ${item.name}\nUnits Sold: ${item.orders.toLocaleString()}\nRank: #${index + 1}\nContribution: ${getPercentage(item.orders)}% of top product`)
+  // Detail drill-down: handled by parent or future modal
 }
 </script>

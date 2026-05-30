@@ -60,19 +60,9 @@
                     required
                     class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 bg-white"
                   >
-                    <option value="Cups">Cups</option>
+                    <option value="Plastic Cups">Plastic Cups</option>
                     <option value="Paper Cups">Paper Cups</option>
                   </select>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
-                  <input
-                    v-model="form.subcategory"
-                    type="text"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                    placeholder="e.g., PP U-CUPS, DOUBLE WALL"
-                  />
                 </div>
               </div>
             </div>
@@ -85,7 +75,6 @@
               </div>
               
               <div class="space-y-4">
-                <!-- Image Preview -->
                 <div v-if="imagePreview" class="relative inline-block">
                   <img :src="imagePreview" alt="Preview" class="h-32 w-32 object-cover rounded-lg border-2 border-gray-200" />
                   <button
@@ -99,7 +88,6 @@
                   </button>
                 </div>
                 
-                <!-- Upload Area -->
                 <div 
                   class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-500 transition-colors cursor-pointer"
                   :class="{ 'border-blue-500 bg-blue-50': isDragOver }"
@@ -122,7 +110,6 @@
                   <p class="text-xs text-gray-400 mt-1">PNG, JPG, JPEG up to 5MB</p>
                 </div>
                 
-                <!-- Upload Progress -->
                 <div v-if="uploadProgress > 0 && uploadProgress < 100" class="w-full bg-gray-200 rounded-full h-2">
                   <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="{ width: uploadProgress + '%' }"></div>
                 </div>
@@ -231,6 +218,7 @@
                       required
                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       placeholder="1.80"
+                      @input="updateBulkPrices(size)"
                     />
                   </div>
                   <div>
@@ -257,49 +245,46 @@
                     {{ size.showBulk ? 'Hide' : 'Show' }} Bulk Pricing
                   </button>
                   
+                  <!-- Bulk prices - auto-update when base price changes, but editable -->
                   <div v-if="size.showBulk" class="grid grid-cols-2 gap-3 mt-2 animate-slide-down">
                     <div>
                       <label class="block text-xs text-gray-500 mb-1">500 pcs</label>
                       <input
-                        v-model.number="size.bulkPrices[500]"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
-                        placeholder="Total ₱"
+                        :value="formatCurrency(size.bulkPrices[500])"
+                        type="text"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
+                        readonly
+                        disabled
                       />
                     </div>
                     <div>
                       <label class="block text-xs text-gray-500 mb-1">1000 pcs</label>
                       <input
-                        v-model.number="size.bulkPrices[1000]"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
-                        placeholder="Total ₱"
+                        :value="formatCurrency(size.bulkPrices[1000])"
+                        type="text"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
+                        readonly
+                        disabled
                       />
                     </div>
                     <div>
                       <label class="block text-xs text-gray-500 mb-1">2000 pcs</label>
                       <input
-                        v-model.number="size.bulkPrices[2000]"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
-                        placeholder="Total ₱"
+                        :value="formatCurrency(size.bulkPrices[2000])"
+                        type="text"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
+                        readonly
+                        disabled
                       />
                     </div>
                     <div>
                       <label class="block text-xs text-gray-500 mb-1">5000 pcs</label>
                       <input
-                        v-model.number="size.bulkPrices[5000]"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
-                        placeholder="Total ₱"
+                        :value="formatCurrency(size.bulkPrices[5000])"
+                        type="text"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
+                        readonly
+                        disabled
                       />
                     </div>
                   </div>
@@ -383,7 +368,7 @@ const uploadError = ref('')
 
 const form = ref({
   name: '',
-  category: 'Cups',
+  category: 'Plastic Cups',
   subcategory: '',
   minOrder: 500,
   featured: false,
@@ -395,11 +380,67 @@ const form = ref({
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 
+// Format currency for display
+function formatCurrency(value) {
+  if (!value && value !== 0) return '₱0.00'
+  return `₱${Number(value).toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`
+}
+
+// Calculate bulk prices based on unit price (no discounts)
+function calculateBulkPrices(unitPrice) {
+  if (!unitPrice || unitPrice <= 0) {
+    return {
+      500: null,
+      1000: null,
+      2000: null,
+      5000: null
+    }
+  }
+  
+  return {
+    500: unitPrice * 500,
+    1000: unitPrice * 1000,
+    2000: unitPrice * 2000,
+    5000: unitPrice * 5000
+  }
+}
+
+// Update ALL bulk prices when unit price changes (always recalculate)
+function updateBulkPrices(size) {
+  if (size.price && size.price > 0) {
+    const calculatedPrices = calculateBulkPrices(size.price)
+    size.bulkPrices[500] = calculatedPrices[500]
+    size.bulkPrices[1000] = calculatedPrices[1000]
+    size.bulkPrices[2000] = calculatedPrices[2000]
+    size.bulkPrices[5000] = calculatedPrices[5000]
+  }
+}
+
+// Add new size with auto-calculated bulk prices
+function addSize() {
+  const newSize = {
+    name: '',
+    price: 0,
+    stock: 0,
+    bulkPrices: {
+      500: null,
+      1000: null,
+      2000: null,
+      5000: null
+    },
+    showBulk: false
+  }
+  form.value.sizes.push(newSize)
+}
+
 watch(() => props.show, (newVal) => {
   if (newVal) {
     form.value = {
       name: '',
-      category: 'Cups',
+      category: 'Plastic Cups',
       subcategory: '',
       minOrder: 500,
       featured: false,
@@ -435,14 +476,12 @@ function handleDrop(event) {
 }
 
 function validateAndSetImage(file) {
-  // Validate file type
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
   if (!allowedTypes.includes(file.type)) {
     uploadError.value = 'Only JPG, JPEG, and PNG files are allowed'
     return
   }
   
-  // Validate file size (5MB)
   if (file.size > 5 * 1024 * 1024) {
     uploadError.value = 'File size must be less than 5MB'
     return
@@ -451,7 +490,6 @@ function validateAndSetImage(file) {
   uploadError.value = ''
   imageFile.value = file
   
-  // Create preview
   const reader = new FileReader()
   reader.onload = (e) => {
     imagePreview.value = e.target.result
@@ -465,21 +503,6 @@ function removeImage() {
   if (fileInput.value) {
     fileInput.value.value = ''
   }
-}
-
-function addSize() {
-  form.value.sizes.push({
-    name: '',
-    price: 0,
-    stock: 0,
-    bulkPrices: {
-      500: null,
-      1000: null,
-      2000: null,
-      5000: null
-    },
-    showBulk: false
-  })
 }
 
 function removeSize(index) {
@@ -519,7 +542,6 @@ async function submit() {
   errorMessage.value = ''
   uploadProgress.value = 0
   
-  // Create FormData for file upload
   const formData = new FormData()
   formData.append('image', imageFile.value)
   formData.append('name', form.value.name)
@@ -536,7 +558,6 @@ async function submit() {
     bulkPrices: size.bulkPrices
   }))))
   
-  // Simulate upload progress
   const interval = setInterval(() => {
     if (uploadProgress.value < 90) {
       uploadProgress.value += 10

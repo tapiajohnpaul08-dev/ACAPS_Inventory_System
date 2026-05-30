@@ -387,15 +387,11 @@ export const adminOrderApi = {
   },
 
   // Update order status - Send status as object with status property
-  async updateOrderStatus(orderId, statusData) {
-    // Handle both string and object input
-    const status = typeof statusData === 'string' ? statusData : statusData.status;
-    const notes = statusData.notes || '';
-    return handleResponse(
-      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/status`, { status, notes })
-    );
-  },
-
+updateOrderStatus: async (orderId, data) => {
+  return handleResponse(
+    adminAxiosInstance.patch(`/order/admin/orders/${orderId}/status`, data)
+  );
+},
   // Update payment status - Send paymentStatus as object
   async updatePaymentStatus(orderId, paymentData) {
     // Handle both string and object input
@@ -601,35 +597,48 @@ export const legacyInventoryApi = {
 
 
 export const analyticsApi = {
-    async getStats() {
-        return handleResponse(
-            adminAxiosInstance.get('/analytics/stats')
-        );
-    },
-    
-    async getTopProducts(limit = 5) {
-        return handleResponse(
-            adminAxiosInstance.get(`/analytics/top-products?limit=${limit}`)
-        );
-    },
-    
-    async getOrderStatusDistribution() {
-        return handleResponse(
-            adminAxiosInstance.get('/analytics/order-status-distribution')
-        );
-    },
-    
-    async getRevenueByCategory() {
-        return handleResponse(
-            adminAxiosInstance.get('/analytics/revenue-by-category')
-        );
-    },
-    
-    async getMonthlyRevenue(months = 12) {
-        return handleResponse(
-            adminAxiosInstance.get(`/analytics/monthly-revenue?months=${months}`)
-        );
-    }
+  async getStats(dateFrom, dateTo) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/stats?${params}`));
+  },
+  async getTopProducts(limit = 5, dateFrom, dateTo) {
+    const params = new URLSearchParams({ limit });
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/top-products?${params}`));
+  },
+  async getOrderStatusDistribution(dateFrom, dateTo) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/order-status-distribution?${params}`));
+  },
+  async getRevenueByCategory(dateFrom, dateTo) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/revenue-by-category?${params}`));
+  },
+  async getMonthlyRevenue(months = 12) {
+    return handleResponse(adminAxiosInstance.get(`/analytics/monthly-revenue?months=${months}`));
+  },
+  async getFilteredAnalytics(dateFrom, dateTo, groupBy = 'month') {
+    const params = new URLSearchParams({ group_by: groupBy });
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/filter?${params}`));
+  },
+  async getRevenueForecast() {
+    return handleResponse(adminAxiosInstance.get('/analytics/forecast'));
+  },
+  async getLowStockProducts(threshold = 500) {
+    return handleResponse(adminAxiosInstance.get(`/analytics/products/low-stock?threshold=${threshold}`));
+  },
+  async getTopCustomers(limit = 10) {
+    return handleResponse(adminAxiosInstance.get(`/analytics/customers/top?limit=${limit}`));
+  },
 };
 
 export const alertApi = {

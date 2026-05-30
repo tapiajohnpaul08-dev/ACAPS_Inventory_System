@@ -276,7 +276,7 @@ watch(() => props.items.length, () => {
 // Product stock helper functions
 function getTotalProductStock(product) {
   if (!product.sizes || product.sizes.length === 0) return 0
-  return product.sizes.reduce((total, size) => total + (size.stock || 0), 0)
+  return product.sizes.reduce((total, size) => total + (size.stock || 0), 0).toLocaleString()
 }
 
 // Get product status text based on 800 threshold
