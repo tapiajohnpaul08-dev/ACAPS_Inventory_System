@@ -687,6 +687,51 @@ export const stockMovementApi = {
   }
 };
 
+export const adminChatApi = {
+  // Get all conversations
+  async getConversations(status = null, adminId = null) {
+    let url = '/chat/admin/conversations';
+    const params = [];
+    if (status) params.push(`status=${status}`);
+    if (adminId) params.push(`admin_id=${adminId}`);
+    if (params.length) url += `?${params.join('&')}`;
+    return handleResponse(adminAxiosInstance.get(url));
+  },
+
+  // Get messages for a conversation
+  async getMessages(conversationId, limit = 50, before = null) {
+    let url = `/chat/admin/conversations/${conversationId}/messages?limit=${limit}`;
+    if (before) url += `&before=${before}`;
+    return handleResponse(adminAxiosInstance.get(url));
+  },
+
+  // Send a message
+  async sendMessage(conversationId, content, attachments = []) {
+    return handleResponse(
+      adminAxiosInstance.post('/chat/admin/messages', { conversationId, content, attachments })
+    );
+  },
+
+  // Assign conversation to current admin
+  async assignConversation(conversationId) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/chat/admin/conversations/${conversationId}/assign`)
+    );
+  },
+
+  // Update conversation status
+  async updateStatus(conversationId, status) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/chat/admin/conversations/${conversationId}/status`, { status })
+    );
+  },
+
+  // Get unread count for admin
+  async getUnreadCount() {
+    return handleResponse(adminAxiosInstance.get('/chat/admin/unread-count'));
+  }
+};
+
 // =============================================================================
 // Export all APIs
 // =============================================================================
@@ -705,4 +750,5 @@ export default {
   alerts: alertApi,
   stockMovement: stockMovementApi,
   legacyInventory: legacyInventoryApi,
+  chat: adminChatApi
 };

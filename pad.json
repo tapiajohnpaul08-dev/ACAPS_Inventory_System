@@ -1,38 +1,12 @@
-=== 🔵 CREATE ORDER STARTED ===
-Payload: {
-  "items": [
-    {
-      "productId": null,
-      "name": "Tumblers",
-      "category": "Customer Provided",
-      "size": "1L",
-      "quantity": 500,
-      "designSource": "saved",
-      "designImage": "/uploads/templates/template-1779962176509-84325029.png",
-      "printSize": "3x3",
-      "printPlacement": "Full-Wrap",
-      "designNotes": "",
-      "files": [],
-      "selectedTemplateId": "8720136759",
-      "selectedTemplate": {
-        "id": "8720136759",
-        "name": "Design Design",
-        "thumbnail": "/uploads/templates/template-1779962176509-84325029.png",
-        "printSize": "3x3",
-        "placement": "Full-Wrap",
-        "notes": ""
-      }
-    }
-  ],
-  "quantity": 500,
-  "address": "Bustos Bulacan",
-  "receivingMode": "Pick-up",
-  "paymentMethod": "cod",
-  "paymentDetails": null,
-  "isProvided": true,
-  "amount": 0,
-  "customerName": "Junebert Hachero",
-  "customerEmail": "braceroroxanne@gmail.com",
-  "customerPhone": "09709406573",
-  "notes": "Customer Provided Items: Tumblers"
+{
+    "id": "6a1ab081d64ba8bbd2f9f319",
+    "name": "Junebert Hachero",
+    "email": "hacherojunebert29@gmail.com",
+    "subject": "Customer Support",
+    "preview": "Hi!!!",
+    "date": "19 min ago",
+    "read": false,
+    "replyStatus": "pending",
+    "conversationId": "6a1ab081d64ba8bbd2f9f319",
+    "status": "open"
 }
