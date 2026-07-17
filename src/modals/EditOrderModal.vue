@@ -27,20 +27,20 @@
                 <div class="grid grid-cols-2 gap-3">
                   <div class="col-span-2 sm:col-span-1">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Customer Name <span class="text-red-400">*</span></label>
-                    <input v-model="form.customer" type="text" required class="field" :class="{'border-red-300': errors.customer}" @input="errors.customer = ''" />
+                    <input disabled v-model="form.customer" type="text" required class="field" :class="{'border-red-300': errors.customer}" @input="errors.customer = ''" />
                     <p v-if="errors.customer" class="text-xs text-red-500 mt-1">{{ errors.customer }}</p>
                   </div>
                   <div class="col-span-2 sm:col-span-1">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Email</label>
-                    <input v-model="form.email" type="email" class="field" />
+                    <input disabled v-model="form.email" type="email" class="field" />
                   </div>
                   <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Phone</label>
-                    <input v-model="form.phone" type="tel" class="field" />
+                    <input disabled v-model="form.phone" type="tel" class="field" />
                   </div>
                   <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Delivery Method</label>
-                    <select v-model="form.deliveryMethod" class="field">
+                    <select disabled v-model="form.deliveryMethod" class="field">
                       <option value="Pick-up">Pick-up</option>
                       <option value="Delivery">Delivery</option>
                     </select>
@@ -58,12 +58,12 @@
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Product <span class="text-red-400">*</span></label>
-                    <input v-model="form.product" type="text" required class="field" :class="{'border-red-300': errors.product}" @input="errors.product = ''" />
+                    <input disabled v-model="form.product" type="text" required class="field" :class="{'border-red-300': errors.product}" @input="errors.product = ''" />
                     <p v-if="errors.product" class="text-xs text-red-500 mt-1">{{ errors.product }}</p>
                   </div>
                   <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Size</label>
-                    <input v-model="form.size" type="text" class="field" placeholder="e.g. 8oz, 12oz" />
+                    <input disabled v-model="form.size" type="text" class="field" placeholder="e.g. 8oz, 12oz" />
                   </div>
                   <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Quantity <span class="text-red-400">*</span></label>
@@ -234,12 +234,9 @@ async function handleSubmit() {
   try {
     // Normalize payment status to match backend enum
     const paymentStatusMap = {
-      'unpaid': 'Unpaid',
-      'partial': 'Partial',
-      'paid': 'Paid',
       'Unpaid': 'Unpaid',
       'Partial': 'Partial',
-      'Paid': 'Paid'
+      'Paid': 'Paid',
     }
     
     const payload = {

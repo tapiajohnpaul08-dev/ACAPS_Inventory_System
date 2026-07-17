@@ -646,7 +646,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
-const localPayment = ref(props.order?.payment || 'unpaid')
+const localPayment = ref(props.order?.payment || 'Unpaid')
 
 // Modal states
 const showScheduleModal = ref(false)
@@ -855,7 +855,7 @@ const isDriverValid = computed(() => {
 watch(() => props.order, (o) => {
   if (o) {
     localStatus.value = o.status || 'Pending'
-    localPayment.value = o.payment || 'unpaid'
+    localPayment.value = o.payment || 'Unpaid'
   }
 }, { deep: true, immediate: true })
 

@@ -136,7 +136,7 @@ function transformOrder(order) {
 
     // Status
     status: order.status || 'Pending',
-    payment: (order.paymentStatus || 'Unpaid').toLowerCase(),
+    payment: (order.paymentStatus || 'Unpaid'),
 
     // Delivery
     deliveryMethod: order.receivingMode || order.deliveryMethod || order.fulfillment?.method || 'Pick-up',
