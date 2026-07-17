@@ -6,6 +6,7 @@
         <p class="text-sm text-gray-500 mt-1">Manage customers and admin accounts</p>
       </div>
       <button
+        :disabled="activeTab === 'customers'"
         @click="openAddModal"
         class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
       >

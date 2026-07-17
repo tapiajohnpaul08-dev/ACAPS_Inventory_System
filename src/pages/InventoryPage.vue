@@ -756,6 +756,8 @@ async function handleAddSupply(supplyData) {
     )
     
     if (inventoryResponse.success) {
+      console.log('supply:', supplyData);
+      
       await Promise.all([loadSupplies(), loadInventory()])
       showToast('success', `Supply "${supplyData.name}" has been created and added to inventory.`)
       closeAddSupplyModal()
@@ -775,8 +777,11 @@ async function handleAddProduct(productData) {
   try {
     const response = await productApi.createProduct(productData)
     if (response.success) {
-      await loadProducts()
-      showFeedback('success', 'Success', `Product "${productData.name}" has been created successfully.`)
+      console.log('added product:', productData);
+      await loadProducts() 
+      // showFeedback('success', 'Success', `Product "${productData.name}" has been created successfully.`)
+      showFeedback('success', 'Success', `Product  has been created successfully.`)
+
       closeAddProductModal()
     } else {
       showFeedback('error', 'Error', response.message || 'Failed to create product')
