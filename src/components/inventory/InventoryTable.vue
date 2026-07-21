@@ -101,17 +101,14 @@
               </td>
               
               <!-- Status Column - Removed for products (shown in stock column), kept for supplies -->
-              <td class="px-5 py-4 cursor-pointer" @click="handleSelect(item)">
-                <div v-if="type === 'supplies'" class="flex items-center gap-1.5 justify-center">
+              <td v-if="type === 'supplies'" class="px-5 py-4 cursor-pointer" @click="handleSelect(item)">
+                <div  class="flex items-center gap-1.5 justify-center">
                   <div class="w-2 h-2 rounded-full" :class="getStatusDotColor(item.status)"></div>
                   <span class="text-xs font-semibold" :class="getStatusColor(item.status)">
                     {{ item.status }}
                   </span>
                 </div>
-                <div v-else class="text-center text-xs text-gray-400">
-                  <!-- Empty for products since status is shown in stock column -->
-                  <span class="text-gray-300">—</span>
-                </div>
+                
               </td>
               
               <!-- Price/Unit Cost Column -->
@@ -232,7 +229,7 @@ const PRODUCT_THRESHOLD = 500
 
 const columns = computed(() => {
   if (props.type === 'products') {
-    return ['Product', 'Category', 'Stock (Size / Qty / Status)', 'Status', 'Base Price', 'Actions']
+    return ['Product', 'Category', 'Stock (Size / Qty / Status)', 'Base Price', 'Actions']
   }
   return ['Item', 'Unit', 'Stock', 'Status', 'Unit Cost', 'Actions']
 })
