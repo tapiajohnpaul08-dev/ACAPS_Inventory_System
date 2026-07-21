@@ -27,16 +27,16 @@
           </thead>
           <tbody class="divide-y divide-gray-50">
             <tr
-  v-for="item in paginatedItems"
-  :key="item.id || item.itemId"
-  :data-item-id="item.id || item.itemId"
-  class="group transition-all duration-200 hover:shadow-md"
-  :class="[
-    getItemRowClass(item),
-    isHighlighted(item) ? 'animate-pulse bg-yellow-50 border-l-4 border-yellow-400' : '',
-    props.highlightId === (item.id || item.itemId) ? 'ring-2 ring-blue-500 bg-blue-50' : ''
-  ]"
->
+              v-for="item in paginatedItems"
+              :key="item.id || item.itemId"
+              :data-item-id="item.id || item.itemId"
+              class="group transition-all duration-200 hover:shadow-md"
+              :class="[
+                getItemRowClass(item),
+                isHighlighted(item) ? 'animate-pulse bg-yellow-50 border-l-4 border-yellow-400' : '',
+                props.highlightId === (item.id || item.itemId) ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+              ]"
+            >
               <!-- Product/Item Name Column -->
               <td class="px-5 py-4 cursor-pointer" @click="handleSelect(item)">
                 <div class="flex items-center gap-3">
@@ -69,36 +69,48 @@
                 </span>
               </td>
               
-              <!-- Stock Column -->
-              <td class="px-5 py-4 cursor-pointer" @click="handleSelect(item)">
-                <div class="flex flex-col">
-                  <p class="text-sm font-bold" :class="getStockTextColor(item)">
-                    {{ type === 'products' ? getTotalProductStock(item) + ' pcs' : (item.stock?.toLocaleString() || 0) }}
-                  </p>
-                  <!-- <div class="mt-1 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                    <div 
-                      class="h-1.5 rounded-full transition-all duration-300"
-                      :class="getStockBarColorClass(item)"
-                      :style="{ width: getStockPercentageValue(item) + '%' }"
-                    ></div>
-                  </div> -->
-
+              <!-- Stock Column - Shows sizes and their statuses for products -->
+              <td class="px-5 py-4 flex justify-center cursor-pointer" @click="handleSelect(item)">
+                <div v-if="type === 'products' && item.sizes && item.sizes.length > 0" class="space-y-1.5">
+                  <div v-for="size in item.sizes" :key="size.name" class="flex items-center gap-2">
+                    <!-- Size name -->
+                    <span class="text-xs font-medium text-gray-600 w-12 flex-shrink-0">{{ size.name }}</span>
+                    <!-- Stock count -->
+                    <span class="text-xs font-bold" :class="getStockTextColorForSize(size.stock, item.threshold || 500)">
+                      {{ size.stock || 0 }}
+                    </span>
+                    <!-- Status dot -->
+                    <div class="flex-1 flex items-center gap-1">
+                      <div class="w-2 h-2 rounded-full flex-shrink-0" :class="getSizeStatusDotColor(size.stock, item.threshold || 500)"></div>
+                      <span class="text-[10px] font-medium" :class="getSizeStatusTextColor(size.stock, item.threshold || 500)">
+                        {{ getSizeStatusText(size.stock, item.threshold || 500) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else-if="type === 'products'">
+                  <p class="text-sm text-gray-400">No sizes available</p>
+                </div>
+                <div v-else>
+                  <div class="flex flex-col">
+                    <p class="text-sm font-bold" :class="getStockTextColor(item)">
+                      {{ (item.stock?.toLocaleString() || 0) }} {{ item.unit || 'pcs' }}
+                    </p>
+                  </div>
                 </div>
               </td>
               
-              <!-- Status Column -->
+              <!-- Status Column - Removed for products (shown in stock column), kept for supplies -->
               <td class="px-5 py-4 cursor-pointer" @click="handleSelect(item)">
-                <div v-if="type === 'products'" class="flex items-center gap-1.5 justify-center">
-                  <div class="w-2 h-2 rounded-full" :class="getProductStatusDotColor(item)"></div>
-                  <span class="text-xs font-semibold" :class="getProductStatusColor(item)">
-                    {{ getProductStatusText(item) }}
-                  </span>
-                </div>
-                <div v-else class="flex items-center gap-1.5 justify-center">
+                <div v-if="type === 'supplies'" class="flex items-center gap-1.5 justify-center">
                   <div class="w-2 h-2 rounded-full" :class="getStatusDotColor(item.status)"></div>
                   <span class="text-xs font-semibold" :class="getStatusColor(item.status)">
                     {{ item.status }}
                   </span>
+                </div>
+                <div v-else class="text-center text-xs text-gray-400">
+                  <!-- Empty for products since status is shown in stock column -->
+                  <span class="text-gray-300">—</span>
                 </div>
               </td>
               
@@ -153,7 +165,7 @@
                   </button>
                 </div>
               </td>
-             </tr>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -205,8 +217,7 @@ const props = defineProps({
   items: { type: Array, required: true },
   loading: { type: Boolean, default: false },
   type: { type: String, default: 'products' },
-    highlightId: { type: String, default: null } // Add this
-
+  highlightId: { type: String, default: null }
 })
 
 const emit = defineEmits(['edit', 'select', 'delete', 'stockIn', 'stockOut'])
@@ -216,12 +227,12 @@ const highlightedItemId = ref(null)
 const currentPage = ref(1)
 const itemsPerPage = 10
 
-// Stock threshold for products (In Stock > 800)
-const PRODUCT_HIGH_STOCK_THRESHOLD = 800
+// Stock threshold for products (Low Stock <= threshold)
+const PRODUCT_THRESHOLD = 500
 
 const columns = computed(() => {
   if (props.type === 'products') {
-    return ['Product', 'Category', 'Stock', 'Status', 'Base Price', 'Actions']
+    return ['Product', 'Category', 'Stock (Size / Qty / Status)', 'Status', 'Base Price', 'Actions']
   }
   return ['Item', 'Unit', 'Stock', 'Status', 'Unit Cost', 'Actions']
 })
@@ -276,29 +287,67 @@ watch(() => props.items.length, () => {
 // Product stock helper functions
 function getTotalProductStock(product) {
   if (!product.sizes || product.sizes.length === 0) return 0
-  return product.sizes.reduce((total, size) => total + (size.stock || 0), 0).toLocaleString()
+  return product.sizes.reduce((total, size) => total + (size.stock || 0), 0)
 }
 
-// Get product status text based on 800 threshold
+// ========== SIZE STATUS HELPER FUNCTIONS ==========
+
+// Get status text for a size
+function getSizeStatusText(stock, threshold) {
+  const stockNum = Number(stock) || 0
+  const thresholdNum = Number(threshold) || 0
+  if (stockNum <= 0) return 'Out of Stock'
+  if (stockNum <= thresholdNum) return 'Low Stock'
+  return 'In Stock'
+}
+
+// Get status dot color for a size
+function getSizeStatusDotColor(stock, threshold) {
+  const stockNum = Number(stock) || 0
+  const thresholdNum = Number(threshold) || 0
+  if (stockNum <= 0) return 'bg-red-500'
+  if (stockNum <= thresholdNum) return 'bg-yellow-500'
+  return 'bg-green-500'
+}
+
+// Get status text color for a size
+function getSizeStatusTextColor(stock, threshold) {
+  const stockNum = Number(stock) || 0
+  const thresholdNum = Number(threshold) || 0
+  if (stockNum <= 0) return 'text-red-600'
+  if (stockNum <= thresholdNum) return 'text-yellow-600'
+  return 'text-green-600'
+}
+
+// Get stock text color for size
+function getStockTextColorForSize(stock, threshold) {
+  const stockNum = Number(stock) || 0
+  const thresholdNum = Number(threshold) || 0
+  if (stockNum <= 0) return 'text-red-600'
+  if (stockNum <= thresholdNum) return 'text-yellow-600'
+  return 'text-green-600'
+}
+
+// Get product status text based on threshold
 function getProductStatusText(product) {
   const totalStock = getTotalProductStock(product)
   
   if (totalStock === 0) {
     return 'Out of Stock'
-  } else if (totalStock < PRODUCT_HIGH_STOCK_THRESHOLD) {
+  } else if (totalStock <= PRODUCT_THRESHOLD) {
     return 'Low Stock'
   } else {
     return 'In Stock'
   }
 }
 
-// Get product status color based on 800 threshold
+// Get product status color based on threshold
 function getProductStatusColor(product) {
   const totalStock = getTotalProductStock(product)
   
   if (totalStock === 0) {
     return 'text-red-600'
-  } else if (totalStock < PRODUCT_HIGH_STOCK_THRESHOLD) {
+  } else if (totalStock <= PRODUCT_THRESHOLD) {
     return 'text-yellow-600'
   } else {
     return 'text-green-600'
@@ -311,7 +360,7 @@ function getProductStatusDotColor(product) {
   
   if (totalStock === 0) {
     return 'bg-red-500'
-  } else if (totalStock < PRODUCT_HIGH_STOCK_THRESHOLD) {
+  } else if (totalStock <= PRODUCT_THRESHOLD) {
     return 'bg-yellow-500'
   } else {
     return 'bg-green-500'
@@ -325,7 +374,7 @@ function getItemRowClass(item) {
     
     if (totalStock === 0) {
       return 'bg-red-50/50 hover:bg-red-100/70'
-    } else if (totalStock < PRODUCT_HIGH_STOCK_THRESHOLD) {
+    } else if (totalStock <= PRODUCT_THRESHOLD) {
       return 'bg-yellow-50/50 hover:bg-yellow-100/70'
     } else {
       return 'hover:bg-green-50/50'
@@ -346,7 +395,7 @@ function getStockTextColor(item) {
     const totalStock = getTotalProductStock(item)
     
     if (totalStock === 0) return 'text-red-600'
-    if (totalStock < PRODUCT_HIGH_STOCK_THRESHOLD) return 'text-yellow-600'
+    if (totalStock <= PRODUCT_THRESHOLD) return 'text-yellow-600'
     return 'text-green-600'
   } else {
     if (item.stock === 0) return 'text-red-600'
@@ -360,7 +409,7 @@ function getStockBarColorClass(item) {
     const totalStock = getTotalProductStock(item)
     
     if (totalStock === 0) return 'bg-red-500'
-    if (totalStock < PRODUCT_HIGH_STOCK_THRESHOLD) return 'bg-yellow-500'
+    if (totalStock <= PRODUCT_THRESHOLD) return 'bg-yellow-500'
     return 'bg-green-500'
   } else {
     if (item.stock === 0) return 'bg-red-500'
@@ -372,8 +421,7 @@ function getStockBarColorClass(item) {
 function getStockPercentageValue(item) {
   if (props.type === 'products') {
     const totalStock = getTotalProductStock(item)
-    // Use 1600 as max (2x the 800 threshold) for percentage calculation
-    const maxStock = PRODUCT_HIGH_STOCK_THRESHOLD * 2
+    const maxStock = PRODUCT_THRESHOLD * 2
     const percentage = (totalStock / maxStock) * 100
     return Math.min(percentage, 100)
   } else {
