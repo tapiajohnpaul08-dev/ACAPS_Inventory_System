@@ -11,7 +11,9 @@ export function useAdminChat() {
   const isLoadingMessages = ref(false)
   const unreadCount = ref(0)
   const isCustomerTyping = ref(false)
-  const messagesContainerRef = ref(null) // expose so MessageDetail can register
+  const messagesContainerRef = ref(null)
+  const processedMessages = new Set()
+  let pendingTempId = null // Add this
 
   // Socket
   const socket = useAdminSocket()
@@ -24,21 +26,29 @@ export function useAdminChat() {
 
   // ─────────────────────────────────────────
   // Map a raw DB/socket message → UI message
-  // BUG FIX: backend uses senderType + createdAt, not sender + timestamp
   // ─────────────────────────────────────────
   const mapMessage = (msg) => ({
     ...msg,
-    // normalise field names so MessageDetail can use either
     sender: msg.senderType || msg.sender || 'customer',
     timestamp: msg.createdAt || msg.timestamp || new Date().toISOString(),
-    attachments: (msg.attachments || []).map((file) => ({
-      ...file,
-      url: resolveFileUrl(file),
-    })),
+    attachments: (msg.attachments || []).map((file) => {
+      if (typeof file === 'string') {
+        return { 
+          name: file, 
+          path: file, 
+          url: file 
+        }
+      }
+      return {
+        ...file,
+        path: file.path || file.url || file.name || '',
+        url: resolveFileUrl(file),
+      }
+    }),
   })
 
   // ─────────────────────────────────────────
-  // File URL helper (shared with MessageDetail)
+  // File URL helper
   // ─────────────────────────────────────────
   const resolveFileUrl = (file) => {
     if (file.url && !file.url.startsWith('blob:')) return file.url
@@ -66,18 +76,38 @@ export function useAdminChat() {
 
   const setupSocketListeners = () => {
     socket.onNewMessage(async (rawMessage) => {
+      // Prevent duplicate processing
+      if (processedMessages.has(rawMessage.messageId)) {
+        console.log('📩 Message already processed, skipping')
+        return
+      }
+      processedMessages.add(rawMessage.messageId)
+
       const message = mapMessage(rawMessage)
+
+      // If this is our own pending message, replace it
+      if (pendingTempId) {
+        const index = messages.value.findIndex(m => m.messageId === pendingTempId)
+        if (index !== -1) {
+          console.log('📩 Replacing temp message with real message')
+          messages.value[index] = { 
+            ...message, 
+            isPending: false,
+            replyTo: message.replyTo || messages.value[index].replyTo
+          }
+          pendingTempId = null
+          return
+        }
+      }
 
       // If message belongs to the open conversation → append & scroll
       if (selectedConversation.value?.conversationId === message.conversationId) {
-        // Avoid duplicates (socket may fire for messages we sent via REST fallback)
         const exists = messages.value.some((m) => m.messageId === message.messageId)
         if (!exists) {
           messages.value.push(message)
           await scrollToBottom()
         }
 
-        // Mark as read if it came from the customer
         if (message.senderType === 'customer') {
           socket.markAsRead(message.conversationId)
         }
@@ -98,14 +128,13 @@ export function useAdminChat() {
           conv.adminUnreadCount = (conv.adminUnreadCount || 0) + 1
         }
       } else {
-        // Unknown conversation – reload the list
         await loadConversations()
       }
 
       await loadUnreadCount()
       window.dispatchEvent(new CustomEvent('newMessageReceived', { 
-    detail: { conversationId: message.conversationId }
-  }))
+        detail: { conversationId: message.conversationId }
+      }))
     })
 
     socket.onUserTyping(({ userType, isTyping: typing }) => {
@@ -127,8 +156,7 @@ export function useAdminChat() {
   }
 
   // ─────────────────────────────────────────
-  // Scroll to bottom of message list
-  // BUG FIX: previous implementation was a no-op (setTimeout only)
+  // Scroll to bottom
   // ─────────────────────────────────────────
   const scrollToBottom = async () => {
     await nextTick()
@@ -147,9 +175,7 @@ export function useAdminChat() {
       const result = await adminChatApi.getConversations()
       if (result.success && result.data) {
         conversations.value = result.data.map((conv) => ({
-          // BUG FIX: keep conversationId as the primary key used for socket rooms,
-          // but also expose .id so MessageList selectedId comparison works
-          id: conv.conversationId,          // ← was conv._id which never matched selectedId
+          id: conv.conversationId,
           conversationId: conv.conversationId,
           name: conv.customerName || 'Unknown Customer',
           email: conv.customerEmail || '',
@@ -175,10 +201,11 @@ export function useAdminChat() {
   // ─────────────────────────────────────────
   const loadMessages = async (conversationId) => {
     isLoadingMessages.value = true
+    processedMessages.clear()
+    pendingTempId = null
     try {
       const result = await adminChatApi.getMessages(conversationId, 100)
       if (result.success && result.data) {
-        // BUG FIX: map each message so senderType / createdAt are normalised
         messages.value = result.data.map(mapMessage)
       }
     } catch (error) {
@@ -189,29 +216,110 @@ export function useAdminChat() {
   }
 
   // ─────────────────────────────────────────
-  // Send reply
-  // BUG FIX: attachments were silently dropped in MessagePage
+  // Send reply - Same approach as customer side
   // ─────────────────────────────────────────
-  const sendReply = async (conversationId, content, attachments = []) => {
-    try {
-      if (socket.isConnected.value) {
-        socket.sendMessage(conversationId, content, attachments)
-        return true
-      }
+ // composables/useAdminChat.js - FIXED sendReply function
 
-      // REST fallback
-      const result = await adminChatApi.sendMessage(conversationId, content, attachments)
-      if (result.success && result.data) {
-        messages.value.push(mapMessage(result.data))
-        await scrollToBottom()
+// ─────────────────────────────────────────
+// Send reply - MATCHES CUSTOMER SIDE EXACTLY
+// ─────────────────────────────────────────
+const sendReply = async (conversationId, content, attachments = [], replyToMessageId = null) => {
+  console.log('📨 ADMIN sendReply called with replyToMessageId:', replyToMessageId)
+  console.log('📨 ADMIN replyToMessageId type:', typeof replyToMessageId, 'value:', replyToMessageId)
+  
+  // Don't proceed if no content and no attachments
+  if (!content && (!attachments || attachments.length === 0)) {
+    console.log('📨 No content or attachments, skipping')
+    return false
+  }
+  
+  try {
+    // Create temp message for optimistic UI update
+    const tempId = 'temp_' + Date.now()
+    pendingTempId = tempId
+    
+    // Get admin info
+    const adminId = getAdminId()
+    const adminName = localStorage.getItem('adminName') || 'Admin'
+    
+    // Find the original message to get its content for the reply preview
+    let replyContent = null
+    if (replyToMessageId) {
+      const originalMsg = messages.value.find(m => (m.messageId || m._id) === replyToMessageId)
+      if (originalMsg) {
+        replyContent = originalMsg.content || '📎 Attachment'
+      }
+    }
+    
+    // Create temp message with reply data
+    const tempMessage = {
+      messageId: tempId,
+      conversationId: conversationId,
+      senderType: 'admin',
+      senderId: adminId,
+      senderName: adminName,
+      content: content || (attachments.length > 0 ? '📎 Sent an attachment' : ''),
+      attachments: attachments,
+      createdAt: new Date().toISOString(),
+      isPending: true,
+      isRead: false,
+      // This is the key - replyTo must be set for the UI to show "Replying to:"
+      replyTo: replyToMessageId ? {
+        messageId: replyToMessageId,
+        content: replyContent || 'Original message'
+      } : null
+    }
+    
+    console.log('📨 ADMIN Temp message with replyTo:', tempMessage.replyTo)
+    
+    // Add optimistic message
+    messages.value.push(tempMessage)
+    await scrollToBottom()
+    
+    // Send via socket with replyToMessageId
+    if (socket.isConnected.value) {
+      console.log('📨 ADMIN Sending via socket with replyToMessageId:', replyToMessageId)
+      const sent = socket.sendMessage(conversationId, content, attachments, replyToMessageId)
+      if (sent) {
+        console.log('📨 ADMIN Socket message sent successfully')
         return true
       }
-      return false
-    } catch (error) {
-      console.error('Failed to send reply:', error)
-      return false
     }
+    
+    // REST fallback with replyToMessageId
+    console.log('📨 ADMIN Sending via REST with replyToMessageId:', replyToMessageId)
+    const result = await adminChatApi.sendMessage(conversationId, content, attachments, replyToMessageId)
+    console.log('📨 ADMIN REST result:', result)
+    
+    if (result.success && result.data) {
+      processedMessages.add(result.data.messageId)
+      const index = messages.value.findIndex(m => m.messageId === tempId)
+      if (index !== -1) {
+        // Preserve replyTo if the server doesn't return it
+        const tempMsg = messages.value[index]
+        messages.value[index] = { 
+          ...result.data, 
+          isPending: false,
+          replyTo: result.data.replyTo || tempMsg.replyTo
+        }
+        console.log('📨 ADMIN Replaced temp message with replyTo:', messages.value[index].replyTo)
+      }
+      pendingTempId = null
+      return true
+    }
+    
+    // If we got here, something failed - mark the temp message as failed
+    const idx = messages.value.findIndex(m => m.messageId === tempId)
+    if (idx !== -1) {
+      messages.value[idx].failed = true
+      messages.value[idx].isPending = false
+    }
+    return false
+  } catch (error) {
+    console.error('📨 ADMIN Failed to send reply:', error)
+    return false
   }
+}
 
   // ─────────────────────────────────────────
   // Mark as read
@@ -225,9 +333,9 @@ export function useAdminChat() {
         conv.adminUnreadCount = 0
       }
       await loadUnreadCount()
-      window.dispatchEvent(new CustomEvent('newMessageReceived', { 
-    detail: { conversationId: message.conversationId }
-  }))
+      window.dispatchEvent(new CustomEvent('messageRead', { 
+        detail: { conversationId }
+      }))
     } catch (error) {
       console.error('Failed to mark as read:', error)
     }
@@ -236,33 +344,51 @@ export function useAdminChat() {
   // ─────────────────────────────────────────
   // Unread count
   // ─────────────────────────────────────────
-
-const loadUnreadCount = async () => {
-  try {
-    const result = await adminChatApi.getUnreadCount()
-    console.log('loadUnreadCount result:', result)
-    
-    if (result.success && result.data) {
-      // The backend returns: { success: true, data: { total: totalUnread } }
-      const count = result.data.total || result.data.count || 0
-      unreadCount.value = count
-      console.log('Unread count loaded:', count)
-      
-      // Dispatch event for sidebar to update
-      window.dispatchEvent(new CustomEvent('unreadCountUpdated', { 
-        detail: { count } 
-      }))
+  const loadUnreadCount = async () => {
+    try {
+      const result = await adminChatApi.getUnreadCount()
+      if (result.success && result.data) {
+        const count = result.data.total || result.data.count || 0
+        unreadCount.value = count
+        
+        window.dispatchEvent(new CustomEvent('unreadCountUpdated', { 
+          detail: { count } 
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to load unread count:', error)
     }
-  } catch (error) {
-    console.error('Failed to load unread count:', error)
   }
-}
+
+  // ─────────────────────────────────────────
+  // Unsend message
+  // ─────────────────────────────────────────
+  const unsendMessage = async (messageId) => {
+    try {
+      const result = await adminChatApi.unsendMessage(messageId)
+      if (result.success) {
+        const index = messages.value.findIndex(m => (m.messageId || m._id) === messageId)
+        if (index !== -1) {
+          messages.value[index] = {
+            ...messages.value[index],
+            isDeleted: true,
+            content: 'This message was unsent'
+          }
+        }
+        await loadConversations()
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Failed to unsend message:', error)
+      return false
+    }
+  }
 
   // ─────────────────────────────────────────
   // Select conversation
   // ─────────────────────────────────────────
   const selectConversation = async (conversation) => {
-    // Leave previous room
     if (selectedConversation.value?.conversationId) {
       socket.leaveConversation(selectedConversation.value.conversationId)
     }
@@ -324,6 +450,8 @@ const loadUnreadCount = async () => {
   // Cleanup
   // ─────────────────────────────────────────
   const cleanup = () => {
+    processedMessages.clear()
+    pendingTempId = null
     if (selectedConversation.value?.conversationId) {
       socket.leaveConversation(selectedConversation.value.conversationId)
     }
@@ -356,6 +484,7 @@ const loadUnreadCount = async () => {
     sendReply,
     selectConversation,
     markAsRead,
+    unsendMessage,
     loadUnreadCount,
     handleTyping,
     updateConversationStatus,

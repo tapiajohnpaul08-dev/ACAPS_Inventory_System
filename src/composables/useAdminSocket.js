@@ -81,18 +81,21 @@ export function useAdminSocket() {
     }
   }
   
-  const sendMessage = (conversationId, content, attachments = [], replyToMessageId = null) => {
-    if (socketInstance?.connected) {
-      socketInstance.emit('send-message', {
-        conversationId,
-        content,
-        attachments,
-        replyToMessageId
-      })
-      return true
-    }
-    return false
+ // composables/useAdminSocket.js
+const sendMessage = (conversationId, content, attachments = [], replyToMessageId = null) => {
+  console.log('🟢 ADMIN Socket sendMessage with replyToMessageId:', replyToMessageId)
+  if (socketInstance?.connected) {
+    socketInstance.emit('send-message', {
+      conversationId,
+      content,
+      attachments,
+      replyToMessageId
+    })
+    return true
   }
+  console.log('🟢 ADMIN Socket not connected')
+  return false
+}
   
   const sendTyping = (conversationId, isTyping) => {
     if (socketInstance?.connected) {

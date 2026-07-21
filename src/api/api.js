@@ -705,10 +705,21 @@ export const adminChatApi = {
     return handleResponse(adminAxiosInstance.get(url));
   },
 
-  // Send a message
-  async sendMessage(conversationId, content, attachments = []) {
+// Send a message - MUST accept 4 parameters
+  async sendMessage(conversationId, content, attachments = [], replyToMessageId = null) {
+    console.log('📨 adminChatApi.sendMessage called with:', { 
+      conversationId, 
+      content, 
+      attachments: attachments?.length || 0,
+      replyToMessageId 
+    })
     return handleResponse(
-      adminAxiosInstance.post('/chat/admin/messages', { conversationId, content, attachments })
+      adminAxiosInstance.post('/chat/admin/messages', { 
+        conversationId, 
+        content, 
+        attachments,
+        replyToMessageId 
+      })
     );
   },
 
@@ -729,7 +740,12 @@ export const adminChatApi = {
   // Get unread count for admin
   async getUnreadCount() {
     return handleResponse(adminAxiosInstance.get('/chat/admin/unread-count'));
-  }
+  },
+ async unsendMessage(messageId) {
+    return handleResponse(
+      adminAxiosInstance.delete(`/chat/admin/messages/${messageId}`)
+    );
+  },
 };
 
 // =============================================================================

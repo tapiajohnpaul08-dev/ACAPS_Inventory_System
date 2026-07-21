@@ -17,7 +17,6 @@
       <!-- ── Conversation Header ── -->
       <div class="shrink-0 px-5 py-3.5 border-b flex items-center justify-between" style="border-color: #e5e7eb;">
         <div class="flex items-center gap-3">
-          <!-- Avatar -->
           <div
             class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm uppercase shrink-0"
             :style="{ background: getAvatarColor(message.name) }"
@@ -31,12 +30,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- Subject chip -->
           <span class="hidden sm:inline-block text-xs px-2.5 py-1 rounded-full font-medium" style="background: #eff6ff; color: #2563eb;">
             {{ message.subject || 'General Support' }}
           </span>
 
-          <!-- Status dropdown -->
           <select
             :value="message.status"
             @change="emit('status-change', message.conversationId, $event.target.value)"
@@ -70,23 +67,20 @@
 
         <!-- Actual messages -->
         <template v-else>
-          <!-- Date separator helper (groups by day) -->
           <template v-for="(group, gi) in groupedMessages" :key="gi">
-            <!-- Day separator -->
             <div class="flex items-center gap-3 my-3">
               <div class="flex-1 h-px" style="background: #e5e7eb;"></div>
               <span class="text-xs font-medium px-2" style="color: #9ca3af;">{{ group.label }}</span>
               <div class="flex-1 h-px" style="background: #e5e7eb;"></div>
             </div>
 
-            <!-- Messages in this day group -->
             <div
               v-for="msg in group.messages"
               :key="msg.messageId || msg._id"
-              class="flex"
+              class="flex items-start group"
               :class="isAdminMessage(msg) ? 'justify-end' : 'justify-start'"
             >
-              <!-- Customer avatar (left) -->
+              <!-- Avatar for customer (left side) -->
               <div
                 v-if="!isAdminMessage(msg)"
                 class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 shrink-0 self-end mb-1"
@@ -95,52 +89,129 @@
                 {{ (message.name || '?')[0] }}
               </div>
 
-              <!-- Bubble -->
-              <div
-                class="message-bubble max-w-[68%]"
-                :class="isAdminMessage(msg) ? 'bubble-admin' : 'bubble-customer'"
-              >
-                <!-- Text content -->
-                <p v-if="msg.content" class="text-sm leading-relaxed whitespace-pre-wrap break-words">{{ msg.content }}</p>
-
-                <!-- Attachments -->
-               <div v-if="msg.attachments && msg.attachments.length > 0" class="mt-2 space-y-2">
-    <div v-for="(file, idx) in msg.attachments" :key="idx">
-      <div v-if="isImageFile(file)" class="relative">
-        <img 
-          :src="getFileUrl(file)" 
-          :alt="file.name || 'Image'"
-          class="max-w-full max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-          @click="openImageViewer(getFileUrl(file))"
-          @error="handleImageError"
-        />
-        <p class="text-xs mt-1" :class="msg.sender === 'admin' ? 'text-blue-200' : 'text-gray-500'">
-          📷 {{ file.name || 'Image' }}
-        </p>
-      </div>
-      <div v-else class="flex items-center gap-2 p-2 rounded-lg bg-gray-100">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-500">
-          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-        <a :href="getFileUrl(file)" target="_blank" class="text-sm text-blue-600 hover:underline truncate flex-1">
-          {{ file.name || 'Download' }}
-        </a>
-        <span class="text-xs text-gray-400">{{ formatFileSize(file.size) }}</span>
-      </div>
-    </div>
-  </div>
-
-                <!-- Timestamp + read status -->
-                <div class="flex items-center gap-1 mt-1.5" :class="isAdminMessage(msg) ? 'justify-end' : 'justify-start'">
-                  <span class="text-[10px]" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-400'">
-                    {{ formatTime(msg.createdAt || msg.timestamp) }}
-                  </span>
-                  <!-- Read tick for admin messages -->
-                  <svg v-if="isAdminMessage(msg) && msg.isRead" class="w-3 h-3 text-blue-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
+              <!-- Message Bubble with actions -->
+              <div class="flex items-center gap-1.5 max-w-[75%]">
+                <!-- Action buttons - LEFT SIDE (for admin messages only - reply + unsend) -->
+                <div 
+                  v-if="isAdminMessage(msg)"
+                  class="flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <!-- Reply button -->
+                  <button
+                    v-if="!msg.isDeleted"
+                    @click="setReplyTo(msg)"
+                    class="p-1.5 rounded-full hover:bg-blue-200 transition-colors"
+                    title="Reply to this message"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-200 hover:text-white">
+                      <path d="M3 10a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z"/>
+                      <path d="M21 15l-5-5 5-5"/>
+                    </svg>
+                  </button>
+                  
+                  <!-- Unsend button -->
+                  <button
+                    v-if="canUnsendMessage(msg)"
+                    @click="openUnsendModal(msg)"
+                    class="p-1.5 rounded-full hover:bg-red-200 transition-colors"
+                    title="Unsend message"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-200 hover:text-red-300">
+                      <path d="M3 6h18"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      <path d="M10 11v6"/>
+                      <path d="M14 11v6"/>
+                    </svg>
+                  </button>
                 </div>
+
+                <!-- Bubble -->
+                <div
+                  class="message-bubble relative group"
+                  :class="isAdminMessage(msg) ? 'bubble-admin' : 'bubble-customer'"
+                >
+                  <!-- Reply indicator -->
+                  <div v-if="msg.replyTo" class="text-xs mb-1.5 p-1.5 rounded bg-opacity-20" :class="isAdminMessage(msg) ? 'bg-blue-500 bg-opacity-20' : 'bg-gray-100'">
+                    <span class="text-[10px] opacity-70">↩️ Replying to:</span>
+                    <p class="text-xs truncate max-w-[200px]" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-500'">
+                      {{ msg.replyTo.content }}
+                    </p>
+                  </div>
+
+                  <!-- Text content -->
+                  <p v-if="msg.content && !msg.isDeleted" class="text-sm leading-relaxed whitespace-pre-wrap break-words">{{ msg.content }}</p>
+
+                  <!-- Unsend indicator -->
+                  <p v-if="msg.isDeleted" class="text-sm leading-relaxed whitespace-pre-wrap break-words italic" :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-400'">
+                    This message was unsent
+                  </p>
+
+                  <!-- Attachments -->
+                  <div v-if="msg.attachments && msg.attachments.length > 0 && !msg.isDeleted" class="mt-2 space-y-2">
+                    <div v-for="(file, idx) in msg.attachments" :key="idx">
+                      <div v-if="isImageFile(file)" class="relative">
+                        <img 
+                          :src="getFileUrl(file)" 
+                          :alt="file.name || 'Image'"
+                          class="max-w-full max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          @click="openImageViewer(getFileUrl(file))"
+                          @error="handleImageError"
+                        />
+                        <p class="text-xs mt-1" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-500'">
+                          📷 {{ file.name || 'Image' }}
+                        </p>
+                      </div>
+                      <div v-else class="flex items-center gap-2 p-2 rounded-lg" :class="isAdminMessage(msg) ? 'bg-blue-700' : 'bg-gray-100'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-500'">
+                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <a :href="getFileUrl(file)" target="_blank" class="text-sm hover:underline truncate flex-1" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-blue-600'">
+                          {{ file.name || 'Download' }}
+                        </a>
+                        <span class="text-xs" :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-400'">{{ formatFileSize(file.size) }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Timestamp + read status -->
+                  <div class="flex items-center gap-1 mt-1.5" :class="isAdminMessage(msg) ? 'justify-end' : 'justify-start'">
+                    <span class="text-[10px]" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-400'">
+                      {{ formatTime(msg.createdAt || msg.timestamp) }}
+                    </span>
+                    <svg v-if="isAdminMessage(msg) && msg.isRead" class="w-3 h-3 text-blue-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Action buttons - RIGHT SIDE (for customer messages only - reply only) -->
+                <div 
+                  v-if="!isAdminMessage(msg)"
+                  class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <!-- Reply button -->
+                  <button
+                    v-if="!msg.isDeleted"
+                    @click="setReplyTo(msg)"
+                    class="p-1.5 rounded-full hover:bg-blue-200 transition-colors"
+                    title="Reply to this message"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 hover:text-blue-600">
+                      <path d="M3 10a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z"/>
+                      <path d="M21 15l-5-5 5-5"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Avatar for admin (right side) -->
+              <div
+                v-if="isAdminMessage(msg)"
+                class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ml-2 shrink-0 self-end mb-1"
+                style="background: #7c3aed;"
+              >
+                A
               </div>
             </div>
           </template>
@@ -162,10 +233,27 @@
         </template>
       </div>
 
+      <!-- Reply indicator -->
+      <div v-if="replyToMessage" class="border-t px-4 py-2 bg-blue-50 border-blue-100 flex items-center justify-between">
+        <div class="flex items-center gap-2 min-w-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0">
+            <path d="M3 10a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z"/>
+            <path d="M21 15l-5-5 5-5"/>
+          </svg>
+          <div class="min-w-0">
+            <span class="text-xs text-blue-600 font-medium">Replying to:</span>
+            <p class="text-sm text-gray-600 truncate">{{ replyToMessage.content || '📎 Attachment' }}</p>
+          </div>
+        </div>
+        <button @click="clearReply" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
       <!-- ── Reply composer ── -->
       <div class="shrink-0 px-5 py-4 border-t" style="border-color: #e5e7eb; background: #fff;">
-
-        <!-- Pending attachment preview -->
         <div v-if="pendingAttachments.length" class="mb-3 flex flex-wrap gap-2">
           <div
             v-for="(file, idx) in pendingAttachments"
@@ -173,7 +261,6 @@
             class="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs"
             style="background: #f9fafb; border-color: #e5e7eb;"
           >
-            <!-- Image thumbnail -->
             <img
               v-if="file.type?.startsWith('image/')"
               :src="file.preview"
@@ -195,7 +282,6 @@
         </div>
 
         <div class="flex items-end gap-2">
-          <!-- Attachment button -->
           <input
             ref="fileInput"
             type="file"
@@ -216,7 +302,6 @@
             </svg>
           </button>
 
-          <!-- Textarea -->
           <textarea
             v-model="reply"
             ref="textareaRef"
@@ -230,13 +315,11 @@
             @keydown.enter.shift.exact="reply += '\n'"
           ></textarea>
 
-          <!-- Send button -->
           <button
             @click="sendReply"
             :disabled="(!reply.trim() && pendingAttachments.length === 0) || isSending"
             class="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style="background: #2563eb;"
-            :style="(!reply.trim() && !pendingAttachments.length) || isSending ? '' : 'background: #2563eb;'"
           >
             <svg v-if="!isSending" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
@@ -252,10 +335,62 @@
       </div>
     </template>
   </div>
+
+  <!-- Unsend Confirmation Modal -->
+  <Teleport to="body">
+    <div 
+      v-if="unsendModal.show" 
+      class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      @click.self="closeUnsendModal"
+    >
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"></div>
+      
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-300">
+        <div class="text-center">
+          <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
+              <path d="M3 6h18"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <path d="M10 11v6"/>
+              <path d="M14 11v6"/>
+            </svg>
+          </div>
+          
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Unsend Message?</h3>
+          <p class="text-sm text-gray-600 mb-6">
+            This message will be removed for everyone in the conversation.
+            <br>
+            <span class="text-xs text-gray-400">This action cannot be undone.</span>
+          </p>
+          
+          <div class="flex gap-3">
+            <button
+              @click="closeUnsendModal"
+              class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              @click="confirmUnsend"
+              :disabled="isUnsendLoading"
+              class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <svg v-if="isUnsendLoading" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              {{ isUnsendLoading ? 'Unsend...' : 'Yes, Unsend' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
+import { adminChatApi } from '@/api/api'
 
 const props = defineProps({
   message:               { type: Object,   default: null },
@@ -276,9 +411,17 @@ const messagesContainer = ref(null)
 const fileInput         = ref(null)
 const textareaRef       = ref(null)
 const pendingAttachments = ref([])
+const replyToMessage    = ref(null)
 let typingTimeout       = null
 
-// Expose container ref to parent (for scroll coordination)
+// Unsend modal state
+const unsendModal = ref({
+  show: false,
+  message: null
+})
+const isUnsendLoading = ref(false)
+
+// Expose container ref to parent
 watch(messagesContainer, (el) => {
   if (props.messagesContainerRefSetter && el) {
     props.messagesContainerRefSetter(el)
@@ -286,6 +429,88 @@ watch(messagesContainer, (el) => {
 })
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+// ── Reply feature ──
+function setReplyTo(msg) {
+  replyToMessage.value = msg
+  if (textareaRef.value) {
+    textareaRef.value.focus()
+  }
+}
+
+function clearReply() {
+  replyToMessage.value = null
+}
+
+// ── Unsend Modal Methods ─────────────────────────────
+const openUnsendModal = (msg) => {
+  unsendModal.value = {
+    show: true,
+    message: msg
+  }
+}
+
+const closeUnsendModal = () => {
+  unsendModal.value = {
+    show: false,
+    message: null
+  }
+}
+
+const confirmUnsend = async () => {
+  const msg = unsendModal.value.message
+  if (!msg) return
+  
+  isUnsendLoading.value = true
+  
+  try {
+    const messageId = msg.messageId || msg._id
+    const result = await adminChatApi.unsendMessage(messageId)
+    
+    if (result.success) {
+      const index = props.messages.findIndex(m => (m.messageId || m._id) === messageId)
+      if (index !== -1) {
+        const updatedMessages = [...props.messages]
+        updatedMessages[index] = {
+          ...updatedMessages[index],
+          isDeleted: true,
+          content: 'This message was unsent'
+        }
+        emit('reply', { messageId, action: 'unsent' })
+      }
+      
+      showToast('success', 'Message unsent successfully')
+      closeUnsendModal()
+    } else {
+      showToast('error', result.message || 'Failed to unsend message')
+    }
+  } catch (error) {
+    console.error('Failed to unsend message:', error)
+    showToast('error', 'Failed to unsend message')
+  } finally {
+    isUnsendLoading.value = false
+  }
+}
+
+// ── Toast helper ──────────────────────────────────────
+const showToast = (type, message) => {
+  window.dispatchEvent(new CustomEvent('show-toast', { 
+    detail: { type, message } 
+  }))
+}
+
+// ── Check if user can unsend a message ─────────────────
+const canUnsendMessage = (msg) => {
+  if (msg.isDeleted) return false
+  const isAdmin = (msg.senderType || msg.sender) === 'admin'
+  if (!isAdmin) return false
+  
+  const msgTime = new Date(msg.createdAt || msg.timestamp).getTime()
+  const now = Date.now()
+  const ageInMinutes = (now - msgTime) / 60000
+  
+  return ageInMinutes <= 5
+}
 
 async function uploadFiles(files) {
   const formData = new FormData()
@@ -314,7 +539,6 @@ async function uploadFiles(files) {
 }
 
 // ── Scroll to bottom ─────────────────────────────────
-// BUG FIX: actually scroll using the ref
 const scrollToBottom = async () => {
   await nextTick()
   if (messagesContainer.value) {
@@ -322,26 +546,23 @@ const scrollToBottom = async () => {
   }
 }
 
-// Scroll whenever message list grows or conversation changes
 watch(
   () => props.messages.length,
   async () => { await scrollToBottom() },
   { immediate: true }
 )
 
-// Clear input on conversation switch
-// BUG FIX: watch conversationId not msg.id — they are the same field but clarifies intent
 watch(
   () => props.message?.conversationId,
   () => {
     reply.value = ''
     isSending.value = false
+    replyToMessage.value = null
     pendingAttachments.value.forEach((f) => f.preview && URL.revokeObjectURL(f.preview))
     pendingAttachments.value = []
   }
 )
 
-// Auto-resize textarea
 watch(reply, async () => {
   await nextTick()
   if (textareaRef.value) {
@@ -350,7 +571,7 @@ watch(reply, async () => {
   }
 })
 
-// ── Grouped messages (by day) ─────────────────────────
+// ── Grouped messages ─────────────────────────
 const groupedMessages = computed(() => {
   if (!props.messages.length) return []
   const groups = []
@@ -370,8 +591,6 @@ const groupedMessages = computed(() => {
 })
 
 // ── Helpers ───────────────────────────────────────────
-
-// BUG FIX: use senderType from backend, with sender as fallback for old data
 const isAdminMessage = (msg) => (msg.senderType || msg.sender) === 'admin'
 
 const formatTime = (ts) => {
@@ -406,7 +625,6 @@ const getAvatarColor = (name = '') => {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
 
-// Update isImageFile to handle more cases
 function isImageFile(file) {
   if (file.type) {
     return file.type.startsWith('image/')
@@ -426,29 +644,32 @@ function isImageFile(file) {
 function getFileUrl(file) {
   const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
   
-  console.log('Getting file URL for:', file)
+  if (typeof file === 'string') {
+    if (file.startsWith('http')) return file
+    if (file.startsWith('/')) return `${baseURL}${file}`
+    if (file.startsWith('uploads/')) return `${baseURL}/${file}`
+    return `${baseURL}/uploads/chat/${file}`
+  }
   
-  // If there's a path from backend
   if (file.path) {
     let cleanPath = file.path.replace(/^\/+/, '')
-    // If it's already a full URL
     if (cleanPath.startsWith('http')) return cleanPath
-    // If it starts with uploads/
-    if (cleanPath.startsWith('uploads/')) {
-      return `${baseURL}/${cleanPath}`
-    }
-    // Default to chat uploads folder
-    return `${baseURL}/uploads/chat/${cleanPath}`
+    if (cleanPath.startsWith('uploads/')) return `${baseURL}/${cleanPath}`
+    if (cleanPath.startsWith('/uploads/')) return `${baseURL}${cleanPath}`
+    if (!cleanPath.includes('/')) return `${baseURL}/uploads/chat/${cleanPath}`
+    return `${baseURL}/${cleanPath}`
   }
   
-  // If there's a url property (not a blob)
-  if (file.url && !file.url.startsWith('blob:')) {
-    return file.url
+  if (file.url) {
+    if (file.url.startsWith('blob:')) return file.url
+    if (file.url.startsWith('/')) return `${baseURL}${file.url}`
+    if (file.url.startsWith('http')) return file.url
+    if (file.url.startsWith('uploads/')) return `${baseURL}/${file.url}`
+    return `${baseURL}/${file.url}`
   }
   
-  // For local preview while sending
-  if (file instanceof File) {
-    return URL.createObjectURL(file)
+  if (file.name) {
+    return `${baseURL}/uploads/chat/${file.name}`
   }
   
   return ''
@@ -456,7 +677,6 @@ function getFileUrl(file) {
 
 function handleImageError(e) {
   console.error('Image failed to load:', e.target.src)
-  // Show a fallback icon instead of broken image
   e.target.onerror = null
   e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"%3E%3C/rect%3E%3Ccircle cx="8.5" cy="8.5" r="1.5"%3E%3C/circle%3E%3Cpath d="M21 15l-5-5-6 6-3-3-4 4"%3E%3C/path%3E%3C/svg%3E'
   e.target.classList.add('bg-gray-100', 'p-4')
@@ -500,8 +720,7 @@ const onInput = () => {
   }
 }
 
-// ── Send message ──────────────────────────────────────
-// Update sendReply function
+// ── Send message with reply support ──────────────────
 async function sendReply() {
   const content = reply.value.trim()
   if ((pendingAttachments.value.length === 0 && !content) || isSending.value) return
@@ -515,23 +734,28 @@ async function sendReply() {
     
     let attachments = []
     
-    // Upload files first if there are any
     if (pendingAttachments.value.length > 0) {
       attachments = await uploadFiles(pendingAttachments.value)
       console.log('Uploaded attachments:', attachments)
     }
     
     const messageContent = content || (attachments.length > 0 ? '📎 Sent an attachment' : '')
+    const replyToMessageId = replyToMessage.value?.messageId || null
+    
+    console.log('🔵 ADMIN SENDING REPLY - replyToMessage:', replyToMessage.value)
+    console.log('🔵 ADMIN SENDING REPLY - replyToMessageId:', replyToMessageId)
     
     const success = await props.onSendReply(
       props.message.conversationId, 
       messageContent, 
-      attachments
+      attachments,
+      replyToMessageId
     )
     
     if (success) {
       emit('reply', { messageId: props.message.id, text: messageContent })
       reply.value = ''
+      replyToMessage.value = null
       pendingAttachments.value = []
     }
   } catch (error) {
@@ -581,4 +805,30 @@ async function sendReply() {
   to { transform: rotate(360deg); }
 }
 .animate-spin { animation: spin 0.7s linear infinite; }
+
+/* Modal animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-in {
+  animation-duration: 0.3s;
+  animation-fill-mode: both;
+}
+.fade-in {
+  animation-name: fadeIn;
+}
+.zoom-in {
+  animation-name: zoomIn;
+}
 </style>

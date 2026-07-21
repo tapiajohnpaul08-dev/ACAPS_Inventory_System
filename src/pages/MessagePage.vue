@@ -204,9 +204,8 @@ const closeImageViewer = () => {
 
 // ── Handlers ──────────────────────────────────────────
 
-// BUG FIX: forward all 3 arguments (conversationId, content, attachments)
-const handleSendReply = async (conversationId, content, attachments = []) => {
-  const success = await sendReply(conversationId, content, attachments)
+const handleSendReply = async (conversationId, content, attachments = [], replyToMessageId = null) => {
+  const success = await sendReply(conversationId, content, attachments, replyToMessageId)
   if (!success) showToast('error', 'Failed to send message')
   return success
 }
@@ -237,10 +236,24 @@ const refreshConversations = async () => {
 const handleImageViewerEvent = (e) => openImageViewer(e.detail)
 
 // ── Lifecycle ─────────────────────────────────────────
+// In MessagePage.vue - add to onMounted
 onMounted(async () => {
   initSocket()
   await loadConversations()
   window.addEventListener('open-image-viewer', handleImageViewerEvent)
+  
+  // Listen for toast events from MessageDetail
+  window.addEventListener('show-toast', (e) => {
+    if (e.detail) {
+      showToast(e.detail.type, e.detail.message)
+    }
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('open-image-viewer', handleImageViewerEvent)
+  window.removeEventListener('show-toast', () => {})
+  cleanup()
 })
 
 onUnmounted(() => {
