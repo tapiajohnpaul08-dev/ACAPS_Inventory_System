@@ -49,7 +49,6 @@
           <path d="m7.5 4.27 9 5.15"></path>
         </svg>
         <span class="text-sm font-medium">Inventory</span>
-        <!-- Dynamic badge -->
         <span v-if="lowStockCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
           {{ lowStockCount }}
         </span>
@@ -88,7 +87,9 @@
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
         <span class="text-sm font-medium">Messages</span>
-        <span class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">1</span>
+        <span v-if="unreadMessagesCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
+          {{ unreadMessagesCount }}
+        </span>
       </router-link>
 
       <!-- Disabled messages for production -->
@@ -218,14 +219,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { adminAuthApi, adminDashboardApi, inventoryApi } from '@/api/api'
+import { adminAuthApi, inventoryApi, adminChatApi } from '@/api/api'
 
 const route = useRoute()
 const router = useRouter()
 const showUserMenu = ref(false)
 const lowStockCount = ref(0)
+const unreadMessagesCount = ref(0)
 const isLoading = ref(true)
 
 // Get user info from localStorage
@@ -257,15 +259,42 @@ function navigateToInventory() {
 async function fetchLowStockCount() {
   try {
     const response = await inventoryApi.getLowStockItems()
+    
     if (response.success && response.data) {
       lowStockCount.value = response.data.length
-      console.log('Low stock count:', lowStockCount.value)
     }
   } catch (error) {
     console.error('Error fetching low stock count:', error)
     lowStockCount.value = 0
   } finally {
     isLoading.value = false
+  }
+}
+
+// Fetch unread messages count
+async function fetchUnreadMessagesCount() {
+  // Only fetch if user is in Sales department
+  if (adminRole !== 'Sales') {
+    return
+  }
+
+  try {
+    const response = await adminChatApi.getUnreadCount()
+    console.log('Unread messages response:', response)
+    
+    // The backend returns: { success: true, data: { total: totalUnread } }
+    // The handleResponse function wraps it as: { success: true, data: { total: totalUnread } }
+    if (response.success && response.data) {
+      // response.data contains { total: number }
+      const count = response.data.total || response.data.count || 0
+      unreadMessagesCount.value = count
+      console.log('Unread messages count set to:', count)
+    } else {
+      unreadMessagesCount.value = 0
+    }
+  } catch (error) {
+    console.error('Error fetching unread messages count:', error)
+    unreadMessagesCount.value = 0
   }
 }
 
@@ -277,12 +306,60 @@ function handleClickOutside(event) {
   }
 }
 
+// Watch for route changes to refresh unread count
+watch(() => route.path, (newPath) => {
+  if (newPath === '/dashboard/messages' || newPath.startsWith('/dashboard/messages/')) {
+    setTimeout(fetchUnreadMessagesCount, 500)
+  }
+})
+
+// Listen for unread count updates from the chat system
+function handleUnreadCountUpdate(event) {
+  if (event.detail && event.detail.count !== undefined) {
+    unreadMessagesCount.value = event.detail.count
+    console.log('Unread count updated via event:', event.detail.count)
+  }
+}
+
+// Listen for message read events
+function handleMessageRead() {
+  fetchUnreadMessagesCount()
+}
+
+// Listen for new messages from socket
+function handleNewMessage() {
+  fetchUnreadMessagesCount()
+}
+
+let intervalId = null
+
 onMounted(() => {
   fetchLowStockCount()
+  fetchUnreadMessagesCount()
   document.addEventListener('click', handleClickOutside)
+  
+  // Listen for chat events
+  window.addEventListener('unreadCountUpdated', handleUnreadCountUpdate)
+  window.addEventListener('messageRead', handleMessageRead)
+  window.addEventListener('newMessageReceived', handleNewMessage)
+  
+  // Refresh unread count periodically when on messages page
+  intervalId = setInterval(() => {
+    if (route.path === '/dashboard/messages' || route.path.startsWith('/dashboard/messages/')) {
+      fetchUnreadMessagesCount()
+    }
+  }, 30000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('unreadCountUpdated', handleUnreadCountUpdate)
+  window.removeEventListener('messageRead', handleMessageRead)
+  window.removeEventListener('newMessageReceived', handleNewMessage)
+  
+  if (intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
 })
 </script>

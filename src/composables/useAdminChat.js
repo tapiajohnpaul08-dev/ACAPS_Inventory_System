@@ -103,6 +103,9 @@ export function useAdminChat() {
       }
 
       await loadUnreadCount()
+      window.dispatchEvent(new CustomEvent('newMessageReceived', { 
+    detail: { conversationId: message.conversationId }
+  }))
     })
 
     socket.onUserTyping(({ userType, isTyping: typing }) => {
@@ -222,6 +225,9 @@ export function useAdminChat() {
         conv.adminUnreadCount = 0
       }
       await loadUnreadCount()
+      window.dispatchEvent(new CustomEvent('newMessageReceived', { 
+    detail: { conversationId: message.conversationId }
+  }))
     } catch (error) {
       console.error('Failed to mark as read:', error)
     }
@@ -230,16 +236,27 @@ export function useAdminChat() {
   // ─────────────────────────────────────────
   // Unread count
   // ─────────────────────────────────────────
-  const loadUnreadCount = async () => {
-    try {
-      const result = await adminChatApi.getUnreadCount()
-      if (result.success && result.data) {
-        unreadCount.value = result.data.total || result.data.count || 0
-      }
-    } catch (error) {
-      console.error('Failed to load unread count:', error)
+
+const loadUnreadCount = async () => {
+  try {
+    const result = await adminChatApi.getUnreadCount()
+    console.log('loadUnreadCount result:', result)
+    
+    if (result.success && result.data) {
+      // The backend returns: { success: true, data: { total: totalUnread } }
+      const count = result.data.total || result.data.count || 0
+      unreadCount.value = count
+      console.log('Unread count loaded:', count)
+      
+      // Dispatch event for sidebar to update
+      window.dispatchEvent(new CustomEvent('unreadCountUpdated', { 
+        detail: { count } 
+      }))
     }
+  } catch (error) {
+    console.error('Failed to load unread count:', error)
   }
+}
 
   // ─────────────────────────────────────────
   // Select conversation
