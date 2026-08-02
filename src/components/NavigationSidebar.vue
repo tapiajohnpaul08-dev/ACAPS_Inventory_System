@@ -73,7 +73,7 @@
       </router-link>
 
       <!-- Messages - Only for sales department -->
-      <template v-if="adminRole === 'Sales' || adminRole === 'SuperAdmin'">
+      <template v-if="adminRole === 'Sales' || adminRole === 'Super Admin'">
         <router-link 
           to="/dashboard/messages"
           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
@@ -112,7 +112,7 @@
       </div>
 
       <!-- Analytics - Only for sales department -->
-      <template v-if="adminRole === 'Sales' || adminRole === 'SuperAdmin'">
+      <template v-if="adminRole === 'Sales' || adminRole === 'Super Admin'">
         <router-link 
           to="/dashboard/analytics"
           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
@@ -153,8 +153,8 @@
         </svg>
       </div>
 
-      <!-- Accounts - Only for SuperAdmin -->
-      <template v-if="adminRole === 'SuperAdmin'">
+      <!-- Accounts - Only for Super Admin -->
+      <template v-if="adminRole === 'Super Admin'">
         <router-link
           to="/dashboard/accounts"
           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
@@ -170,7 +170,7 @@
         </router-link>
       </template>
 
-      <!-- Disabled Accounts for non-SuperAdmin -->
+      <!-- Disabled Accounts for non-Super Admin -->
       <div
         v-else
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group cursor-not-allowed opacity-60"
@@ -271,7 +271,7 @@ const isLoading = ref(true)
 
 // Get user info from localStorage
 const userName = ref(localStorage.getItem('adminName') || 'Admin User')
-const userRole = ref(localStorage.getItem('adminRole') || 'SuperAdmin')
+const userRole = ref(localStorage.getItem('adminRole') || 'Super Admin')
 const adminRole = userRole.value
 
 const userNameInitial = computed(() => userName.value.charAt(0).toUpperCase())
@@ -280,7 +280,7 @@ const userDepartment = computed(() => {
   switch(adminRole) {
     case 'Sales': return 'Sales Department'
     case 'Production': return 'Production Department'
-    case 'SuperAdmin': return 'Super Administrator'
+    case 'Super Admin': return 'Super Administrator'
     default: return 'Staff'
   }
 })
