@@ -85,7 +85,7 @@ const tabs = computed(() => [
   },
   { 
     key: 'superadmin', 
-    label: 'Super Admins', 
+    label: 'Superior Admins', 
     icon: Shield, 
     count: props.superAdminCount || 0 
   },
