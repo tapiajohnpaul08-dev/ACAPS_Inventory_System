@@ -8,40 +8,29 @@
       >
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal" />
         
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-          <div class="flex items-start justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+          <div class="flex items-start justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-gradient-to-r from-blue-50 to-white rounded-t-2xl">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 leading-snug">
                 Edit {{ accountTypeLabel }} Account
               </h2>
-              <p class="text-sm text-gray-500 mt-0.5">{{ displayName }} - {{ accountId }}</p>
+              <p class="text-sm text-gray-500">{{ displayName }} - {{ accountId }}</p>
             </div>
-            <button @click="closeModal" class="ml-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
-                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-              </svg>
+            <button @click="closeModal" class="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+              <X class="w-5 h-5" />
             </button>
           </div>
 
-          <div class="flex-1 overflow-y-auto px-6 py-5">
-            <form @submit.prevent="handleSubmit" class="space-y-5">
+          <div class="flex-1 overflow-y-auto px-6 py-4">
+            <form @submit.prevent="handleSubmit" class="space-y-4">
               <!-- Basic Information -->
               <div class="border border-gray-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Basic Information</p>
-                <div class="grid grid-cols-2 gap-4">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Basic Information</p>
+                <div class="grid grid-cols-3 gap-3">
                   <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">First Name *</label>
                     <input
                       v-model="formData.firstName"
-                      type="text"
-                      required
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Last Name *</label>
-                    <input
-                      v-model="formData.lastName"
                       type="text"
                       required
                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -55,6 +44,17 @@
                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                   </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Last Name *</label>
+                    <input
+                      v-model="formData.lastName"
+                      type="text"
+                      required
+                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3 mt-3">
                   <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">User ID</label>
                     <input
@@ -73,23 +73,23 @@
                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                   </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
-                    <div class="flex items-center gap-2">
-                      <span class="text-gray-500 border border-gray-200 px-3 py-2 rounded-lg bg-gray-50 text-sm">+63</span>
-                      <input
-                        v-model="formData.phone"
-                        type="tel"
-                        class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      />
-                    </div>
+                </div>
+                <div class="mt-3">
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
+                  <div class="flex items-center gap-2">
+                    <span class="text-gray-500 border border-gray-200 px-3 py-2 rounded-lg bg-gray-50 text-sm">+63</span>
+                    <input
+                      v-model="formData.phone"
+                      type="tel"
+                      class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
                   </div>
                 </div>
               </div>
 
               <!-- Customer Specific Fields -->
               <div v-if="accountType === 'customers'" class="border border-gray-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Customer Details</p>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Customer Details</p>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-1">Company Name</label>
                   <input
@@ -103,7 +103,7 @@
 
               <!-- Admin Specific Fields -->
               <div v-if="accountType !== 'customers'" class="border border-gray-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Employment Details</p>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Employment Details</p>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-1">Admin Role</label>
                   <select
@@ -112,6 +112,7 @@
                   >
                     <option value="Sales">Sales Department</option>
                     <option value="Production">Production Department</option>
+                    <option value="SuperAdmin">Super Admin</option>
                   </select>
                 </div>
               </div>
@@ -135,7 +136,7 @@
                 <button
                   type="button"
                   @click="closeModal"
-                  class="flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors text-sm font-semibold"
+                  class="flex-1 py-2.5 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors text-sm font-semibold"
                 >
                   Cancel
                 </button>
@@ -159,6 +160,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { X } from 'lucide-vue-next'
 import FeedbackModal from './FeedbackModal.vue'
 
 const props = defineProps({
@@ -259,7 +261,6 @@ function showFeedback(type, title, message) {
 async function handleSubmit() {
   isSubmitting.value = true
   
-  // Prepare updated account data matching backend structure
   const updatedAccount = {
     firstName: formData.value.firstName,
     middleName: formData.value.middleName,
@@ -268,23 +269,18 @@ async function handleSubmit() {
     phone: formData.value.phone
   }
   
-  // Add customer specific fields
   if (props.accountType === 'customers') {
     updatedAccount.companyName = formData.value.companyName
-  } 
-  // Add admin specific fields
-  else {
+  } else {
     updatedAccount.role = formData.value.role
   }
   
-  // Emit update event
   emit('update', updatedAccount)
   
   showFeedback('success', 'Success', `${accountTypeLabel.value} account has been updated successfully!`)
   
   isSubmitting.value = false
   
-  // Close modal after a short delay
   setTimeout(() => {
     closeModal()
   }, 1500)

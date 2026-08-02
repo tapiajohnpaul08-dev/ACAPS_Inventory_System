@@ -73,29 +73,30 @@
       </router-link>
 
       <!-- Messages - Only for sales department -->
-      <router-link 
-        v-if="adminRole === 'Sales'" 
-        to="/dashboard/messages"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
-        :class="isActive('/dashboard/messages')
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-message-square w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-        <span class="text-sm font-medium">Messages</span>
-        <span v-if="unreadMessagesCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
-          {{ unreadMessagesCount }}
-        </span>
-      </router-link>
+      <template v-if="adminRole === 'Sales' || adminRole === 'SuperAdmin'">
+        <router-link 
+          to="/dashboard/messages"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
+          :class="isActive('/dashboard/messages')
+            ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-message-square w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="text-sm font-medium">Messages</span>
+          <span v-if="unreadMessagesCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
+            {{ unreadMessagesCount }}
+          </span>
+        </router-link>
+      </template>
 
-      <!-- Disabled messages for production -->
+      <!-- Disabled messages for non-Sales -->
       <div 
         v-else 
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
         title="Messages are only available for Sales department"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -104,32 +105,37 @@
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
         <span class="text-sm font-medium">Messages</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5 ml-auto text-gray-300">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
       </div>
 
       <!-- Analytics - Only for sales department -->
-      <router-link 
-        v-if="adminRole === 'Sales'" 
-        to="/dashboard/analytics"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
-        :class="isActive('/dashboard/analytics')
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-chart-column w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-          <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
-          <path d="M18 17V9"></path>
-          <path d="M13 17V5"></path>
-          <path d="M8 17v-3"></path>
-        </svg>
-        <span class="text-sm font-medium">Analytics</span>
-      </router-link>
+      <template v-if="adminRole === 'Sales' || adminRole === 'SuperAdmin'">
+        <router-link 
+          to="/dashboard/analytics"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
+          :class="isActive('/dashboard/analytics')
+            ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-chart-column w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
+            <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+            <path d="M18 17V9"></path>
+            <path d="M13 17V5"></path>
+            <path d="M8 17v-3"></path>
+          </svg>
+          <span class="text-sm font-medium">Analytics</span>
+        </router-link>
+      </template>
 
-      <!-- Disabled analytics for production -->
+      <!-- Disabled analytics for non-Sales -->
       <div 
         v-else 
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
         title="Analytics are only available for Sales department"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -141,22 +147,49 @@
           <path d="M8 17v-3"></path>
         </svg>
         <span class="text-sm font-medium">Analytics</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5 ml-auto text-gray-300">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
       </div>
 
-      <!-- Accounts -->
-      <router-link
-        to="/dashboard/accounts"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
+      <!-- Accounts - Only for SuperAdmin -->
+      <template v-if="adminRole === 'SuperAdmin'">
+        <router-link
+          to="/dashboard/accounts"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
+          :class="isActive('/dashboard/accounts') 
+            ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' 
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="text-sm font-medium">Accounts</span>
+        </router-link>
+      </template>
+
+      <!-- Disabled Accounts for non-SuperAdmin -->
+      <div
+        v-else
+        class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group cursor-not-allowed opacity-60"
         :class="isActive('/dashboard/accounts') 
           ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' 
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
+          : 'text-gray-400 hover:bg-gray-100 hover:text-gray-900'"
+        title="Access restricted to Super Admin only"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
         </svg>
         <span class="text-sm font-medium">Accounts</span>
-      </router-link>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 ml-auto">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+      </div>
     </nav>
 
     <!-- Low Stock Alert Box -->
@@ -190,7 +223,7 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-gray-900 truncate">{{ userName }}</p>
-            <p class="text-xs text-gray-400 truncate">{{ adminRole === 'Sales' ? 'Sales Department' : 'Production Department' }}</p>
+            <p class="text-xs text-gray-400 truncate">{{ userDepartment }}</p>
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -202,6 +235,12 @@
         <!-- User dropdown menu -->
         <div v-if="showUserMenu"
           class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-10">
+          <!-- Show user info in dropdown -->
+          <div class="px-4 py-3 border-b border-gray-100">
+            <p class="text-sm font-semibold text-gray-900">{{ userName }}</p>
+            <p class="text-xs text-gray-400">{{ userDepartment }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">Role: {{ adminRole }}</p>
+          </div>
           <button @click="logout"
             class="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -232,10 +271,19 @@ const isLoading = ref(true)
 
 // Get user info from localStorage
 const userName = ref(localStorage.getItem('adminName') || 'Admin User')
-const userRole = ref(localStorage.getItem('adminRole') || 'production')
+const userRole = ref(localStorage.getItem('adminRole') || 'SuperAdmin')
 const adminRole = userRole.value
 
 const userNameInitial = computed(() => userName.value.charAt(0).toUpperCase())
+
+const userDepartment = computed(() => {
+  switch(adminRole) {
+    case 'Sales': return 'Sales Department'
+    case 'Production': return 'Production Department'
+    case 'SuperAdmin': return 'Super Administrator'
+    default: return 'Staff'
+  }
+})
 
 function isActive(path) {
   return route.path === path
@@ -282,10 +330,7 @@ async function fetchUnreadMessagesCount() {
     const response = await adminChatApi.getUnreadCount()
     console.log('Unread messages response:', response)
     
-    // The backend returns: { success: true, data: { total: totalUnread } }
-    // The handleResponse function wraps it as: { success: true, data: { total: totalUnread } }
     if (response.success && response.data) {
-      // response.data contains { total: number }
       const count = response.data.total || response.data.count || 0
       unreadMessagesCount.value = count
       console.log('Unread messages count set to:', count)
@@ -363,3 +408,18 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+</style>

@@ -1,3 +1,4 @@
+<!-- src/modals/AddDriverModal.vue -->
 <template>
   <Teleport to="body">
     <Transition name="modal">
@@ -8,13 +9,14 @@
       >
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="close" />
         
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
-          <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center rounded-t-2xl">
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto">
+          <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center rounded-t-2xl bg-gradient-to-r from-orange-50 to-white">
             <div>
-              <h2 class="text-lg font-semibold text-gray-900">
-                {{ userType === 'customer' ? 'Add New Customer' : 'Add New Admin' }}
+              <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Truck class="w-5 h-5 text-orange-600" />
+                Add New Driver
               </h2>
-              <p class="text-sm text-gray-500">Fill in the details below</p>
+              <p class="text-sm text-gray-500">Enter driver and vehicle details</p>
             </div>
             <button @click="close" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
               <X class="w-5 h-5" />
@@ -22,7 +24,7 @@
           </div>
 
           <form @submit.prevent="submit" class="p-6 space-y-4">
-            <!-- Name Fields -->
+            <!-- Name Fields - 3 columns -->
             <div class="grid grid-cols-3 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
@@ -30,7 +32,7 @@
                   v-model="form.firstName"
                   type="text"
                   required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="John"
                 />
               </div>
@@ -39,7 +41,7 @@
                 <input
                   v-model="form.middleName"
                   type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="Santos"
                 />
               </div>
@@ -49,13 +51,13 @@
                   v-model="form.lastName"
                   type="text"
                   required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="Doe"
                 />
               </div>
             </div>
 
-            <!-- Username & Email -->
+            <!-- Account Credentials - 2 columns -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
@@ -63,7 +65,7 @@
                   v-model="form.username"
                   type="text"
                   required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="johndoe"
                 />
               </div>
@@ -73,49 +75,80 @@
                   v-model="form.email"
                   type="email"
                   required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="john@example.com"
                 />
               </div>
             </div>
 
-            <!-- Phone -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span class="text-gray-400">(optional)</span></label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
               <div class="flex items-center gap-2">
                 <span class="text-gray-500 border border-gray-300 px-3 py-2 rounded-lg bg-gray-50 text-sm">+63</span>
                 <input
-                  v-model="form.phone"
+                  v-model="form.phoneNumber"
                   type="tel"
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  required
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="912 345 6789"
                 />
               </div>
             </div>
 
-            <!-- Company Name (Customer only) -->
-            <div v-if="userType === 'customer'">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Company Name <span class="text-gray-400">(optional)</span></label>
-              <input
-                v-model="form.companyName"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="ABC Corporation"
-              />
+            <!-- Vehicle Information -->
+            <div class="border-t border-gray-200 pt-4">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Car class="w-4 h-4 text-gray-500" />
+                Vehicle Information
+              </h3>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number *</label>
+                  <input
+                    v-model="form.plateNumber"
+                    type="text"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase text-sm"
+                    placeholder="ABC-1234"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Vehicle Description</label>
+                  <input
+                    v-model="form.vehicleDescription"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    placeholder="e.g., White Isuzu Elf"
+                  />
+                </div>
+              </div>
             </div>
 
-            <!-- Role (Admin only) -->
-            <div v-if="userType === 'admin'">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-              <select
-                v-model="form.role"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="Sales">Sales Staff</option>
-                <option value="Production">Production Staff</option>
-                <option value="Super Admin">Super Admin</option>
-              </select>
+            <!-- Availability & Password - 2 columns -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Availability</label>
+                <div class="flex items-center gap-3 pt-1">
+                  <input
+                    v-model="form.available"
+                    type="checkbox"
+                    class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <label class="text-sm text-gray-700">Available for delivery</label>
+                </div>
+              </div>
+              <!-- <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Max Orders</label>
+                <input
+                  v-model.number="form.maxOrders"
+                  type="number"
+                  min="1"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                  placeholder="5"
+                />
+                <p class="text-xs text-gray-400 mt-1">Maximum orders driver can handle</p>
+              </div> -->
             </div>
 
             <!-- Password -->
@@ -127,9 +160,9 @@
                     v-model="form.password"
                     :type="showPassword ? 'text' : 'password'"
                     required
-                    minlength="8"
-                    class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="At least 8 characters"
+                    minlength="6"
+                    class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    placeholder="Min 6 characters"
                   />
                   <button
                     type="button"
@@ -148,7 +181,7 @@
                     v-model="form.confirmPassword"
                     :type="showConfirmPassword ? 'text' : 'password'"
                     required
-                    class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                     placeholder="Confirm password"
                   />
                   <button
@@ -180,10 +213,10 @@
               <button
                 type="submit"
                 :disabled="isSubmitting"
-                class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-semibold"
+                class="flex-1 px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-semibold"
               >
                 <span v-if="isSubmitting" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isSubmitting ? 'Creating...' : 'Create Account' }}
+                {{ isSubmitting ? 'Creating...' : 'Add Driver' }}
               </button>
             </div>
           </form>
@@ -191,25 +224,15 @@
       </div>
     </Transition>
   </Teleport>
-
-  <!-- Feedback Modal -->
-  <FeedbackModal
-    v-model:show="feedback.show"
-    :type="feedback.type"
-    :title="feedback.title"
-    :message="feedback.message"
-    @close="feedback.show = false"
-  />
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
-import { X, Eye, EyeOff } from 'lucide-vue-next'
-import FeedbackModal from './FeedbackModal.vue'
+import { X, Truck, Car, Eye, EyeOff } from 'lucide-vue-next'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  userType: { type: String, required: true } // 'customer' or 'admin'
+  loading: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'submit'])
@@ -220,9 +243,11 @@ const form = ref({
   lastName: '',
   username: '',
   email: '',
-  phone: '',
-  companyName: '',
-  role: 'Sales',
+  phoneNumber: '',
+  plateNumber: '',
+  vehicleDescription: '',
+  available: true,
+  maxOrders: 5,
   password: '',
   confirmPassword: ''
 })
@@ -232,13 +257,7 @@ const showConfirmPassword = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 
-const feedback = ref({
-  show: false,
-  type: 'success',
-  title: '',
-  message: ''
-})
-
+// Reset form when modal opens
 watch(() => props.show, (newVal) => {
   if (newVal) {
     form.value = {
@@ -247,9 +266,11 @@ watch(() => props.show, (newVal) => {
       lastName: '',
       username: '',
       email: '',
-      phone: '',
-      companyName: '',
-      role: 'Sales',
+      phoneNumber: '',
+      plateNumber: '',
+      vehicleDescription: '',
+      available: true,
+      maxOrders: 5,
       password: '',
       confirmPassword: ''
     }
@@ -283,12 +304,20 @@ function validateForm() {
     errorMessage.value = 'Enter a valid email address'
     return false
   }
+  if (!form.value.phoneNumber.trim()) {
+    errorMessage.value = 'Phone number is required'
+    return false
+  }
+  if (!form.value.plateNumber.trim()) {
+    errorMessage.value = 'Plate number is required'
+    return false
+  }
   if (!form.value.password) {
     errorMessage.value = 'Password is required'
     return false
   }
-  if (form.value.password.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters'
+  if (form.value.password.length < 6) {
+    errorMessage.value = 'Password must be at least 6 characters'
     return false
   }
   if (form.value.password !== form.value.confirmPassword) {
@@ -296,15 +325,6 @@ function validateForm() {
     return false
   }
   return true
-}
-
-function showFeedback(type, title, message) {
-  feedback.value = {
-    show: true,
-    type,
-    title,
-    message
-  }
 }
 
 async function submit() {
@@ -319,19 +339,15 @@ async function submit() {
     lastName: form.value.lastName,
     username: form.value.username,
     email: form.value.email,
-    phone: form.value.phone,
+    phoneNumber: form.value.phoneNumber,
+    plateNumber: form.value.plateNumber.toUpperCase(),
+    vehicleDescription: form.value.vehicleDescription,
+    available: form.value.available,
+    maxOrders: form.value.maxOrders || 5,
     password: form.value.password
   }
   
-  if (props.userType === 'customer') {
-    submitData.companyName = form.value.companyName
-  } else {
-    submitData.role = form.value.role
-  }
-  
   emit('submit', submitData)
-  
-  showFeedback('success', 'Success', `${props.userType === 'customer' ? 'Customer' : 'Admin'} account has been created successfully!`)
   
   isSubmitting.value = false
   

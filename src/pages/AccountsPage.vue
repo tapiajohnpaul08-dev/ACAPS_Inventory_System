@@ -3,17 +3,16 @@
     <div class="mb-8 flex justify-between items-center">
       <div>
         <h1 class="text-2xl font-black text-gray-900">Account Management</h1>
-        <p class="text-sm text-gray-500 mt-1">Manage customers and admin accounts</p>
+        <p class="text-sm text-gray-500 mt-1">Manage customers, admin accounts, and drivers</p>
       </div>
       <button
+        v-if="activeTab !== 'customers'"
         :disabled="activeTab === 'customers'"
         @click="openAddModal"
-        class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors shadow-sm bg-blue-600 hover:bg-blue-700 text-white"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Add New User
+        <Plus class="w-4 h-4" />
+        Add New {{ activeTab === 'drivers' ? 'Driver' : activeTab === 'sales' ? ' Staff' : activeTab === 'production' ? ' Staff' : 'Admin' }}
       </button>
     </div>
 
@@ -23,6 +22,8 @@
       :customers-count="customers.length"
       :sales-count="salesAdmins.length"
       :production-count="productionAdmins.length"
+      :super-admin-count="superAdmins.length"
+      :drivers-count="drivers.length"
     />
     
     <AccountsTable 
@@ -35,7 +36,7 @@
 
     <!-- View Details Modal -->
     <AccountDetailModal
-      v-if="selectedAccount"
+      v-if="selectedAccount && activeTab !== 'drivers'"
       :show="true"
       :account="selectedAccount"
       :account-type="activeTab"
@@ -43,23 +44,49 @@
       @edit="openEditModal"
     />
 
+    <!-- Driver Detail Modal -->
+    <DriverDetailModal
+      v-if="selectedAccount && activeTab === 'drivers'"
+      :show="true"
+      :driver="selectedAccount"
+      @close="closeDetailModal"
+      @edit="openEditModal"
+    />
+
     <!-- Edit Account Modal -->
     <EditAccountModal
-      v-if="editAccount"
+      v-if="editAccount && activeTab !== 'drivers'"
       :show="true"
       :account="editAccount"
-      :account-type="activeTab === 'customers' ? 'customer' : (activeTab === 'sales' ? 'sales' : 'production')"
+      :account-type="activeTab === 'customers' ? 'customer' : activeTab"
       @close="closeEditModal"
       @update="handleUpdateAccount"
     />
 
+    <!-- Edit Driver Modal -->
+    <EditDriverModal
+      v-if="editAccount && activeTab === 'drivers'"
+      :show="true"
+      :driver="editAccount"
+      @close="closeEditModal"
+      @submit="handleUpdateDriver"
+    />
+
     <!-- Add User Modal -->
     <AddUserModal
-      v-if="showAddModal"
+      v-if="showAddModal && activeTab !== 'drivers'"
       :show="true"
       :user-type="activeTab === 'customers' ? 'customer' : 'admin'"
       @close="closeAddModal"
       @submit="handleAddUser"
+    />
+
+    <!-- Add Driver Modal -->
+    <AddDriverModal
+      v-if="showAddModal && activeTab === 'drivers'"
+      :show="true"
+      @close="closeAddModal"
+      @submit="handleAddDriver"
     />
 
     <!-- Loading State -->
@@ -86,12 +113,8 @@
       class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold max-w-sm"
       :class="toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'"
     >
-      <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M20 6L9 17l-5-5"/>
-      </svg>
-      <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
-      </svg>
+      <CheckCircle v-if="toast.type === 'success'" class="w-4 h-4" />
+      <XCircle v-else class="w-4 h-4" />
       {{ toast.message }}
     </div>
   </Transition>
@@ -100,13 +123,17 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { Plus, CheckCircle, XCircle } from 'lucide-vue-next'
 import AccountsSearch from '@/components/accounts/AccountsSearch.vue'
 import AccountsTable from '@/components/accounts/AccountsTable.vue'
 import AccountDetailModal from '@/modals/AccountDetailModal.vue'
 import EditAccountModal from '@/modals/EditAccountModal.vue'
 import AddUserModal from '@/modals/AddUserModal.vue'
+import AddDriverModal from '@/modals/DriverModals/AddDriverModal.vue'
+import EditDriverModal from '@/modals/DriverModals/EditDriverModal.vue'
+import DriverDetailModal from '@/modals/DriverModals/DriverDetailModal.vue'
 import ConfirmModal from '@/modals/ConfirmModal.vue'
-import { adminCustomerApi, adminManagementApi } from '@/api/api'
+import { adminCustomerApi, adminManagementApi, adminDriverApi } from '@/api/api'
 
 const route = useRoute()
 const searchQuery = ref('')
@@ -120,9 +147,13 @@ const loading = ref(false)
 const customers = ref([])
 const salesAdmins = ref([])
 const productionAdmins = ref([])
+const superAdmins = ref([])
+const drivers = ref([])
 
 const toast = ref({ show: false, type: 'success', message: '' })
 const confirmModal = ref({ show: false, type: 'danger', title: '', message: '', onConfirm: null })
+
+let toastTimer = null
 
 function showToast(type, message) {
   clearTimeout(toastTimer)
@@ -135,6 +166,10 @@ if (route.query.tab === 'sales') {
   activeTab.value = 'sales'
 } else if (route.query.tab === 'production') {
   activeTab.value = 'production'
+} else if (route.query.tab === 'drivers') {
+  activeTab.value = 'drivers'
+} else if (route.query.tab === 'superadmin') {
+  activeTab.value = 'superadmin'
 }
 
 // Load data based on active tab
@@ -161,10 +196,15 @@ const loadData = async () => {
           createdAt: customer.createdAt
         }))
       }
-    } else if (activeTab.value === 'sales' || activeTab.value === 'production') {
+    } else if (activeTab.value === 'sales' || activeTab.value === 'production' || activeTab.value === 'superadmin') {
       const response = await adminManagementApi.getAllAdmins()
       if (response.success && response.data) {
-        const role = activeTab.value === 'sales' ? 'Sales' : 'Production'
+        const roleMap = {
+          'sales': 'Sales',
+          'production': 'Production',
+          'superadmin': 'Super Admin'
+        }
+        const role = roleMap[activeTab.value]
         const filteredAdmins = response.data.filter(admin => admin.role === role)
         
         const adminList = filteredAdmins.map(admin => ({
@@ -177,16 +217,40 @@ const loadData = async () => {
           phone: admin.phone || 'N/A',
           status: 'Active',
           role: admin.role,
-          department: admin.role === 'Sales' ? 'Sales Department' : 'Production Department',
+          department: admin.role === 'Sales' ? 'Sales Department' : admin.role === 'Production' ? 'Production Department' : 'Super Admin',
           lastLogin: admin.lastLogin ? new Date(admin.lastLogin).toLocaleDateString() : 'N/A',
           createdAt: admin.createdAt
         }))
         
         if (activeTab.value === 'sales') {
           salesAdmins.value = adminList
-        } else {
+        } else if (activeTab.value === 'production') {
           productionAdmins.value = adminList
+        } else if (activeTab.value === 'superadmin') {
+          superAdmins.value = adminList
         }
+      }
+    } else if (activeTab.value === 'drivers') {
+      const response = await adminDriverApi.getAllDrivers()
+      if (response.success && response.data) {
+        drivers.value = response.data.map(driver => ({
+          id: driver._id,
+          driverId: driver.driverId,
+          firstName: driver.firstName,
+          middleName: driver.middleName || '',
+          lastName: driver.lastName,
+          name: `${driver.firstName || ''} ${driver.lastName || ''}`.trim(),
+          email: driver.email,
+          phoneNumber: driver.phoneNumber,
+          username: driver.username,
+          plateNumber: driver.plateNumber,
+          vehicleDescription: driver.vehicleDescription || '',
+          available: driver.available,
+          status: driver.available ? 'Available' : 'Unavailable',
+          assignedOrders: driver.assignedOrdersCount || 0,
+          lastLogin: driver.lastLogin ? new Date(driver.lastLogin).toLocaleDateString() : 'N/A',
+          createdAt: driver.createdAt
+        }))
       }
     }
   } catch (error) {
@@ -214,6 +278,10 @@ const accountsByTab = computed(() => {
       return salesAdmins.value
     case 'production':
       return productionAdmins.value
+    case 'superadmin':
+      return superAdmins.value
+    case 'drivers':
+      return drivers.value
     default:
       return []
   }
@@ -224,11 +292,14 @@ const filteredAccounts = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
   if (!q) return accountsByTab.value
   
-  return accountsByTab.value.filter(account =>
-    account.name.toLowerCase().includes(q) ||
-    account.email.toLowerCase().includes(q) ||
-    account.userId.toLowerCase().includes(q)
-  )
+  return accountsByTab.value.filter(account => {
+    const name = account.name || account.firstName || ''
+    const email = account.email || ''
+    const id = account.userId || account.driverId || ''
+    return name.toLowerCase().includes(q) ||
+           email.toLowerCase().includes(q) ||
+           id.toLowerCase().includes(q)
+  })
 })
 
 function openAddModal() {
@@ -270,7 +341,7 @@ async function handleAddUser(userData) {
         email: userData.email,
         password: userData.password,
         phone: userData.phone || '',
-        role: activeTab.value === 'sales' ? 'Sales' : 'Production'
+        role: activeTab.value === 'sales' ? 'Sales' : activeTab.value === 'production' ? 'Production' : 'Super Admin'
       })
       
       if (response.success) {
@@ -289,6 +360,25 @@ async function handleAddUser(userData) {
   }
 }
 
+async function handleAddDriver(driverData) {
+  loading.value = true
+  try {
+    const response = await adminDriverApi.createDriver(driverData)
+    
+    if (response.success) {
+      await loadData()
+      showToast('success', `Driver "${driverData.firstName} ${driverData.lastName}" has been created successfully!`)
+      closeAddModal()
+    } else {
+      showToast('error', response.message || 'Failed to create driver')
+    }
+  } catch (error) {
+    console.error('Error creating driver:', error)
+    showToast('error', 'Failed to create driver. Please try again.')
+  } finally {
+    loading.value = false
+  }
+}
 
 function handleSelect(account) {
   selectedAccount.value = account
@@ -324,30 +414,50 @@ async function handleUpdateAccount(updatedAccount) {
       
       if (response.success) {
         await loadData()
-        alert(`Customer "${updatedAccount.name}" has been updated successfully!`)
+        showToast('success', `Customer "${updatedAccount.name}" has been updated successfully!`)
         closeEditModal()
       } else {
-        alert(response.message || 'Failed to update customer')
+        showToast('error', response.message || 'Failed to update customer')
       }
     } else {
       const response = await adminManagementApi.updateAdmin(updatedAccount.userId, {
         firstName: updatedAccount.firstName,
         lastName: updatedAccount.lastName,
         phone: updatedAccount.phone,
-        role: activeTab.value === 'sales' ? 'Sales' : 'Production'
+        role: activeTab.value === 'sales' ? 'Sales' : activeTab.value === 'production' ? 'Production' : 'Super Admin'
       })
       
       if (response.success) {
         await loadData()
-        alert(`Admin "${updatedAccount.name}" has been updated successfully!`)
+        showToast('success', `Admin "${updatedAccount.name}" has been updated successfully!`)
         closeEditModal()
       } else {
-        alert(response.message || 'Failed to update admin')
+        showToast('error', response.message || 'Failed to update admin')
       }
     }
   } catch (error) {
     console.error('Error updating account:', error)
-    alert('Failed to update account. Please try again.')
+    showToast('error', 'Failed to update account. Please try again.')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleUpdateDriver(driverData) {
+  loading.value = true
+  try {
+    const response = await adminDriverApi.updateDriver(editAccount.value.driverId, driverData)
+    
+    if (response.success) {
+      await loadData()
+      showToast('success', `Driver "${driverData.firstName} ${driverData.lastName}" has been updated successfully!`)
+      closeEditModal()
+    } else {
+      showToast('error', response.message || 'Failed to update driver')
+    }
+  } catch (error) {
+    console.error('Error updating driver:', error)
+    showToast('error', 'Failed to update driver. Please try again.')
   } finally {
     loading.value = false
   }
@@ -358,7 +468,7 @@ async function handleDelete(account) {
     show: true,
     type: 'danger',
     title: 'Delete Account',
-    message: `Are you sure you want to delete ${account.name}? This action cannot be undone.`,
+    message: `Are you sure you want to delete ${account.name || account.firstName}? This action cannot be undone.`,
     onConfirm: () => confirmDelete(account)
   }
 }
@@ -374,6 +484,14 @@ async function confirmDelete(account) {
         showToast('success', `Customer "${account.name}" has been deleted successfully!`)
       } else {
         showToast('error', response.message || 'Failed to delete customer')
+      }
+    } else if (activeTab.value === 'drivers') {
+      const response = await adminDriverApi.deleteDriver(account.driverId)
+      if (response.success) {
+        await loadData()
+        showToast('success', `Driver "${account.firstName} ${account.lastName}" has been deleted successfully!`)
+      } else {
+        showToast('error', response.message || 'Failed to delete driver')
       }
     } else {
       const response = await adminManagementApi.deleteAdmin(account.userId)
@@ -392,7 +510,6 @@ async function confirmDelete(account) {
   }
 }
 
-let toastTimer = null
 
 </script>
 
@@ -402,5 +519,18 @@ let toastTimer = null
 }
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
 }
 </style>

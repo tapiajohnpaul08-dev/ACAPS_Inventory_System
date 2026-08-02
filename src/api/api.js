@@ -748,6 +748,65 @@ export const adminChatApi = {
   },
 };
 
+// src/admin/api/api.js
+// Add this section after the adminChatApi section
+
+// =============================================================================
+// DRIVER MANAGEMENT
+// =============================================================================
+
+export const adminDriverApi = {
+  // Get all drivers
+  async getAllDrivers(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return handleResponse(
+      adminAxiosInstance.get(`/drivers/all${params ? `?${params}` : ''}`)
+    );
+  },
+
+  // Get available drivers
+  async getAvailableDrivers() {
+    return handleResponse(
+      adminAxiosInstance.get('/drivers/available')
+    );
+  },
+
+  // Get driver by ID
+  async getDriverById(driverId) {
+    return handleResponse(
+      adminAxiosInstance.get(`/drivers/${driverId}`)
+    );
+  },
+
+  // Create driver
+  async createDriver(driverData) {
+    return handleResponse(
+      adminAxiosInstance.post('/drivers/create', driverData)
+    );
+  },
+
+  // Update driver
+  async updateDriver(driverId, driverData) {
+    return handleResponse(
+      adminAxiosInstance.put(`/drivers/${driverId}`, driverData)
+    );
+  },
+
+  // Delete driver
+  async deleteDriver(driverId) {
+    return handleResponse(
+      adminAxiosInstance.delete(`/drivers/${driverId}`)
+    );
+  },
+
+  // Toggle driver availability
+  async toggleAvailability(driverId) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/drivers/${driverId}/toggle-availability`)
+    );
+  },
+};
+
 // =============================================================================
 // Export all APIs
 // =============================================================================
@@ -766,5 +825,6 @@ export default {
   alerts: alertApi,
   stockMovement: stockMovementApi,
   legacyInventory: legacyInventoryApi,
-  chat: adminChatApi
+  chat: adminChatApi,
+  drivers: adminDriverApi
 };

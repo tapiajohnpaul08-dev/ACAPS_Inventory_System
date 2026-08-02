@@ -3,11 +3,11 @@
     <div class="overflow-x-auto">
       <table class="w-full min-w-[800px]">
         <thead class="bg-gray-50 border-b border-gray-100">
-          <tr class="text-left text-xs font-bold text-gray-400 uppercase tracking-wider ">
+          <tr class="text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
             <th
               v-for="col in columns"
               :key="col"
-              class="px-5 py-3 text-center text-xs font-bold  text-gray-400 uppercase tracking-wider"
+              class="px-5 py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider"
             >
               {{ col }}
             </th>
@@ -28,12 +28,12 @@
                   :class="getAvatarColor(type)"
                 >
                   <span class="text-white font-bold text-sm">
-                    {{ account.name.charAt(0) }}
+                    {{ getInitials(account) }}
                   </span>
                 </div>
                 <div>
-                  <p class="text-sm font-semibold text-gray-900">{{ account.name }}</p>
-                  <p class="text-xs text-gray-400">{{ account.userId }}</p>
+                  <p class="text-sm font-semibold text-gray-900">{{ getDisplayName(account) }}</p>
+                  <p class="text-xs text-gray-400">{{ account.userId || account.driverId || 'N/A' }}</p>
                 </div>
               </div>
             </td>
@@ -41,45 +41,58 @@
             <!-- Contact Info Column -->
             <td class="px-5 py-4">
               <p class="text-sm text-gray-900">{{ account.email }}</p>
-              <p class="text-xs text-gray-400">{{ account.phone || 'N/A' }}</p>
+              <p class="text-xs text-gray-400">{{ account.phone || account.phoneNumber || 'N/A' }}</p>
             </td>
 
             <!-- Status Column -->
             <td class="px-5 py-4">
               <span
                 class="px-2.5 py-1 rounded-full text-xs font-semibold"
-                :class="account.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                :class="getStatusClass(account)"
               >
-                {{ account.status }}
+                {{ getStatus(account) }}
               </span>
             </td>
 
-            <!-- Dynamic Column: Orders (for customers) OR Role/Department (for admins) -->
+            <!-- Dynamic Column -->
             <td v-if="type === 'customers'" class="px-5 py-4">
               <p class="text-sm font-semibold text-gray-900">{{ account.ordersCount || 0 }}</p>
               <p class="text-xs text-gray-400">orders</p>
             </td>
+            <!-- In the driver table, update the dynamic columns -->
+<td v-else-if="type === 'drivers'" class="px-5 py-4">
+  <p class="text-sm font-semibold text-gray-900">{{ account.plateNumber || 'N/A' }}</p>
+  <p class="text-xs text-gray-400">{{ account.vehicleDescription || 'No vehicle' }}</p>
+</td>
+
+<td v-else-if="type === 'drivers'" class="px-5 py-4">
+  <p class="text-sm text-gray-600">{{ account.assignedOrdersCount || 0 }}/{{ account.maxOrders || 5 }}</p>
+  <p class="text-xs text-gray-400">active orders</p>
+</td>
             <td v-else class="px-5 py-4">
               <p class="text-sm font-semibold text-gray-900">{{ account.role || 'N/A' }}</p>
               <p class="text-xs text-gray-400">{{ account.department || '' }}</p>
             </td>
 
-            <!-- Dynamic Column: Total Spent (for customers) OR Last Login (for admins) -->
+            <!-- Dynamic Column 2 -->
             <td v-if="type === 'customers'" class="px-5 py-4">
               <p class="text-sm font-bold text-blue-600">{{ account.totalSpent || '₱0' }}</p>
             </td>
-            
+            <td v-else-if="type === 'drivers'" class="px-5 py-4">
+              <p class="text-sm text-gray-600">{{ account.assignedOrders || 0 }}</p>
+              <p class="text-xs text-gray-400">assigned orders</p>
+            </td>
 
-            <!-- Last Active / Last Login Column -->
+            <!-- Last Active Column -->
             <td class="px-5 py-4">
               <p class="text-sm text-gray-600">{{ account.lastActive || account.lastLogin || 'N/A' }}</p>
             </td>
 
             <!-- Actions Column -->
             <td class="px-5 py-4">
-              <div class="flex items-center justify-center gap-2">
+              <div class="flex items-center justify-center gap-1">
                 <button
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600
+                  class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600
                          hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors"
                   @click.stop="handleEdit(account)"
                 >
@@ -89,7 +102,7 @@
                   Edit
                 </button>
                 <button
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600
+                  class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600
                          hover:bg-red-100 hover:text-red-800 rounded-lg transition-colors"
                   @click.stop="handleDelete(account)"
                 >
@@ -102,7 +115,7 @@
             </td>
           </tr>
         </tbody>
-       </table>
+      </table>
     </div>
   </div>
 </template>
@@ -112,7 +125,7 @@ import { computed } from 'vue'
 
 const props = defineProps({
   accounts: { type: Array, required: true },
-  type: { type: String, required: true } // 'customers', 'sales', or 'production'
+  type: { type: String, required: true } // 'customers', 'sales', 'production', or 'drivers'
 })
 
 const emit = defineEmits(['select', 'edit', 'delete'])
@@ -121,10 +134,26 @@ const emit = defineEmits(['select', 'edit', 'delete'])
 const columns = computed(() => {
   if (props.type === 'customers') {
     return ['Account', 'Contact Info', 'Status', 'Orders', 'Total Spent', 'Last Active', 'Actions']
+  } else if (props.type === 'drivers') {
+    return ['Account', 'Contact Info', 'Status', 'Plate/Vehicle', 'Assigned Orders', 'Last Active', 'Actions']
   } else {
     return ['Account', 'Contact Info', 'Status', 'Role/Department', 'Last Login', 'Actions']
   }
 })
+
+function getInitials(account) {
+  const name = getDisplayName(account)
+  return name.charAt(0).toUpperCase()
+}
+
+function getDisplayName(account) {
+  if (account.name) return account.name
+  if (account.firstName) {
+    const middle = account.middleName ? ` ${account.middleName} ` : ' '
+    return `${account.firstName}${middle}${account.lastName || ''}`.trim()
+  }
+  return 'Unknown'
+}
 
 function getAvatarColor(type) {
   switch (type) {
@@ -134,9 +163,30 @@ function getAvatarColor(type) {
       return 'bg-green-600'
     case 'production':
       return 'bg-purple-600'
+    case 'drivers':
+      return 'bg-orange-600'
     default:
       return 'bg-gray-600'
   }
+}
+
+function getStatus(account) {
+  if (account.status) return account.status
+  if (account.available !== undefined) {
+    return account.available ? 'Available' : 'Unavailable'
+  }
+  return 'Active'
+}
+
+function getStatusClass(account) {
+  const status = getStatus(account).toLowerCase()
+  const classes = {
+    'active': 'bg-green-100 text-green-700',
+    'available': 'bg-green-100 text-green-700',
+    'inactive': 'bg-red-100 text-red-700',
+    'unavailable': 'bg-red-100 text-red-700'
+  }
+  return classes[status] || 'bg-gray-100 text-gray-700'
 }
 
 function handleSelect(account) {

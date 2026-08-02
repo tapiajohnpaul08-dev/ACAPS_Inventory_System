@@ -35,12 +35,12 @@
         @update:statusFilter="statusFilter = $event"
       />
       <OrdersTable
-  :orders="filteredOrders"
-  :is-loading="isLoading"
-  @select="handleSelect"
-  @edit="handleEdit"
-  @delete="handleDelete"
-/>
+        :orders="filteredOrders"
+        :is-loading="isLoading"
+        @select="handleSelect"
+        @edit="handleEdit"
+        @delete="handleDelete"
+      />
     </template>
 
     <OrderDetailModal
@@ -143,7 +143,7 @@ function transformOrder(order) {
     deliveryAddress: order.fulfillment?.deliveryAddress || order.address || '',
     supplyType: order.isProvided ? 'Own Cups' : 'Company Cups',
     expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
-    receivingMode: order.receivingMode ,
+    receivingMode: order.receivingMode,
     // Dates
     date: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
     orderedAt: order.orderedAt,
@@ -159,8 +159,6 @@ function transformOrder(order) {
     isProvided: order.isProvided || false,
   }
 }
-
-
 
 // ─── Load orders ──────────────────────────────────────────────────────────
 async function loadOrders() {
@@ -226,8 +224,8 @@ function handleEdit(order) {
 }
 function closeEditModal() { editOrder.value = null }
 
-// Called from OrderDetailModal when admin clicks a status step
-async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails }) {
+// In OrdersPage.vue - handleStatusUpdate function
+async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails, driverId }) {
   try {
     const validStatuses = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed', 'Cancelled'];
     const normalizedStatus = validStatuses.find(s => s.toLowerCase() === status.toLowerCase()) || status;
@@ -241,9 +239,22 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
       payload.productionSchedule = productionSchedule
     }
     
-    if (driverDetails) {
-      payload.driverDetails = driverDetails
+    // IMPORTANT: Only send driverId as string, not the whole object
+    if (driverId) {
+      payload.driverId = driverId // This should be a string like "DRV-6837"
     }
+    
+    // If you want to include driver details for history, add them separately
+    if (driverDetails) {
+      payload.driverDetails = {
+        driverName: driverDetails.driverName,
+        driverPhone: driverDetails.driverPhone,
+        plateNumber: driverDetails.plateNumber,
+        truckDescription: driverDetails.truckDescription
+      }
+    }
+    
+    console.log('Updating order status with payload:', payload)
     
     const response = await adminOrderApi.updateOrderStatus(orderId, payload)
     
@@ -265,7 +276,6 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
 // Called from OrderDetailModal when admin clicks a payment button
 async function handlePaymentUpdate({ orderId, paymentStatus, amountPaid }) {
   try {
-    // Ensure payment status matches backend enum
     const validPayments = ['Paid', 'Partial', 'Unpaid'];
     const normalizedPayment = validPayments.find(p => p.toLowerCase() === paymentStatus.toLowerCase()) || paymentStatus;
     

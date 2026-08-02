@@ -20,22 +20,17 @@
       </div>
     </div>
 
-    <div class="flex">
+    <div class="flex overflow-x-auto">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        class="flex-1 px-6 py-3.5 text-sm font-semibold transition-all flex items-center justify-center gap-2"
+        class="flex-shrink-0 px-6 py-3.5 text-sm font-semibold transition-all flex items-center justify-center gap-2"
         :class="activeTab === tab.key
           ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/60'
           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
         @click="switchTab(tab.key)"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          style="width:16px;height:16px">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
+        <component :is="tab.icon" class="w-4 h-4" />
         {{ tab.label }}
         <span 
           class="px-1.5 py-0.5 text-white text-xs rounded-full font-bold"
@@ -51,13 +46,16 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Users, UserCog, Settings, Truck, Shield } from 'lucide-vue-next'
 
 const props = defineProps({
   search: { type: String, default: '' },
   activeTab: { type: String, default: 'customers' },
   customersCount: { type: Number, default: 0 },
   salesCount: { type: Number, default: 0 },
-  productionCount: { type: Number, default: 0 }
+  productionCount: { type: Number, default: 0 },
+  driversCount: { type: Number, default: 0 },
+  superAdminCount: { type: Number, default: 0 }
 })
 
 const emit = defineEmits(['update:search', 'update:activeTab'])
@@ -65,17 +63,44 @@ const emit = defineEmits(['update:search', 'update:activeTab'])
 const router = useRouter()
 const route = useRoute()
 
+// Use computed with proper reactivity - it will re-run when props change
 const tabs = computed(() => [
-  { key: 'customers', label: 'Customers', count: props.customersCount },
-  { key: 'sales', label: 'Sales Admin', count: props.salesCount },
-  { key: 'production', label: 'Production Admin', count: props.productionCount }
+  { 
+    key: 'customers', 
+    label: 'Customers', 
+    icon: Users, 
+    count: props.customersCount || 0 
+  },
+  { 
+    key: 'sales', 
+    label: 'Sales Staff', 
+    icon: UserCog, 
+    count: props.salesCount || 0 
+  },
+  { 
+    key: 'production', 
+    label: 'Production Staff', 
+    icon: Settings, 
+    count: props.productionCount || 0 
+  },
+  { 
+    key: 'superadmin', 
+    label: 'Super Admins', 
+    icon: Shield, 
+    count: props.superAdminCount || 0 
+  },
+  { 
+    key: 'drivers', 
+    label: 'Drivers', 
+    icon: Truck, 
+    count: props.driversCount || 0 
+  }
 ])
 
 function switchTab(tabKey) {
   if (tabKey === props.activeTab) return
   emit('update:activeTab', tabKey)
   
-  // Update URL without reloading the page
   router.replace({
     query: { ...route.query, tab: tabKey }
   })

@@ -91,6 +91,19 @@
                   </svg>
                   Edit
                 </button>
+                <button
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600
+                         hover:bg-red-100 hover:text-red-800 rounded-lg transition-colors"
+                  @click.stop="$emit('delete', order)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="width:13px;height:13px">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                  Delete
+                </button>
               </div>
             </td>
           </tr>
@@ -100,7 +113,7 @@
             </td>
           </tr>
         </tbody>
-       </table>
+      </table>
     </div>
     
     <!-- Pagination -->
@@ -150,7 +163,7 @@ const props = defineProps({
   isLoading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['select', 'edit'])
+const emit = defineEmits(['select', 'edit', 'delete'])
 
 const currentPage = ref(1)
 const itemsPerPage = 10
@@ -199,12 +212,11 @@ function goToPage(page) {
   currentPage.value = page
 }
 
-// Reset to first page when orders change (e.g., after filter/search)
+// Reset to first page when orders change
 watch(() => props.orders.length, () => {
   currentPage.value = 1
 })
 
-// Also reset when orders array reference changes
 watch(() => props.orders, () => {
   currentPage.value = 1
 }, { deep: true })
@@ -268,7 +280,3 @@ function paymentBadge(payment) {
   return classes[payment] ?? 'bg-gray-100 text-gray-500'
 }
 </script>
-
-<style scoped>
-/* Add any additional styles if needed */
-</style>

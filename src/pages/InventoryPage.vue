@@ -59,6 +59,7 @@
       :supply-categories="supplyCategoryValues"
       :category-counts="categoryCounts"
       @update:activeTab="handleTabChange"
+
     />
     
     <InventoryTable 
@@ -179,6 +180,7 @@ import ConfirmModal from '@/modals/ConfirmModal.vue'
 import { productApi, supplyApi, inventoryApi, alertApi } from '@/api/api'
 import StockMovementModal from '@/modals/StockMovementModal.vue'
 
+const userRole = ref('')
 const route = useRoute()
 const searchQuery = ref('')
 const activeTab = ref('products')
@@ -203,6 +205,21 @@ const highlightedItemIdFromQuery = ref(null)
 const products = ref([])
 const supplies = ref([])
 const inventoryItems = ref([])
+
+
+
+// Get user role from localStorage
+const getUserRole = () => {
+  try {
+    const adminUser = localStorage.getItem('adminUser')
+    if (adminUser) {
+      const user = JSON.parse(adminUser)
+      userRole.value = user.role || ''
+    }
+  } catch (error) {
+    console.error('Error getting user role:', error)
+  }
+}
 
 // Categories for supplies
 const supplyCategories = [
@@ -447,6 +464,7 @@ const loadInventory = async () => {
 
 // Initialize on mount
 onMounted(async () => {
+    getUserRole()
   await Promise.all([loadProducts(), loadSupplies(), loadInventory()])
   
   if (route.query.search) {

@@ -31,7 +31,7 @@ const computedStats = computed(() => {
   const inProd = orders.filter(o => o.status === 'In Production').length
   const completed = orders.filter(o => o.status === 'Completed').length
   const cancelled = orders.filter(o => o.status === 'Cancelled').length
-  const unpaid = orders.filter(o => o.payment === 'unpaid').length
+  const unpaid = orders.filter(o => o.payment === 'Unpaid').length
   const revenue = orders
     .filter(o => o.status === 'Completed')
     .reduce((sum, o) => sum + (o.rawAmount || 0), 0)

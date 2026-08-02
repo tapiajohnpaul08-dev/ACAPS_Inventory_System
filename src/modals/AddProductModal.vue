@@ -62,6 +62,10 @@
                   >
                     <option value="Plastic Cups">Plastic Cups</option>
                     <option value="Paper Cups">Paper Cups</option>
+                    <option value="Containers">Containers</option>
+                    <option value="Bags">Bags</option>
+                    <option value="Utensils">Utensils</option>
+                    <option value="Straws">Straws</option>
                   </select>
                 </div>
               </div>
