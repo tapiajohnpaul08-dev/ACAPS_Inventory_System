@@ -71,16 +71,25 @@
               </div>
             </div>
 
-            <!-- Image Upload Section -->
+            <!-- Image Upload Section with Cloudinary -->
             <div class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow duration-200">
               <div class="flex items-center gap-2 mb-4">
                 <div class="w-1 h-5 bg-purple-600 rounded-full"></div>
                 <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Product Image</p>
+                <span v-if="uploadProgress > 0 && uploadProgress < 100" class="ml-auto text-xs text-blue-600">
+                  Uploading... {{ uploadProgress }}%
+                </span>
               </div>
               
               <div class="space-y-4">
+                <!-- Image Preview with Cloudinary optimization -->
                 <div v-if="imagePreview" class="relative inline-block">
-                  <img :src="imagePreview" alt="Preview" class="h-32 w-32 object-cover rounded-lg border-2 border-gray-200" />
+                  <img 
+                    :src="optimizedPreview" 
+                    alt="Preview" 
+                    class="h-32 w-32 object-cover rounded-lg border-2 border-gray-200"
+                    @error="handleImageError"
+                  />
                   <button
                     type="button"
                     @click="removeImage"
@@ -90,6 +99,10 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
+                  <!-- Cloudinary badge -->
+                  <div v-if="isCloudinaryUrl(imagePreview)" class="absolute bottom-0 left-0 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-tr-lg rounded-bl-lg">
+                    Cloudinary
+                  </div>
                 </div>
                 
                 <div 
@@ -112,10 +125,15 @@
                   </svg>
                   <p class="text-sm text-gray-600">Click or drag and drop to upload image</p>
                   <p class="text-xs text-gray-400 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                  <p class="text-xs text-blue-500 mt-1">Uploaded to Cloudinary for fast delivery</p>
                 </div>
                 
-                <div v-if="uploadProgress > 0 && uploadProgress < 100" class="w-full bg-gray-200 rounded-full h-2">
-                  <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="{ width: uploadProgress + '%' }"></div>
+                <!-- Upload progress bar -->
+                <div v-if="uploadProgress > 0 && uploadProgress < 100" class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div 
+                    class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300" 
+                    :style="{ width: uploadProgress + '%' }"
+                  ></div>
                 </div>
                 
                 <p v-if="uploadError" class="text-xs text-red-500">{{ uploadError }}</p>
@@ -249,7 +267,7 @@
                     {{ size.showBulk ? 'Hide' : 'Show' }} Bulk Pricing
                   </button>
                   
-                  <!-- Bulk prices - auto-update when base price changes, but editable -->
+                  <!-- Bulk prices - auto-update when base price changes -->
                   <div v-if="size.showBulk" class="grid grid-cols-2 gap-3 mt-2 animate-slide-down">
                     <div>
                       <label class="block text-xs text-gray-500 mb-1">500 pcs</label>
@@ -355,7 +373,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { getOptimizedImage, isCloudinaryUrl } from '@/utils/imageUtils'
 
 const props = defineProps({
   show: { type: Boolean, default: false }
@@ -383,6 +402,17 @@ const form = ref({
 
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+
+// Computed: optimized preview for Cloudinary images
+const optimizedPreview = computed(() => {
+  if (!imagePreview.value) return null
+  // If it's a Cloudinary URL, optimize it
+  if (isCloudinaryUrl(imagePreview.value)) {
+    return getOptimizedImage(imagePreview.value, { width: 200, height: 200, crop: 'fill' })
+  }
+  // If it's a local blob URL, use as is
+  return imagePreview.value
+})
 
 // Format currency for display
 function formatCurrency(value) {
@@ -480,9 +510,9 @@ function handleDrop(event) {
 }
 
 function validateAndSetImage(file) {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    uploadError.value = 'Only JPG, JPEG, and PNG files are allowed'
+    uploadError.value = 'Only JPG, JPEG, PNG, GIF, and WEBP files are allowed'
     return
   }
   
@@ -501,12 +531,21 @@ function validateAndSetImage(file) {
   reader.readAsDataURL(file)
 }
 
+function handleImageError() {
+  console.warn('Image failed to load, using fallback')
+  // If Cloudinary image fails, try without optimization
+  if (isCloudinaryUrl(imagePreview.value)) {
+    imagePreview.value = imagePreview.value
+  }
+}
+
 function removeImage() {
   imageFile.value = null
   imagePreview.value = ''
   if (fileInput.value) {
     fileInput.value.value = ''
   }
+  uploadError.value = ''
 }
 
 function removeSize(index) {
@@ -562,25 +601,33 @@ async function submit() {
     bulkPrices: size.bulkPrices
   }))))
   
+  // Simulate upload progress
   const interval = setInterval(() => {
     if (uploadProgress.value < 90) {
       uploadProgress.value += 10
     }
   }, 200)
   
-  emit('submit', formData)
-  
-  clearInterval(interval)
-  uploadProgress.value = 100
-  
-  setTimeout(() => {
-    uploadProgress.value = 0
-    isSubmitting.value = false
-  }, 500)
+  try {
+    emit('submit', formData)
+  } catch (error) {
+    console.error('Error submitting form:', error)
+    errorMessage.value = 'Failed to create product. Please try again.'
+  } finally {
+    clearInterval(interval)
+    uploadProgress.value = 100
+    
+    setTimeout(() => {
+      uploadProgress.value = 0
+      isSubmitting.value = false
+    }, 500)
+  }
 }
 
 function close() {
-  emit('close')
+  if (!isSubmitting.value) {
+    emit('close')
+  }
 }
 </script>
 

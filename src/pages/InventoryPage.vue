@@ -795,18 +795,16 @@ async function handleAddProduct(productData) {
   try {
     const response = await productApi.createProduct(productData)
     if (response.success) {
-      console.log('added product:', productData);
+      console.log('✅ Product created with Cloudinary image:', response.data.image)
       await loadProducts() 
-      // showFeedback('success', 'Success', `Product "${productData.name}" has been created successfully.`)
-      showFeedback('success', 'Success', `Product  has been created successfully.`)
-
+      showFeedback('success', 'Success', `Product "${response.data.name || 'New Product'}" has been created successfully with Cloudinary image!`)
       closeAddProductModal()
     } else {
       showFeedback('error', 'Error', response.message || 'Failed to create product')
     }
   } catch (error) {
     console.error('Error creating product:', error)
-    showFeedback('error', 'Error', 'Failed to create product')
+    showFeedback('error', 'Error', error.response?.data?.message || 'Failed to create product')
   } finally {
     loadingProducts.value = false
   }
