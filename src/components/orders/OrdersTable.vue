@@ -4,13 +4,37 @@
       <table class="w-full min-w-[800px]">
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th v-for="col in columns" :key="col"
-              class="px-5 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
-              {{ col }}
+            <th
+              v-for="col in columns"
+              :key="col.key"
+              class="px-5 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider select-none"
+              :class="[
+                col.align === 'right' ? 'text-right' : 'text-left',
+                col.sortable ? 'cursor-pointer hover:text-gray-600' : '',
+              ]"
+              @click="col.sortable && toggleSort(col.key)"
+            >
+              <span class="inline-flex items-center gap-1" :class="col.align === 'right' ? 'flex-row-reverse' : ''">
+                {{ col.label }}
+                <span v-if="col.sortable" class="inline-flex flex-col leading-none text-[8px]">
+                  <span :class="sortKey === col.key && sortDir === 'asc' ? 'text-blue-600' : 'text-gray-300'">▲</span>
+                  <span :class="sortKey === col.key && sortDir === 'desc' ? 'text-blue-600' : 'text-gray-300'">▼</span>
+                </span>
+              </span>
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50">
+
+        <!-- Loading skeleton: shown while refreshing an already-populated table -->
+        <tbody v-if="isLoading && orders.length > 0" class="divide-y divide-gray-50">
+          <tr v-for="n in skeletonRows" :key="`skeleton-${n}`" class="animate-pulse">
+            <td v-for="col in columns" :key="col.key" class="px-5 py-4">
+              <div class="h-3.5 bg-gray-100 rounded w-3/4"></div>
+            </td>
+          </tr>
+        </tbody>
+
+        <tbody v-else class="divide-y divide-gray-50">
           <tr
             v-for="order in paginatedOrders"
             :key="order.id"
@@ -50,11 +74,11 @@
                 </div>
               </div>
             </td>
-            <td class="px-5 py-4">
+            <td class="px-5 py-4 text-right">
               <p class="text-sm text-gray-700 font-medium">{{ (order.qty || 0).toLocaleString() }}</p>
               <p class="text-xs text-gray-400">pcs</p>
             </td>
-            <td class="px-5 py-4">
+            <td class="px-5 py-4 text-right">
               <p class="text-sm font-bold text-gray-900">{{ order.amount || '₱0' }}</p>
             </td>
             <td class="px-5 py-4">
@@ -63,7 +87,7 @@
             <td class="px-5 py-4">
               <span
                 class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold"
-                :class="statusBadge(order.status).bg"
+                :class="getStatusBadgeClass(order.status)"
               >
                 <component :is="getStatusIcon(order.status)" v-if="getStatusIcon(order.status)" style="width:14px;height:14px" />
                 {{ order.status || 'Pending' }}
@@ -72,9 +96,9 @@
             <td class="px-5 py-4">
               <span
                 class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-bold capitalize"
-                :class="paymentBadge(order.payment)"
+                :class="getPaymentBadgeClass(order.payment)"
               >
-                {{ order.payment || 'unpaid' }}
+                {{ order.payment || 'Unpaid' }}
               </span>
             </td>
             <td class="px-5 py-4">
@@ -115,11 +139,14 @@
         </tbody>
       </table>
     </div>
-    
+
     <!-- Pagination -->
     <div v-if="orders.length > 0" class="px-5 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between flex-wrap gap-4">
-      <div class="text-sm text-gray-500">
-        Showing {{ startIndex + 1 }} to {{ endIndex }} of {{ orders.length }} orders
+      <div class="flex items-center gap-3">
+        <div class="text-sm text-gray-500">
+          Showing {{ startIndex + 1 }} to {{ endIndex }} of {{ orders.length }} orders
+        </div>
+        
       </div>
       <div class="flex gap-2">
         <button
@@ -156,127 +183,98 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { h } from 'vue'
+import { getStatusBadgeClass, getPaymentBadgeClass, getStatusIcon } from '@/composables/useOrderStatus'
 
 const props = defineProps({
   orders: { type: Array, required: true },
-  isLoading: { type: Boolean, default: false }
+  isLoading: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['select', 'edit', 'delete'])
+defineEmits(['select', 'edit', 'delete'])
 
+// ─── Columns (declarative -> also drives sorting + alignment) ─────────────
+const columns = [
+  { key: 'orderId', label: 'Order ID', sortable: true },
+  { key: 'customer', label: 'Customer', sortable: true },
+  { key: 'product', label: 'Product', sortable: false },
+  { key: 'qty', label: 'Qty', sortable: true, align: 'right' },
+  { key: 'rawAmount', label: 'Amount', sortable: true, align: 'right' },
+  { key: 'orderedAt', label: 'Date', sortable: true },
+  { key: 'status', label: 'Status', sortable: true },
+  { key: 'payment', label: 'Payment', sortable: false },
+  { key: 'actions', label: 'Actions', sortable: false },
+]
+
+// ─── Sorting ────────────────────────────────────────────────────────────
+const sortKey = ref('orderedAt')
+const sortDir = ref('desc') // 'asc' | 'desc'
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortDir.value = 'asc'
+  }
+}
+
+const sortedOrders = computed(() => {
+  const list = [...props.orders]
+  const key = sortKey.value
+  const dir = sortDir.value === 'asc' ? 1 : -1
+
+  list.sort((a, b) => {
+    let av = a[key]
+    let bv = b[key]
+
+    // Dates need to compare as timestamps, not lexically
+    if (key === 'orderedAt') {
+      av = av ? new Date(av).getTime() : 0
+      bv = bv ? new Date(bv).getTime() : 0
+    }
+    if (typeof av === 'string' && typeof bv === 'string') {
+      return av.localeCompare(bv) * dir
+    }
+    if ((av ?? 0) < (bv ?? 0)) return -1 * dir
+    if ((av ?? 0) > (bv ?? 0)) return 1 * dir
+    return 0
+  })
+  return list
+})
+
+// ─── Pagination ─────────────────────────────────────────────────────────
 const currentPage = ref(1)
-const itemsPerPage = 10
+const itemsPerPage = ref(10)
+const pageSizeOptions = [10, 25, 50, 100]
+const skeletonRows = computed(() => Math.min(itemsPerPage.value, 6))
 
-const columns = ['Order ID', 'Customer', 'Product', 'Qty', 'Amount', 'Date', 'Status', 'Payment', 'Actions']
-
-// Pagination computed properties
-const totalPages = computed(() => Math.ceil(props.orders.length / itemsPerPage))
-
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage)
-const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, props.orders.length))
-
-const paginatedOrders = computed(() => {
-  return props.orders.slice(startIndex.value, endIndex.value)
-})
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedOrders.value.length / itemsPerPage.value)))
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage.value, sortedOrders.value.length))
+const paginatedOrders = computed(() => sortedOrders.value.slice(startIndex.value, endIndex.value))
 
 const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 5
   let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
   let end = Math.min(totalPages.value, start + maxVisible - 1)
-  
   if (end - start + 1 < maxVisible) {
     start = Math.max(1, end - maxVisible + 1)
   }
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
+  for (let i = start; i <= end; i++) pages.push(i)
   return pages
 })
 
-function prevPage() {
-  if (currentPage.value > 1) {
-    currentPage.value--
-  }
-}
+function prevPage() { if (currentPage.value > 1) currentPage.value-- }
+function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++ }
+function goToPage(page) { currentPage.value = page }
 
-function nextPage() {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-  }
-}
-
-function goToPage(page) {
-  currentPage.value = page
-}
-
-// Reset to first page when orders change
-watch(() => props.orders.length, () => {
+// Reset to first page whenever the underlying list, sort, or page size changes
+watch(() => [props.orders.length, sortKey.value, sortDir.value, itemsPerPage.value], () => {
   currentPage.value = 1
 })
-
-watch(() => props.orders, () => {
-  currentPage.value = 1
-}, { deep: true })
-
-function getStatusIcon(status) {
-  const icons = {
-    'Completed': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
-      h('path', { d: 'M21.801 10A10 10 0 1 1 17 3.335' }),
-      h('path', { d: 'm9 11 3 3L22 4' })
-    ]),
-    'In Production': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
-      h('path', { d: 'M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z' }),
-      h('path', { d: 'M12 22V12' }),
-      h('polyline', { points: '3.29 7 12 12 20.71 7' }),
-      h('path', { d: 'm7.5 4.27 9 5.15' })
-    ]),
-    'Scheduled': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
-      h('path', { d: 'M8 2v4' }),
-      h('path', { d: 'M16 2v4' }),
-      h('rect', { width: '18', height: '18', x: '3', y: '4', rx: '2' }),
-      h('path', { d: 'M3 10h18' })
-    ]),
-    'Out for Delivery': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
-      h('path', { d: 'M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2' }),
-      h('path', { d: 'M15 18H9' }),
-      h('path', { d: 'M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14' }),
-      h('circle', { cx: '17', cy: '18', r: '2' }),
-      h('circle', { cx: '7', cy: '18', r: '2' })
-    ]),
-    'Pending': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
-      h('circle', { cx: '12', cy: '12', r: '10' }),
-      h('polyline', { points: '12 6 12 12 16 14' })
-    ]),
-    'Cancelled': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
-      h('circle', { cx: '12', cy: '12', r: '10' }),
-      h('path', { d: 'm15 9-6 6' }),
-      h('path', { d: 'm9 9 6 6' })
-    ])
-  }
-  return icons[status] || null
-}
-
-function statusBadge(status) {
-  const classes = {
-    Completed:       { bg: 'bg-green-100 text-green-700' },
-    'In Production': { bg: 'bg-blue-100 text-blue-700' },
-    Scheduled:       { bg: 'bg-purple-100 text-purple-700' },
-    Pending:         { bg: 'bg-yellow-100 text-yellow-700' },
-    'Out for Delivery': { bg: 'bg-cyan-100 text-cyan-700' },
-    Cancelled:       { bg: 'bg-gray-100 text-gray-500' },
-  }
-  return classes[status] ?? { bg: 'bg-gray-100 text-gray-500' }
-}
-
-function paymentBadge(payment) {
-  const classes = {
-    paid:    'bg-green-100 text-green-700',
-    partial: 'bg-orange-100 text-orange-700',
-    unpaid:  'bg-red-100 text-red-700',
-  }
-  return classes[payment] ?? 'bg-gray-100 text-gray-500'
-}
+// Clamp current page if it's now out of range (e.g. after deleting the last item on a page)
+watch(totalPages, (max) => {
+  if (currentPage.value > max) currentPage.value = max
+})
 </script>

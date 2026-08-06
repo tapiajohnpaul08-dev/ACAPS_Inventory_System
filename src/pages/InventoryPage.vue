@@ -1,3 +1,4 @@
+<!-- InventoryPage.vue -->
 <template>
   <div class="p-8">
     <div class="mb-8 flex justify-between items-center flex-wrap gap-4">
@@ -59,7 +60,6 @@
       :supply-categories="supplyCategoryValues"
       :category-counts="categoryCounts"
       @update:activeTab="handleTabChange"
-
     />
     
     <InventoryTable 
@@ -73,7 +73,7 @@
       @stock-out="openStockMovementModal"
     />
     
-    <!-- Rest of your modals remain the same -->
+    <!-- Modals -->
     <ItemDetailModal
       :is-open="modalOpen"
       :item="selectedItem"
@@ -114,6 +114,7 @@
       :show="true"
       @close="closeAddProductModal"
       @submit="handleAddProduct"
+      @success="handleProductSuccess"
     />
     
     <FeedbackModal
@@ -143,6 +144,7 @@
       @close="closeStockMovementModal"
       @submit="handleStockMovement"
     />
+
   </div>
 
   <Transition name="toast">
@@ -166,7 +168,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick  } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import InventorySearch from '@/components/inventory/InventorySearch.vue'
 import InventoryTable from '@/components/inventory/InventoryTable.vue'
@@ -205,8 +207,6 @@ const highlightedItemIdFromQuery = ref(null)
 const products = ref([])
 const supplies = ref([])
 const inventoryItems = ref([])
-
-
 
 // Get user role from localStorage
 const getUserRole = () => {
@@ -249,12 +249,10 @@ const categoryCounts = computed(() => {
   const counts = {}
   
   if (activeTab.value === 'products') {
-    // Count products by category
     productCategories.value.forEach(cat => {
       counts[cat] = products.value.filter(p => p.category === cat).length
     })
   } else {
-    // Count supplies by category
     supplyCategoryValues.value.forEach(cat => {
       counts[cat] = allSupplyItems.value.filter(item => item.category === cat).length
     })
@@ -339,7 +337,6 @@ const displayItems = computed(() => {
 const filteredItems = computed(() => {
   let items = displayItems.value || []
   
-  // Filter by search (name only)
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim()
     items = items.filter(item => 
@@ -347,7 +344,6 @@ const filteredItems = computed(() => {
     )
   }
   
-  // Filter by category
   if (categoryFilter.value !== 'all') {
     items = items.filter(item => {
       const itemCategory = activeTab.value === 'products' ? item.category : item.category
@@ -355,7 +351,6 @@ const filteredItems = computed(() => {
     })
   }
   
-  // Filter by status (for both products and supplies)
   if (statusFilter.value !== 'all') {
     items = items.filter(item => {
       if (statusFilter.value === 'in-stock') return item.status === 'In Stock'
@@ -407,7 +402,7 @@ const outOfStockCount = computed(() => {
   return activeTab.value === 'products' ? productOutOfStockCount.value : supplyOutOfStockCount.value
 })
 
-// Load data functions
+// ✅ Updated loadProducts with loading modal
 const loadProducts = async () => {
   loadingProducts.value = true
   try {
@@ -430,6 +425,7 @@ const loadProducts = async () => {
   }
 }
 
+// ✅ Updated loadSupplies with loading modal
 const loadSupplies = async () => {
   loadingSupplies.value = true
   try {
@@ -446,6 +442,7 @@ const loadSupplies = async () => {
   }
 }
 
+// ✅ Updated loadInventory with loading modal
 const loadInventory = async () => {
   loadingInventory.value = true
   try {
@@ -462,10 +459,22 @@ const loadInventory = async () => {
   }
 }
 
+// Combined load function - loadProducts/loadSupplies/loadInventory each
+// manage their own loading ref, which already drives the table's skeleton
+// via the `loading` computed above. No global modal needed here.
+const loadAllData = async () => {
+  try {
+    await Promise.all([loadProducts(), loadSupplies(), loadInventory()])
+  } catch (error) {
+    console.error('Error loading inventory data:', error)
+    showToast('error', 'Failed to load inventory data')
+  }
+}
+
 // Initialize on mount
 onMounted(async () => {
-    getUserRole()
-  await Promise.all([loadProducts(), loadSupplies(), loadInventory()])
+  getUserRole()
+  await loadAllData()
   
   if (route.query.search) {
     searchQuery.value = route.query.search
@@ -502,12 +511,10 @@ watch(() => route.query.category, (newCategory) => {
 async function highlightAndScrollToItem(itemId) {
   if (!itemId) return
   
-  // Find the item in the current filtered items
   const item = filteredItems.value.find(i => (i.id === itemId || i.itemId === itemId))
   if (item) {
     highlightedItemIdFromQuery.value = itemId
     
-    // Scroll to the item after a short delay
     await nextTick()
     const element = document.querySelector(`[data-item-id="${itemId}"]`)
     if (element) {
@@ -526,7 +533,6 @@ async function highlightAndScrollToItem(itemId) {
 
 function handleTabChange(tab) {
   console.log('Tab changed to:', tab)
-  // Reset filters when tab changes
   statusFilter.value = 'all'
   categoryFilter.value = 'all'
   searchQuery.value = ''
@@ -561,7 +567,6 @@ function openStockMovementModal(data) {
     itemType 
   }
 }
-
 
 function closeStockMovementModal() {
   stockMovementModal.value = { show: false, item: null, type: 'in', itemType: 'supply' }
@@ -729,6 +734,7 @@ function openAddProductModal() {
 
 function closeAddProductModal() {
   showAddProductModal.value = false
+  loadingProducts.value = false
 }
 
 function closeEditInventoryModal() {
@@ -774,7 +780,7 @@ async function handleAddSupply(supplyData) {
     )
     
     if (inventoryResponse.success) {
-      console.log('supply:', supplyData);
+      console.log('supply:', supplyData)
       
       await Promise.all([loadSupplies(), loadInventory()])
       showToast('success', `Supply "${supplyData.name}" has been created and added to inventory.`)
@@ -790,14 +796,17 @@ async function handleAddSupply(supplyData) {
   }
 }
 
-async function handleAddProduct(productData) {
+async function handleAddProduct(formData) {
   loadingProducts.value = true
+  
   try {
-    const response = await productApi.createProduct(productData)
+    const response = await productApi.createProduct(formData)
+    
     if (response.success) {
-      console.log('✅ Product created with Cloudinary image:', response.data.image)
-      await loadProducts() 
-      showFeedback('success', 'Success', `Product "${response.data.name || 'New Product'}" has been created successfully with Cloudinary image!`)
+      console.log('✅ Product created:', response.data)
+      await loadProducts()
+      
+      showFeedback('success', 'Success', `Product "${response.data.name || 'New Product'}" has been created successfully!`)
       closeAddProductModal()
     } else {
       showFeedback('error', 'Error', response.message || 'Failed to create product')
@@ -808,6 +817,11 @@ async function handleAddProduct(productData) {
   } finally {
     loadingProducts.value = false
   }
+}
+
+function handleProductSuccess(productData) {
+  showToast('success', `Product "${productData.name}" created successfully!`)
+  loadProducts()
 }
 
 async function handleDelete(item) {
@@ -897,6 +911,7 @@ function closeModal() {
   modalOpen.value = false
   selectedItem.value = null
 }
+
 </script>
 
 <style scoped>

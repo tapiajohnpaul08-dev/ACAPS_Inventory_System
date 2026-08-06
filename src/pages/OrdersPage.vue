@@ -115,6 +115,12 @@ const confirmModal = ref({ show: false, type: 'danger', title: '', message: '', 
 function transformOrder(order) {
   console.log('transformed:', order);
   
+  // Determine display status based on receivingMode
+  let displayStatus = order.status || 'Pending'
+  if (order.status === 'Out for Delivery' && order.receivingMode === 'Pick-up') {
+    displayStatus = 'Ready to Pick-up'
+  }
+  
   return {
     // Identifiers
     id: order.orderId || order._id,
@@ -134,8 +140,8 @@ function transformOrder(order) {
     amount: order.amount ? `₱${Number(order.amount).toLocaleString()}` : '₱0',
     rawAmount: order.amount || 0,
 
-    // Status
-    status: order.status || 'Pending',
+    // Status - USE THE DISPLAY STATUS
+    status: displayStatus,  // ← FIXED: Use displayStatus
     payment: (order.paymentStatus || 'Unpaid'),
 
     // Delivery
@@ -143,7 +149,8 @@ function transformOrder(order) {
     deliveryAddress: order.fulfillment?.deliveryAddress || order.address || '',
     supplyType: order.isProvided ? 'Own Cups' : 'Company Cups',
     expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
-    receivingMode: order.receivingMode,
+    receivingMode: order.receivingMode,  // Keep original for logic
+    
     // Dates
     date: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
     orderedAt: order.orderedAt,
@@ -160,9 +167,9 @@ function transformOrder(order) {
   }
 }
 
-// ─── Load orders ──────────────────────────────────────────────────────────
 async function loadOrders() {
   isLoading.value = true
+
   try {
     const response = await adminOrderApi.getAllOrders()
     if (response.success && response.data) {

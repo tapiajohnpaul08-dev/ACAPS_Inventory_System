@@ -50,6 +50,8 @@
 </template>
 
 <script setup>
+import { getStatusBadgeClass } from '@/composables/useOrderStatus'
+
 const props = defineProps({
   search: { type: String, required: true },
   statusFilter: { type: String, required: true },
@@ -58,38 +60,48 @@ const props = defineProps({
 
 const emit = defineEmits(['update:search', 'update:statusFilter'])
 
+// "out-for-delivery" also covers pickup orders currently displayed as
+// "Ready to Pick-up" - counts.outForDelivery (from useOrders' statusCounts)
+// already accounts for both, so this label reflects that.
 const statusOptions = [
   { value: 'all', label: 'All Orders' },
   { value: 'pending', label: 'Pending' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'in-production', label: 'In Production' },
-  { value: 'out-for-delivery', label: 'Out for Delivery' },
+  { value: 'out-for-delivery', label: 'Out for Delivery / Pick-up' },
   { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' }
+  { value: 'cancelled', label: 'Cancelled' },
 ]
+
+// Maps a filter value to the display-status key used by the shared badge
+// classes, so button colors always match the badges shown in the table.
+const FILTER_TO_DISPLAY_STATUS = {
+  pending: 'Pending',
+  scheduled: 'Scheduled',
+  'in-production': 'In Production',
+  'out-for-delivery': 'Out for Delivery',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+}
 
 function getStatusCount(status) {
   const countMap = {
-    'pending': props.counts.pending || 0,
-    'scheduled': props.counts.scheduled || 0,
+    pending: props.counts.pending || 0,
+    scheduled: props.counts.scheduled || 0,
     'in-production': props.counts.inProduction || 0,
     'out-for-delivery': props.counts.outForDelivery || 0,
-    'completed': props.counts.completed || 0,
-    'cancelled': props.counts.cancelled || 0
+    completed: props.counts.completed || 0,
+    cancelled: props.counts.cancelled || 0,
   }
   return countMap[status] || 0
 }
 
 function getStatusButtonClass(status) {
-  const classMap = {
-    'pending': 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
-    'scheduled': 'bg-purple-100 text-purple-700 hover:bg-purple-200',
-    'in-production': 'bg-blue-100 text-blue-700 hover:bg-blue-200',
-    'out-for-delivery': 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200',
-    'completed': 'bg-green-100 text-green-700 hover:bg-green-200',
-    'cancelled': 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-  }
-  return classMap[status] || 'bg-gray-100 text-gray-600'
+  const displayStatus = FILTER_TO_DISPLAY_STATUS[status]
+  if (!displayStatus) return 'bg-gray-100 text-gray-600'
+  // Reuse the exact same badge classes as the table so filter buttons and
+  // status badges are always visually consistent, then add a hover state.
+  return `${getStatusBadgeClass(displayStatus)} hover:opacity-80`
 }
 
 function setStatusFilter(value) {

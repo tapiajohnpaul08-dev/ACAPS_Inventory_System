@@ -144,46 +144,69 @@
                 </div>
               </div>
 
-              <!-- DESIGN PREVIEW SECTION - Compact -->
+              <!-- DESIGN PREVIEW SECTION -->
               <div v-if="hasDesignData" class="border border-gray-200 rounded-xl overflow-hidden">
                 <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 border-b border-gray-100">
                   <div class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
-                    <p class="text-xs font-bold text-purple-700 uppercase tracking-wide">Design</p>
+                    <p class="text-xs font-bold text-purple-700 uppercase tracking-wide">Design Preview</p>
+                    <span v-if="designSource" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ml-2" :class="designSourceBadgeClass">
+                      {{ designSourceLabel }}
+                    </span>
                   </div>
                 </div>
+                
                 <div class="p-3 space-y-3">
-                  <!-- Design Image -->
-                  <div v-if="designImageUrl" class="rounded-lg overflow-hidden border border-gray-200 bg-gray-50 max-h-48">
-                    <img :src="designImageUrl" alt="Design" class="w-full h-48 object-contain" @error="handleImageError" />
+                  <div v-if="designImageUrl" class="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                    <img 
+                      :src="designImageUrl" 
+                      alt="Design preview" 
+                      class="w-full h-auto max-h-64 object-contain"
+                      @error="handleImageError"
+                    />
                   </div>
                   
-                  <!-- Design Details Grid -->
-                  <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <span class="text-xs text-gray-500">Source</span>
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ml-2" :class="designSourceBadgeClass">
-                        {{ designSource === 'upload' ? 'Upload' : 'Template' }}
-                      </span>
-                    </div>
+                  <div v-else-if="hasDesignWithoutImage" class="flex flex-col items-center justify-center py-6 bg-amber-50 rounded-lg border border-amber-200">
+                    <p class="text-sm font-medium text-amber-700">Design Uploaded</p>
+                    <p class="text-xs text-amber-600 mt-1">The design was uploaded but the image URL is missing</p>
+                    <p class="text-xs text-amber-500 mt-1">Print Size: {{ printSize || 'N/A' }} · Placement: {{ printPlacement || 'N/A' }}</p>
+                    <p v-if="designFiles.length > 0" class="text-xs text-amber-500 mt-1">Files: {{ designFiles.length }} uploaded</p>
+                  </div>
+                  
+                  <div v-else-if="!hasDesignData" class="flex flex-col items-center justify-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    <span class="text-3xl mb-1">📋</span>
+                    <p class="text-sm text-gray-500">No design available for this order</p>
+                  </div>
+                  
+                  <div v-if="printSize || printPlacement || designNotes" class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
                     <div v-if="printSize">
-                      <span class="text-xs text-gray-500">Size</span>
+                      <span class="text-xs text-gray-500">Print Size</span>
                       <span class="text-xs font-medium ml-2">{{ printSize }}</span>
                     </div>
                     <div v-if="printPlacement">
                       <span class="text-xs text-gray-500">Placement</span>
                       <span class="text-xs font-medium ml-2">{{ printPlacement }}</span>
                     </div>
-                    <div v-if="selectedTemplate?.name">
-                      <span class="text-xs text-gray-500">Template</span>
-                      <span class="text-xs font-medium ml-2">{{ selectedTemplate.name }}</span>
+                    <div v-if="designNotes" class="col-span-2">
+                      <span class="text-xs text-gray-500">Notes</span>
+                      <p class="text-xs text-amber-800 bg-amber-50 rounded p-1 mt-1">{{ designNotes }}</p>
                     </div>
                   </div>
-                  
-                  <!-- Design Notes -->
-                  <div v-if="designNotes" class="bg-amber-50 rounded-lg p-2">
-                    <p class="text-xs text-amber-600">Notes</p>
-                    <p class="text-xs text-amber-800">{{ designNotes }}</p>
+
+                  <div v-if="designFiles.length > 0" class="border-t border-gray-100 pt-2">
+                    <p class="text-xs font-medium text-gray-600 mb-1">📎 Attached Files ({{ designFiles.length }})</p>
+                    <div class="flex flex-wrap gap-1">
+                      <button
+                        v-for="(file, idx) in designFiles"
+                        :key="idx"
+                        @click="previewFile(file)"
+                        class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        <span>📄</span>
+                        <span class="max-w-[100px] truncate">{{ file.name || 'File ' + (idx + 1) }}</span>
+                        <span class="text-gray-400 text-[10px]">{{ formatFileSize(file.size) }}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -207,7 +230,7 @@
                 </div>
               </div>
 
-              <!-- Order Status Flow - Compact -->
+              <!-- ✅ UPDATED: Order Status Flow - Compact -->
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Order Status</p>
@@ -235,25 +258,30 @@
                   Ready for Pickup
                 </div>
 
-                <!-- Progress flow -->
+                <!-- ✅ Progress flow with proper status management -->
                 <div v-if="localStatus !== 'Completed' && localStatus !== 'Cancelled'" class="flex items-center gap-1">
                   <div v-for="(status, index) in statusFlow" :key="status" class="flex items-center flex-1">
                     <button
                       @click="handleStatusClickWithPrompt(status)"
-                      :disabled="isSaving || isStatusDisabled(status)"
+                      :disabled="isSaving || isStatusDisabled(status) || isStatusCompleted(status)"
                       class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
                       :class="getStatusButtonClass(status)"
                       :title="getStatusButtonTitle(status)"
                     >
                       <span class="flex items-center justify-center w-5 h-5">
-                        <component v-if="isStatusCompleted(status)" :is="statusIcon(status)" class="w-3 h-3" />
-                        <span v-else class="text-xs font-black">{{ index + 1 }}</span>
+                        <!-- ✅ Show checkmark for completed statuses -->
+                        <component v-if="isStatusCompleted(status)" :is="statusIcon('Completed')" class="w-3 h-3 text-green-500" />
+                        <!-- ✅ Show current status indicator (pulsing green dot) -->
+                        <span v-else-if="isCurrentStatus(status)" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                        <!-- ✅ Show step number for future statuses -->
+                        <span v-else class="text-xs font-black" :class="getStepNumberClass(status)">{{ index + 1 }}</span>
                       </span>
-                      <span class="text-xs font-semibold leading-tight">
+                      <span class="text-xs font-semibold leading-tight" :class="getStatusTextClass(status)">
                         {{ getStatusDisplayName(status) }}
                       </span>
                     </button>
-                    <svg v-if="index < statusFlow.length - 1" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mx-0.5" :class="isStatusCompleted(statusFlow[index + 1]) ? 'text-green-400' : 'text-gray-200'">
+                    <!-- ✅ Arrow indicator -->
+                    <svg v-if="index < statusFlow.length - 1" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mx-0.5" :class="getArrowClass(statusFlow[index + 1])">
                       <path d="m9 18 6-6-6-6"/>
                     </svg>
                   </div>
@@ -277,9 +305,14 @@
                         <p class="text-xs font-bold" :class="historyText(h.status)">
                           {{ h.status === 'Out for Delivery' && order?.receivingMode === 'Pick-up' ? 'Ready for Pickup' : h.status }}
                         </p>
-                        <p class="text-xs text-gray-400">{{ formatDateTimeShort(h.timestamp) }}</p>
+                          <p class="text-xs text-gray-400">{{ formatDateTimeShort(h.timestamp) }}</p>
+                        
                       </div>
-                      <p v-if="h.notes && h.notes !== 'Order created'" class="text-xs text-gray-500">{{ h.notes }}</p>
+                      <div class="flex items-center justify-between">
+                        <p v-if="h.notes && h.notes !== 'Order created'" class="text-xs text-gray-500">{{ h.notes }}</p>
+                      <div v-if="h.updatedBy" class="text-xs text-blue-400 ml-2">Updated by: {{ h.updatedBy }}</div>
+                      </div>
+
                     </div>
                   </div>
                 </div>
@@ -322,6 +355,13 @@
 
           <!-- Footer -->
           <div class="flex items-center justify-end px-6 py-3 border-t border-gray-100 flex-shrink-0">
+            <button
+              v-if="localStatus === 'Out for Delivery' || localStatus === 'Ready to Pick-up' || localStatus === 'Completed'"               
+              class="flex items-center justify-center px-5 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-semibold"
+            >
+              <Printer class="w-4 h-4 text-white mr-2" />
+              Print Receipt
+            </button>
             <button
               @click="closeModal"
               class="px-5 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition-colors font-semibold"
@@ -493,7 +533,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { h } from 'vue'
-import { Truck, User, Phone, Car, Loader2 } from 'lucide-vue-next'
+import { Truck, User, Phone, Car, Loader2, Printer } from 'lucide-vue-next'
 import { adminDriverApi } from '@/api/api'
 
 const props = defineProps({
@@ -502,8 +542,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'statusUpdate', 'paymentUpdate', 'edit'])
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
@@ -533,11 +571,400 @@ const driverDetails = ref({
   truckDescription: ''
 })
 
+// ─── Cloudinary Configuration ─────────────────────────────────────────────
+const CLOUDINARY_URL = 'https://res.cloudinary.com'
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'vwrxijez'
+
+function getFullImageUrl(path) {
+  if (!path) return ''
+  
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+  
+  if (path.startsWith('beverage/') || path.includes('beverage/')) {
+    const cleanPath = path.replace(/^\/+/, '')
+    return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/${cleanPath}`
+  }
+  
+  if (path.startsWith('uploads/')) {
+    const filename = path.split('/').pop()
+    return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/beverage/designs/${filename}`
+  }
+  
+  return path
+}
+
+// ─── DESIGN DATA RETRIEVAL ───────────────────────────────────────────────
+
+const designFiles = computed(() => {
+  const files = []
+  
+  if (props.order?.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.files && Array.isArray(item.files)) {
+        const validFiles = item.files.filter(f => f.path || f.url || f.name)
+        files.push(...validFiles)
+      }
+    }
+  }
+  
+  if (props.order?.designDetails && Array.isArray(props.order.designDetails)) {
+    for (const design of props.order.designDetails) {
+      if (design.files && Array.isArray(design.files)) {
+        const validFiles = design.files.filter(f => f.path || f.url || f.name)
+        files.push(...validFiles)
+      }
+    }
+  }
+  
+  if (props.order?.files && Array.isArray(props.order.files)) {
+    const validFiles = props.order.files.filter(f => f.path || f.url || f.name)
+    files.push(...validFiles)
+  }
+  
+  return files
+})
+
+const designSource = computed(() => {
+  if (props.order?.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.designSource) {
+        return item.designSource
+      }
+    }
+  }
+  
+  if (designFiles.value.length > 0) return 'upload'
+  if (selectedTemplate.value) return 'saved'
+  
+  return null
+})
+
+const designSourceLabel = computed(() => {
+  const labels = {
+    'upload': ' Uploaded Design',
+    'saved': 'Saved Template',
+    'no-design': 'No Design'
+  }
+  return labels[designSource.value] || 'Unknown'
+})
+
+const designSourceBadgeClass = computed(() => {
+  return designSource.value === 'upload' 
+    ? 'bg-blue-100 text-blue-700' 
+    : designSource.value === 'saved'
+    ? 'bg-purple-100 text-purple-700'
+    : 'bg-gray-100 text-gray-500'
+})
+
+const printSize = computed(() => {
+  if (props.order?.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.printSize) return item.printSize
+    }
+  }
+  if (props.order?.printSize) return props.order.printSize
+  if (selectedTemplate.value?.printSize) return selectedTemplate.value.printSize
+  return null
+})
+
+const printPlacement = computed(() => {
+  if (props.order?.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.printPlacement) return item.printPlacement
+    }
+  }
+  if (props.order?.printPlacement) return props.order.printPlacement
+  if (selectedTemplate.value?.placement) return selectedTemplate.value.placement
+  return null
+})
+
+const designNotes = computed(() => {
+  if (props.order?.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.designNotes) return item.designNotes
+    }
+  }
+  if (props.order?.designNotes) return props.order.designNotes
+  if (selectedTemplate.value?.notes) return selectedTemplate.value.notes
+  return null
+})
+
+const selectedTemplate = computed(() => {
+  if (props.order?.selectedTemplate) return props.order.selectedTemplate
+  
+  if (props.order?.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.selectedTemplate) return item.selectedTemplate
+    }
+  }
+  
+  return null
+})
+
+const designImageUrl = computed(() => {
+  if (!props.order) return ''
+  
+  if (props.order.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.designImage && item.designImage.length > 0) {
+        return getFullImageUrl(item.designImage)
+      }
+    }
+  }
+  
+  if (props.order.items && Array.isArray(props.order.items)) {
+    for (const item of props.order.items) {
+      if (item.files && Array.isArray(item.files)) {
+        for (const file of item.files) {
+          if (file.path && file.path.length > 0) {
+            return getFullImageUrl(file.path)
+          }
+          if (file.url && file.url.length > 0) {
+            return file.url
+          }
+        }
+      }
+    }
+  }
+  
+  if (selectedTemplate.value) {
+    const template = selectedTemplate.value
+    if (template.thumbnail && template.thumbnail.length > 0) {
+      return getFullImageUrl(template.thumbnail)
+    }
+    if (template.imagePath && template.imagePath.length > 0) {
+      return getFullImageUrl(template.imagePath)
+    }
+  }
+  
+  if (props.order.designDetails && Array.isArray(props.order.designDetails)) {
+    for (const design of props.order.designDetails) {
+      if (design.imagePaths && Array.isArray(design.imagePaths) && design.imagePaths.length > 0) {
+        if (design.imagePaths[0] && design.imagePaths[0].length > 0) {
+          return getFullImageUrl(design.imagePaths[0])
+        }
+      }
+    }
+  }
+  
+  return ''
+})
+
+const hasDesignData = computed(() => {
+  return !!(designImageUrl.value || 
+            designSource.value || 
+            printSize.value || 
+            printPlacement.value || 
+            designNotes.value || 
+            designFiles.value.length > 0 ||
+            selectedTemplate.value)
+})
+
+const hasDesignWithoutImage = computed(() => {
+  return !designImageUrl.value && 
+         (designSource.value === 'upload' || 
+          designFiles.value.length > 0 || 
+          printSize.value || 
+          printPlacement.value)
+})
+
+// ─── File Preview Functions ──────────────────────────────────────────────
+function isImageFile(file) {
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif']
+  const ext = file.name?.split('.').pop()?.toLowerCase()
+  return imageExtensions.includes(ext) || file.type?.startsWith('image/')
+}
+
+function getFileUrl(file) {
+  if (!file) return ''
+  if (file.url) return file.url
+  if (file.path) return getFullImageUrl(file.path)
+  return ''
+}
+
+function previewFile(file) {
+  previewFileData.value = file
+  showPreviewModal.value = true
+}
+
+function closePreviewModal() {
+  showPreviewModal.value = false
+  previewFileData.value = null
+}
+
+function handleImageError(e) {
+  const img = e.target
+  img.style.display = 'none'
+  const parent = img.parentElement
+  if (parent) {
+    const fallback = document.createElement('div')
+    fallback.className = 'flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg w-full min-h-[100px]'
+    fallback.innerHTML = `
+      <span class="text-2xl">🖼️</span>
+      <span class="text-xs text-gray-500">Image unavailable</span>
+    `
+    parent.appendChild(fallback)
+  }
+}
+
+function formatFileSize(bytes) {
+  if (!bytes || bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// ─── Keep local state in sync ────────────────────────────────────────────
+watch(() => props.order, (o) => {
+  if (o) {
+    localStatus.value = o.status || 'Pending'
+    localPayment.value = o.payment || 'Unpaid'
+  }
+}, { immediate: true, deep: true })
+
+// ─── Status flow ──────────────────────────────────────────────────────────
+const statusFlow = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed']
+const paymentStatuses = [
+  { value: 'Paid', label: 'Paid', activeClass: 'border-green-500 bg-green-50 text-green-700' },
+  { value: 'Partial', label: 'Partial', activeClass: 'border-orange-400 bg-orange-50 text-orange-700' },
+  { value: 'Unpaid', label: 'Unpaid', activeClass: 'border-red-400 bg-red-50 text-red-600' },
+]
+
+// ─── Status Display Functions ────────────────────────────────────────────
+
+// ✅ Check if status is the current status
+function isCurrentStatus(status) {
+  let effectiveStatus = status
+  if (status === 'Ready to Pick-up') {
+    effectiveStatus = 'Out for Delivery'
+  }
+  let currentEffectiveStatus = localStatus.value
+  if (localStatus.value === 'Ready to Pick-up') {
+    currentEffectiveStatus = 'Out for Delivery'
+  }
+  return effectiveStatus === currentEffectiveStatus
+}
+
+function getStatusDisplayName(status) {
+  if (status === 'Out for Delivery' && props.order?.receivingMode === 'Pick-up') {
+    return 'Ready to Pick-up'
+  }
+  const names = { 
+    'Pending': 'Pending', 
+    'Scheduled': 'Scheduled', 
+    'In Production': 'In Prod.', 
+    'Out for Delivery': 'Out for Delivery',
+    'Ready to Pick-up': 'Ready',
+    'Completed': 'Done' 
+  }
+  return names[status] || status
+}
+
+function isStatusCompleted(status) {
+  let effectiveStatus = status
+  if (status === 'Ready to Pick-up') {
+    effectiveStatus = 'Out for Delivery'
+  }
+  const ci = statusFlow.indexOf(localStatus.value === 'Ready to Pick-up' ? 'Out for Delivery' : localStatus.value)
+  const si = statusFlow.indexOf(effectiveStatus)
+  return si < ci
+}
+
+function isStatusDisabled(status) {
+  let effectiveStatus = status
+  if (status === 'Ready to Pick-up') {
+    effectiveStatus = 'Out for Delivery'
+  }
+  const ci = statusFlow.indexOf(localStatus.value === 'Ready to Pick-up' ? 'Out for Delivery' : localStatus.value)
+  const si = statusFlow.indexOf(effectiveStatus)
+  
+  if (localStatus.value === 'Out for Delivery' && status === 'Ready to Pick-up' && props.order?.receivingMode === 'Pick-up') {
+    return false
+  }
+  return si > ci + 1
+}
+
+function getStatusButtonClass(status) {
+  let effectiveStatus = status
+  if (status === 'Ready to Pick-up') {
+    effectiveStatus = 'Out for Delivery'
+  }
+  const ci = statusFlow.indexOf(localStatus.value === 'Ready to Pick-up' ? 'Out for Delivery' : localStatus.value)
+  const si = statusFlow.indexOf(effectiveStatus)
+  const isActive = isCurrentStatus(status)
+  
+  if (isActive) {
+    return 'bg-green-100 text-green-700 ring-2 ring-inset ring-green-400 cursor-default'
+  }
+  if (isStatusCompleted(status)) {
+    return 'bg-green-50 text-green-500 cursor-not-allowed opacity-60'
+  }
+  if (si === ci + 1) {
+    return 'bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer'
+  }
+  return 'bg-gray-50 text-gray-300 cursor-not-allowed'
+}
+
+function getStatusTextClass(status) {
+  if (isCurrentStatus(status)) {
+    return 'text-green-700'
+  }
+  if (isStatusCompleted(status)) {
+    return 'text-green-500'
+  }
+  if (!isStatusDisabled(status)) {
+    return 'text-blue-600'
+  }
+  return 'text-gray-400'
+}
+
+function getStepNumberClass(status) {
+  if (isCurrentStatus(status)) {
+    return 'text-green-700'
+  }
+  if (isStatusCompleted(status)) {
+    return 'text-green-500'
+  }
+  if (!isStatusDisabled(status)) {
+    return 'text-blue-600'
+  }
+  return 'text-gray-400'
+}
+
+function getArrowClass(status) {
+  if (isStatusCompleted(status)) {
+    return 'text-green-400'
+  }
+  if (isCurrentStatus(status)) {
+    return 'text-green-400'
+  }
+  if (!isStatusDisabled(status)) {
+    return 'text-blue-300'
+  }
+  return 'text-gray-200'
+}
+
+function getStatusButtonTitle(status) {
+  if (isStatusCompleted(status)) {
+    return `${getStatusDisplayName(status)} - Already completed`
+  }
+  if (isCurrentStatus(status)) {
+    return `${getStatusDisplayName(status)} - Current status`
+  }
+  if (isStatusDisabled(status)) {
+    return `Cannot skip to ${getStatusDisplayName(status)}`
+  }
+  return `Set to: ${getStatusDisplayName(status)}`
+}
+
+// ─── Driver Functions ─────────────────────────────────────────────────────
 const selectedDriver = computed(() => {
   return availableDrivers.value.find(d => d.driverId === selectedDriverId.value)
 })
 
-// Fetch available drivers
 async function fetchAvailableDrivers() {
   isLoadingDrivers.value = true
   try {
@@ -555,15 +982,9 @@ async function fetchAvailableDrivers() {
 function onDriverSelect() {
   driverError.value = ''
   if (!selectedDriverId.value) {
-    driverDetails.value = {
-      driverName: '',
-      driverPhone: '',
-      plateNumber: '',
-      truckDescription: ''
-    }
+    driverDetails.value = { driverName: '', driverPhone: '', plateNumber: '', truckDescription: '' }
     return
   }
-
   const driver = selectedDriver.value
   if (driver) {
     driverDetails.value = {
@@ -580,13 +1001,11 @@ async function confirmDriver() {
     driverError.value = 'Please select a driver'
     return
   }
-  
   const driver = selectedDriver.value
   if (!driver) {
     driverError.value = 'Driver not found'
     return
   }
-  
   const payload = {
     orderId: props.order.id,
     status: pendingStatus.value,
@@ -600,7 +1019,6 @@ async function confirmDriver() {
       truckDescription: driver.vehicleDescription || ''
     }
   }
-  
   emit('statusUpdate', payload)
   localStatus.value = pendingStatus.value
   closeDriverModal()
@@ -611,256 +1029,12 @@ function openDriverModal(status) {
   selectedDriverId.value = ''
   driverNotes.value = ''
   driverError.value = ''
-  driverDetails.value = {
-    driverName: '',
-    driverPhone: '',
-    plateNumber: '',
-    truckDescription: ''
-  }
+  driverDetails.value = { driverName: '', driverPhone: '', plateNumber: '', truckDescription: '' }
   fetchAvailableDrivers()
   showDriverModal.value = true
 }
 
-// Design preview computed properties
-const uploadedFiles = computed(() => {
-  const files = []
-  if (props.order?.items) {
-    for (const item of props.order.items) {
-      if (item.files && Array.isArray(item.files)) {
-        files.push(...item.files)
-      }
-    }
-  }
-  if (props.order?.files && Array.isArray(props.order.files)) {
-    files.push(...props.order.files)
-  }
-  return files
-})
-
-const selectedTemplate = computed(() => {
-  if (props.order?.selectedTemplate) {
-    return props.order.selectedTemplate
-  }
-  if (props.order?.items) {
-    for (const item of props.order.items) {
-      if (item.selectedTemplate) {
-        return item.selectedTemplate
-      }
-    }
-  }
-  return null
-})
-
-const designSource = computed(() => {
-  if (uploadedFiles.value.length > 0) return 'upload'
-  if (selectedTemplate.value) return 'saved'
-  return null
-})
-
-const printSize = computed(() => {
-  if (props.order?.printSize) return props.order.printSize
-  if (props.order?.items?.[0]?.printSize) return props.order.items[0].printSize
-  if (selectedTemplate.value?.printSize) return selectedTemplate.value.printSize
-  return null
-})
-
-const printPlacement = computed(() => {
-  if (props.order?.printPlacement) return props.order.printPlacement
-  if (props.order?.items?.[0]?.printPlacement) return props.order.items[0].printPlacement
-  if (selectedTemplate.value?.placement) return selectedTemplate.value.placement
-  return null
-})
-
-const designNotes = computed(() => {
-  if (props.order?.designNotes) return props.order.designNotes
-  if (props.order?.items?.[0]?.designNotes) return props.order.items[0].designNotes
-  if (selectedTemplate.value?.notes) return selectedTemplate.value.notes
-  return null
-})
-
-const hasDesignData = computed(() => {
-  return designImageUrl.value || designSource.value || printSize.value || printPlacement.value || designNotes.value
-})
-
-const designSourceBadgeClass = computed(() => {
-  return designSource.value === 'upload' 
-    ? 'bg-blue-100 text-blue-700' 
-    : 'bg-purple-100 text-purple-700'
-})
-
-const designImageUrl = computed(() => {
-  for (const item of props.order.items) {
-    if (item.designImage) {
-      let cleanPath = item.designImage.replace(/^\/+/, '')
-      if (cleanPath.startsWith('uploads/')) {
-        return `${API_BASE_URL}/${cleanPath}`
-      }
-      return `${API_BASE_URL}/uploads/${cleanPath}`
-    }
-  }
-  return ''
-})
-
-function isImageFile(file) {
-  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']
-  const ext = file.name?.split('.').pop()?.toLowerCase()
-  return imageExtensions.includes(ext) || file.type?.startsWith('image/')
-}
-
-function getFileUrl(file) {
-  if (!file) return ''
-  if (file.path) {
-    let cleanPath = file.path.replace(/^\/+/, '')
-    if (cleanPath.startsWith('uploads/')) {
-      return `${API_BASE_URL}/${cleanPath}`
-    }
-    return `${API_BASE_URL}/uploads/designs/${cleanPath}`
-  }
-  if (file.data) {
-    return file.data
-  }
-  if (typeof file === 'string') {
-    if (file.startsWith('http')) return file
-    if (file.startsWith('data:')) return file
-    return `${API_BASE_URL}/uploads/designs/${file}`
-  }
-  return ''
-}
-
-function getTemplateImageUrl(imagePath) {
-  if (!imagePath) return ''
-  if (imagePath.startsWith('http')) return imagePath
-  let cleanPath = imagePath.replace(/^\/+/, '')
-  if (cleanPath.startsWith('uploads/')) {
-    return `${API_BASE_URL}/${cleanPath}`
-  }
-  if (cleanPath.startsWith('templates/')) {
-    return `${API_BASE_URL}/uploads/${cleanPath}`
-  }
-  return `${API_BASE_URL}/uploads/templates/${cleanPath}`
-}
-
-function handleImageError(e) {
-  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1"%3E%3Crect x="3" y="3" width="18" height="18" rx="2"%3E%3C/rect%3E%3C/svg%3E'
-}
-
-function previewFile(file) {
-  previewFileData.value = file
-  showPreviewModal.value = true
-}
-
-function closePreviewModal() {
-  showPreviewModal.value = false
-  previewFileData.value = null
-}
-
-const minDateTime = computed(() => {
-  const now = new Date()
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-  return now.toISOString().slice(0, 16)
-})
-
-// Keep local state in sync
-watch(() => props.order, (o) => {
-  if (o) {
-    localStatus.value = o.status || 'Pending'
-    localPayment.value = o.payment || 'Unpaid'
-  }
-}, { deep: true, immediate: true })
-
-// Status flow
-const statusFlow = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed']
-const paymentStatuses = [
-  { value: 'Paid', label: 'Paid', activeClass: 'border-green-500 bg-green-50 text-green-700' },
-  { value: 'Partial', label: 'Partial', activeClass: 'border-orange-400 bg-orange-50 text-orange-700' },
-  { value: 'Unpaid', label: 'Unpaid', activeClass: 'border-red-400 bg-red-50 text-red-600' },
-]
-
-function getStatusDisplayName(status) {
-  if (status === 'Out for Delivery') {
-    return props.order?.receivingMode === 'Pick-up' ? 'Ready' : 'Out for Delivery'
-  }
-  const names = { 
-    'Pending': 'Pending', 
-    'Scheduled': 'Scheduled', 
-    'In Production': 'In Prod.', 
-    'Completed': 'Done' 
-  }
-  return names[status] || status
-}
-
-function getStatusButtonTitle(status) {
-  if (status === 'Completed' && localStatus.value === 'Out for Delivery' && props.order?.receivingMode === 'Pick-up') {
-    return 'Click to confirm customer pickup and complete order'
-  }
-  return isStatusDisabled(status) ? `Cannot skip to ${getStatusDisplayName(status)}` : `Set to: ${getStatusDisplayName(status)}`
-}
-
-function isStatusCompleted(status) {
-  const ci = statusFlow.indexOf(localStatus.value)
-  const si = statusFlow.indexOf(status)
-  return si <= ci
-}
-
-function isStatusDisabled(status) {
-  const ci = statusFlow.indexOf(localStatus.value)
-  const si = statusFlow.indexOf(status)
-  if (localStatus.value === 'Out for Delivery' && status === 'Completed' && props.order?.receivingMode === 'Pick-up') {
-    return false
-  }
-  return si > ci + 1
-}
-
-function getStatusButtonClass(status) {
-  const ci = statusFlow.indexOf(localStatus.value)
-  const si = statusFlow.indexOf(status)
-  const isActive = localStatus.value === status
-  const isCompletedHighlight = (status === 'Completed' && localStatus.value === 'Out for Delivery' && props.order?.receivingMode === 'Pick-up')
-  
-  if (isActive) return 'bg-green-100 text-green-700 ring-2 ring-inset ring-green-400 cursor-default'
-  if (isCompletedHighlight) return 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer border border-green-300'
-  if (si < ci) return 'bg-green-50 text-green-600'
-  if (si === ci + 1) return 'bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer'
-  return 'bg-gray-50 text-gray-300 cursor-not-allowed'
-}
-
-function handleStatusClickWithPrompt(status) {
-  if (isStatusDisabled(status) || localStatus.value === status || isSaving.value) return
-  
-  if (status === 'Completed' && localStatus.value === 'Out for Delivery' && props.order?.receivingMode === 'Pick-up') {
-    pendingStatus.value = status
-    completeNotes.value = ''
-    showCompleteConfirmModal.value = true
-    return
-  }
-  
-  if (status === 'Scheduled') {
-    pendingStatus.value = status
-    scheduleDate.value = ''
-    scheduleNotes.value = ''
-    showScheduleModal.value = true
-  } else if (status === 'Out for Delivery') {
-    if (props.order?.receivingMode === 'Pick-up') {
-      updateStatus(status, '')
-    } else {
-      openDriverModal(status)
-    }
-  } else {
-    updateStatus(status, '')
-  }
-}
-
-async function confirmSchedule() {
-  if (!scheduleDate.value) return
-  await updateStatus(pendingStatus.value, scheduleNotes.value, scheduleDate.value)
-  closeScheduleModal()
-}
-
-async function confirmComplete() {
-  await updateStatus(pendingStatus.value, completeNotes.value || 'Customer picked up the order')
-  closeCompleteConfirmModal()
-}
-
+// ─── Status Update Functions ─────────────────────────────────────────────
 async function updateStatus(status, notes, productionSchedule = null) {
   isSaving.value = true
   localStatus.value = status
@@ -876,8 +1050,50 @@ async function updateStatus(status, notes, productionSchedule = null) {
   }
   
   emit('statusUpdate', payload)
-  
   setTimeout(() => { isSaving.value = false }, 1500)
+}
+
+function handleStatusClickWithPrompt(status) {
+  if (isStatusDisabled(status) || isStatusCompleted(status) || isCurrentStatus(status) || isSaving.value) return
+  
+  let updateStatusParam = status
+  if (status === 'Ready to Pick-up') {
+    updateStatusParam = 'Out for Delivery'
+  }
+  
+  if (status === 'Scheduled') {
+    pendingStatus.value = status
+    scheduleDate.value = ''
+    scheduleNotes.value = ''
+    showScheduleModal.value = true
+  } else if (status === 'Out for Delivery' || status === 'Ready to Pick-up') {
+    if (props.order?.receivingMode === 'Pick-up') {
+      if (status === 'Ready to Pick-up') {
+        pendingStatus.value = 'Completed'
+        completeNotes.value = 'Customer picked up the order'
+        showCompleteConfirmModal.value = true
+      } else {
+        updateStatus('Out for Delivery', 'Order ready for pickup')
+      }
+    } else {
+      if (status === 'Out for Delivery') {
+        openDriverModal(status)
+      }
+    }
+  } else {
+    updateStatus(updateStatusParam, '')
+  }
+}
+
+async function confirmSchedule() {
+  if (!scheduleDate.value) return
+  await updateStatus(pendingStatus.value, scheduleNotes.value, scheduleDate.value)
+  closeScheduleModal()
+}
+
+async function confirmComplete() {
+  await updateStatus(pendingStatus.value, completeNotes.value || 'Customer picked up the order')
+  closeCompleteConfirmModal()
 }
 
 async function handlePaymentClick(paymentDisplayValue) {
@@ -898,11 +1114,13 @@ async function handleCancelClick() {
   setTimeout(() => { isSaving.value = false }, 1500)
 }
 
+// ─── Modal Control Functions ─────────────────────────────────────────────
 function closeModal() { emit('close') }
 function closeScheduleModal() { showScheduleModal.value = false; pendingStatus.value = null }
 function closeDriverModal() { showDriverModal.value = false; pendingStatus.value = null }
 function closeCompleteConfirmModal() { showCompleteConfirmModal.value = false; pendingStatus.value = null }
 
+// ─── Badge Functions ─────────────────────────────────────────────────────
 function statusBadge(status) {
   const displayStatus = getStatusDisplayName(status)
   const classes = {
@@ -911,7 +1129,7 @@ function statusBadge(status) {
     'Scheduled': 'bg-purple-100 text-purple-700',
     'Pending': 'bg-yellow-100 text-yellow-700',
     'Out for Delivery': 'bg-cyan-100 text-cyan-700',
-    'Ready': 'bg-green-100 text-green-700',
+    'Ready to Pick-up': 'bg-green-100 text-green-700',
     'Cancelled': 'bg-red-100 text-red-600',
   }
   return classes[displayStatus] ?? classes[status] ?? 'bg-gray-100 text-gray-500'
@@ -933,6 +1151,7 @@ function historyBg(status) {
     'Scheduled': 'bg-purple-100',
     'Pending': 'bg-yellow-100',
     'Out for Delivery': 'bg-cyan-100',
+    'Ready to Pick-up': 'bg-green-100',
     'Cancelled': 'bg-red-100',
   }
   return classes[status] ?? 'bg-gray-100'
@@ -945,6 +1164,7 @@ function historyText(status) {
     'Scheduled': 'text-purple-700',
     'Pending': 'text-yellow-700',
     'Out for Delivery': 'text-cyan-700',
+    'Ready to Pick-up': 'text-green-700',
     'Cancelled': 'text-red-600',
   }
   return classes[status] ?? 'text-gray-600'
@@ -971,7 +1191,7 @@ function formatDateTimeShort(ts) {
   })
 }
 
-// Status icons
+// ─── Status Icons ─────────────────────────────────────────────────────────
 const CheckIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('path',{d:'M20 6L9 17l-5-5'})])
 const PackageIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('path',{d:'M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z'}), h('path',{d:'M12 22V12'}), h('polyline',{points:'3.29 7 12 12 20.71 7'})])
 const ClockIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('circle',{cx:12,cy:12,r:10}), h('polyline',{points:'12 6 12 12 16 14'})])
@@ -986,10 +1206,18 @@ function statusIcon(status) {
     'Scheduled': CalendarIcon,
     'Pending': ClockIcon,
     'Out for Delivery': TruckIcon,
+    'Ready to Pick-up': TruckIcon,
     'Cancelled': XIcon
   }
   return icons[status] ?? ClockIcon
 }
+
+// ─── MIN DATE for schedule ───────────────────────────────────────────────
+const minDateTime = computed(() => {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 16)
+})
 </script>
 
 <style scoped>
@@ -998,6 +1226,12 @@ function statusIcon(status) {
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .modal-enter-from .relative { transform: scale(0.95) translateY(8px); opacity: 0; }
 .modal-leave-to .relative { transform: scale(0.95) translateY(8px); opacity: 0; }
+
 @keyframes spin { to { transform: rotate(360deg); } }
 .animate-spin { animation: spin 0.7s linear infinite; }
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+}
+.animate-pulse { animation: pulse 1.5s ease-in-out infinite; }
 </style>

@@ -1,6 +1,7 @@
+<!-- DashboardPage.vue - No direct loading management -->
 <template>
   <div class="p-8">
-    <!-- Welcome Header with Animation -->
+    <!-- Welcome Header -->
     <div class="mb-8 animate-fade-in">
       <div class="flex justify-between items-start">
         <div>
@@ -15,10 +16,10 @@
         <div class="flex gap-3">
           <button
             @click="refreshData"
-            :disabled="loading"
+            :disabled="isLoading || loading"
             class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'animate-spin': loading }">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'animate-spin': isLoading || loading }">
               <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
               <path d="M21 3v5h-5"/>
               <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
@@ -42,7 +43,7 @@
       </div>
     </div>
 
-    <!-- Loading State with Skeleton -->
+    <!-- Loading State -->
     <div v-if="loading" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div v-for="i in 4" :key="i" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-pulse">
@@ -68,10 +69,8 @@
     </div>
 
     <template v-else>
-      <!-- Stats Grid with Hover Effects -->
       <StatsGrid :stats="filteredStats" @stat-click="handleStatClick" />
 
-      <!-- Charts Section with Glassmorphism -->
       <div v-if="userRole === 'sales'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div class="group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-white rounded-2xl border border-gray-100 p-4">
           <RevenueCategoryChart :categories="revenueCategories" />
@@ -81,7 +80,6 @@
         </div>
       </div>
 
-      <!-- Alerts and Orders Section -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="transition-all duration-300 hover:shadow-lg rounded-2xl">
           <LowStockAlerts 
@@ -113,6 +111,19 @@
       @saved="handleOrderSaved"
     />
 
+    <!-- Global Loading Modal -->
+    <AdminLoadingModal
+      v-if="!isLoading"
+      :visible="loadingState.visible"
+      :title="loadingState.title"
+      :message="loadingState.message"
+      :icon="loadingState.icon"
+      :show-progress="false"
+      :show-cancel="false"
+      @cancel="handleCancel"
+      @complete="handleComplete"
+    />
+
     <!-- Toast Notification -->
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" @update:show="toast.show = $event" />
   </div>
@@ -128,10 +139,16 @@ import LowStockAlerts from '@/components/dashboard/LowStockAlerts.vue'
 import RecentOrders from '@/components/dashboard/RecentOrders.vue'
 import EditOrderModal from '@/modals/EditOrderModal.vue'
 import Toast from '@/components/Toast.vue'
+import AdminLoadingModal from '@/modals/UniversalModals/AdminLoadingModal.vue'
 import { useDashboard } from '@/composables/useDashboard'
 import { useToast } from '@/composables/useToast'
+import { useAdminLoading } from '@/composables/useAdminLoading'
 
 const router = useRouter()
+
+// Use the same loading composable - only need loadingState for the modal
+const { loadingState } = useAdminLoading()
+
 const { 
   stats, 
   revenueCategories, 
@@ -147,6 +164,7 @@ const {
 const { toast, showToast } = useToast()
 const editOrderData = ref(null)
 const adminName = ref(localStorage.getItem('adminName') || 'Admin')
+const isLoading = ref(false)
 
 // Filter stats based on user role
 const filteredStats = computed(() => {
@@ -165,7 +183,6 @@ function navigateToInventory() {
   router.push('/dashboard/inventory')
 }
 
-// Handle order click - navigate to orders page and highlight specific order
 function handleOrderClick(order) {
   router.push({
     path: '/dashboard/orders',
@@ -173,12 +190,8 @@ function handleOrderClick(order) {
   })
 }
 
-// Handle low stock item click - navigate to inventory and highlight specific item
 function handleLowStockItemClick(item) {
-  // Determine the correct tab based on item type
   const tab = item.type === 'product' ? 'products' : 'supplies'
-  
-  console.log('Navigating to inventory:', { tab, name: item.name, id: item.id })
   
   router.push({
     path: '/dashboard/inventory',
@@ -189,8 +202,6 @@ function handleLowStockItemClick(item) {
     }
   })
 }
-
-
 
 function handleStatClick(stat) {
   if (stat.label === 'Total Orders') {
@@ -208,10 +219,23 @@ function handleStatClick(stat) {
   }
 }
 
-// Refresh data
+// ✅ Refresh data - no loading management here
 async function refreshData() {
-  await loadDashboardData()
-  showToast('success', 'Dashboard data refreshed!')
+  if (isLoading.value || loading.value) return
+  
+  isLoading.value = true
+  
+  try {
+    await loadDashboardData()
+    showToast('success', 'Dashboard refreshed!')
+  } catch (error) {
+    console.error('Error refreshing dashboard:', error)
+    showToast('error', 'Failed to refresh dashboard')
+  } finally {
+    setTimeout(() => {
+      isLoading.value = false
+    }, 300)
+  }
 }
 
 function handleEditOrder(order) {
@@ -244,20 +268,29 @@ function handleEditOrder(order) {
 
 async function handleOrderSaved(updatedOrder) {
   await loadDashboardData()
-  showToast('success', `Order ${updatedOrder.id} has been updated successfully!`)
+  showToast('success', `Order ${updatedOrder.id} updated!`)
   closeEditModal()
 }
 
 function handleNotify(item) {
-  showToast('info', `Low stock alert sent for ${item.name}`)
+  showToast('info', `Alert sent for ${item.name}`)
 }
 
 function closeEditModal() {
   editOrderData.value = null
 }
 
-onMounted(() => {
-  loadDashboardData()
+function handleCancel() {
+  isLoading.value = false
+}
+
+function handleComplete() {
+  isLoading.value = false
+}
+
+// ✅ Load dashboard on mount - no loading management here
+onMounted(async () => {
+  await loadDashboardData()
 })
 </script>
 

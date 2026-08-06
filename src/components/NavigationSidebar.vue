@@ -93,24 +93,6 @@
         </router-link>
       </template>
 
-      <!-- Disabled messages for non-Sales -->
-      <div 
-        v-else 
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
-        title="Messages are only available for Sales department"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-message-square w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-        <span class="text-sm font-medium">Messages</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5 ml-auto text-gray-300">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </div>
-
       <!-- Analytics - Only for sales department -->
       <template v-if="adminRole === 'Sales' || adminRole === 'Super Admin'">
         <router-link 
@@ -132,26 +114,6 @@
         </router-link>
       </template>
 
-      <!-- Disabled analytics for non-Sales -->
-      <div 
-        v-else 
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
-        title="Analytics are only available for Sales department"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-chart-column w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-          <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
-          <path d="M18 17V9"></path>
-          <path d="M13 17V5"></path>
-          <path d="M8 17v-3"></path>
-        </svg>
-        <span class="text-sm font-medium">Analytics</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5 ml-auto text-gray-300">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </div>
 
       <!-- Accounts - Only for Super Admin -->
       <template v-if="adminRole === 'Super Admin'">
@@ -170,26 +132,6 @@
         </router-link>
       </template>
 
-      <!-- Disabled Accounts for non-Super Admin -->
-      <div
-        v-else
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group cursor-not-allowed opacity-60"
-        :class="isActive('/dashboard/accounts') 
-          ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' 
-          : 'text-gray-400 hover:bg-gray-100 hover:text-gray-900'"
-        title="Access restricted to Super Admin only"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        <span class="text-sm font-medium">Accounts</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 ml-auto">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-        <span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-      </div>
     </nav>
 
     <!-- Low Stock Alert Box -->

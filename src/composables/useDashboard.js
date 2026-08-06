@@ -1,6 +1,7 @@
-// src/composables/useDashboard.js
+// src/composables/useDashboard.js - Fixed - only top-level loading management
 import { ref, computed } from 'vue'
 import { adminDashboardApi, adminOrderApi, inventoryApi } from '@/api/api'
+import { useAdminLoading } from '@/composables/useAdminLoading'
 
 export function useDashboard() {
   const stats = ref([])
@@ -14,12 +15,34 @@ export function useDashboard() {
   // Get user role from localStorage
   const userRole = computed(() => localStorage.getItem('adminRole') || 'production')
 
-  // Load all dashboard data
+  // Get loading functions
+  const { showLoading, hideLoading, getLoadingCounter } = useAdminLoading()
+
+  // Load all dashboard data - ONLY place where showLoading/hideLoading is called
   const loadDashboardData = async () => {
+    // Prevent multiple simultaneous loads
+    if (loading.value) {
+      console.log('⏳ Dashboard already loading, skipping...')
+      return
+    }
+    
     loading.value = true
     error.value = null
     
+    // ✅ Show loading modal ONCE at the beginning - keep the token, only
+    // this exact call is allowed to close it. This is what stops the
+    // overlay from being closed early by some unrelated showLoading/
+    // hideLoading pair elsewhere in the app.
+    const loadingToken = showLoading({
+      title: 'Loading Dashboard',
+      message: 'Fetching your data...',
+      icon: 'process'
+    })
+    
     try {
+      console.log('🚀 Starting dashboard data load...')
+      
+      // Load all data in parallel
       await Promise.all([
         loadStats(),
         loadRevenueCategories(),
@@ -27,15 +50,25 @@ export function useDashboard() {
         loadLowStockItems(),
         loadRecentOrders()
       ])
+      
+      console.log('✅ All dashboard data loaded successfully')
+      
     } catch (err) {
-      console.error('Error loading dashboard data:', err)
+      console.error('❌ Error loading dashboard data:', err)
       error.value = err.message
     } finally {
+      // ✅ Hide loading modal ONCE, right after all operations actually
+      // complete. Hiding it with the matching token (instead of a bare
+      // hideLoading() call after an arbitrary delay) guarantees this only
+      // closes the dashboard's own operation, not someone else's.
+      console.log(`📊 Loading operations still active: ${getLoadingCounter()}`)
+      hideLoading(loadingToken)
       loading.value = false
+      console.log('✅ Dashboard loading complete')
     }
   }
 
-  // Load stats from OrderService.getOrderStatistics()
+  // Load stats - NO loading management here
   const loadStats = async () => {
     try {
       const response = await adminOrderApi.getOrderStatistics()
@@ -87,9 +120,10 @@ export function useDashboard() {
         )
         
         stats.value = statsArray
+        console.log('✅ Stats loaded:', statsArray.length)
       }
     } catch (err) {
-      console.error('Error loading stats:', err)
+      console.error('❌ Error loading stats:', err)
       stats.value = [
         { label: 'Total Orders', value: '0', sub: '0 pending', subColor: 'text-gray-400', icon: 'cart', iconBg: 'bg-gray-100', iconColor: 'text-gray-400' },
         { label: 'In Production', value: '0', sub: '0 scheduled', subColor: 'text-gray-400', icon: 'package', iconBg: 'bg-gray-100', iconColor: 'text-gray-400' },
@@ -98,27 +132,29 @@ export function useDashboard() {
     }
   }
 
-  // Load revenue by category
+  // Load revenue by category - NO loading management here
   const loadRevenueCategories = async () => {
     try {
       const response = await adminDashboardApi.getRevenueByCategory()
       if (response.success && response.data && response.data.length > 0) {
         revenueCategories.value = response.data
+        console.log('✅ Revenue categories loaded:', response.data.length)
       } else {
         revenueCategories.value = []
       }
     } catch (err) {
-      console.error('Error loading revenue categories:', err)
+      console.error('❌ Error loading revenue categories:', err)
       revenueCategories.value = []
     }
   }
 
-  // Load weekly sales
+  // Load weekly sales - NO loading management here
   const loadWeeklySales = async () => {
     try {
       const response = await adminDashboardApi.getWeeklySales()
       if (response.success && response.data && response.data.length > 0) {
         weeklySales.value = response.data
+        console.log('✅ Weekly sales loaded:', response.data.length)
       } else {
         weeklySales.value = [
           { day: 'Mon', value: 0, displayValue: '0k' },
@@ -131,12 +167,12 @@ export function useDashboard() {
         ]
       }
     } catch (err) {
-      console.error('Error loading weekly sales:', err)
+      console.error('❌ Error loading weekly sales:', err)
       weeklySales.value = []
     }
   }
 
-  // Load low stock items - SINGLE SOURCE, NO DUPLICATES
+  // Load low stock items - NO loading management here
   const loadLowStockItems = async () => {
     try {
       const token = localStorage.getItem('adminToken');
@@ -146,54 +182,45 @@ export function useDashboard() {
         return;
       }
       
-      console.log('Fetching low stock items from inventory API...');
+      console.log('🔍 Fetching low stock items from inventory API...');
       
-      // Get all inventory items (both products and supplies)
       const inventoryResponse = await inventoryApi.getAllInventory();
       
-      const itemsMap = new Map(); // Use Map to prevent duplicates by product ID
+      const itemsMap = new Map();
       const PRODUCT_LOW_STOCK_THRESHOLD = 800;
       const SUPPLY_LOW_STOCK_THRESHOLD = 100;
       
       if (inventoryResponse.success && inventoryResponse.data) {
         for (const invItem of inventoryResponse.data) {
-          // Skip if no reference
           if (!invItem.itemRef) continue;
           
           const isProduct = invItem.itemType === 'product';
           const productId = invItem.itemRef._id || invItem.itemRef.id;
           
-          // Skip if we already processed this product (prevents duplicates)
           if (itemsMap.has(productId)) continue;
           
-          // Get current stock
           let currentStock = invItem.stock || 0;
           let displayStock = currentStock;
           let threshold = isProduct ? PRODUCT_LOW_STOCK_THRESHOLD : SUPPLY_LOW_STOCK_THRESHOLD;
           let productName = invItem.itemRef.name || 'Unknown';
           
-          // For products, calculate total stock from sizes
           if (isProduct && invItem.itemRef.sizes && invItem.itemRef.sizes.length > 0) {
             const totalStock = invItem.itemRef.sizes.reduce((sum, size) => sum + (size.stock || 0), 0);
             currentStock = totalStock;
             displayStock = totalStock;
           }
           
-          // Determine if low stock
           let isLowStock = false;
           if (isProduct) {
-            // Product is low stock if total stock > 0 AND <= threshold
             isLowStock = currentStock > 0 && currentStock <= threshold;
           } else {
-            // Supply is low stock if stock > 0 AND <= threshold
             isLowStock = currentStock > 0 && currentStock <= threshold;
           }
           
-          // Only add if low stock
           if (isLowStock) {
             itemsMap.set(productId, {
               id: invItem.itemId,
-              name: productName, // Clean name without size
+              name: productName,
               stock: displayStock,
               threshold: threshold,
               unit: isProduct ? 'pcs' : (invItem.unit || 'units'),
@@ -204,27 +231,25 @@ export function useDashboard() {
               minOrder: invItem.itemRef.minOrder || 500,
               sizes: invItem.itemRef.sizes,
               lastRestocked: invItem.lastRestocked,
-              // Store the original product/supply ID for navigation
               originalId: isProduct ? invItem.itemRef.id : invItem.itemRef.supplyId
             });
           }
         }
       }
       
-      // Convert Map to array and sort by stock
       const items = Array.from(itemsMap.values());
       items.sort((a, b) => a.stock - b.stock);
       
       lowStockItems.value = items;
-      console.log('Processed low stock items (no duplicates, clean names):', lowStockItems.value);
+      console.log('✅ Processed low stock items:', lowStockItems.value.length, 'items found');
       
     } catch (err) {
-      console.error('Error loading low stock items:', err);
+      console.error('❌ Error loading low stock items:', err);
       lowStockItems.value = [];
     }
   }
 
-  // Load recent orders with complete data
+  // Load recent orders - NO loading management here
   const loadRecentOrders = async () => {
     try {
       const response = await adminDashboardApi.getRecentOrders(5)
@@ -252,11 +277,12 @@ export function useDashboard() {
           statusHistory: order.statusHistory || [],
           items: order.items || []
         }))
+        console.log('✅ Recent orders loaded:', recentOrders.value.length)
       } else {
         recentOrders.value = []
       }
     } catch (err) {
-      console.error('Error loading recent orders:', err)
+      console.error('❌ Error loading recent orders:', err)
       recentOrders.value = []
     }
   }
