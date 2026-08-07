@@ -309,7 +309,7 @@
                         
                       </div>
                       <div class="flex items-center justify-between">
-                        <p v-if="h.notes && h.notes !== 'Order created'" class="text-xs text-gray-500">{{ h.notes }}</p>
+                        <p v-if="h.notes " class="text-xs text-gray-500">{{ h.notes }}</p>
                       <div v-if="h.updatedBy" class="text-xs text-blue-400 ml-2">Updated by: {{ h.updatedBy }}</div>
                       </div>
 
