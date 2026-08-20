@@ -136,9 +136,16 @@
                         <p class="text-xs font-bold text-gray-900">{{ order.amount }}</p>
                       </div>
                     </template>
-                    <div class="border-t border-gray-100 pt-1 flex items-center justify-between">
-                      <span class="text-xs font-bold text-gray-700">Total</span>
-                      <span class="text-sm font-black text-gray-900">{{ order.amount }}</span>
+                    
+                    <div class="border-t border-gray-100 pt-1 flex flex-col items-start justify-between">
+                      <div v-if="order.hasDesign" class="flex items-center justify-between w-full" >
+                        <span  class="text-xs font-medium text-gray-600">Design & Printing Fee</span>
+                        <span class="text-xs font-black text-black-600">₱500</span>
+                      </div>
+                      <div class="flex items-center justify-between w-full">
+                        <span class="text-xs font-bold text-gray-700">Total</span>
+                        <span class="text-sm font-black text-gray-900">{{ order.amount }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -230,7 +237,7 @@
                 </div>
               </div>
 
-              <!-- ✅ UPDATED: Order Status Flow - Compact -->
+              <!-- Order Status Flow - Compact -->
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Order Status</p>
@@ -258,7 +265,7 @@
                   Ready for Pickup
                 </div>
 
-                <!-- ✅ Progress flow with proper status management -->
+                <!-- Progress flow with proper status management -->
                 <div v-if="localStatus !== 'Completed' && localStatus !== 'Cancelled'" class="flex items-center gap-1">
                   <div v-for="(status, index) in statusFlow" :key="status" class="flex items-center flex-1">
                     <button
@@ -269,18 +276,14 @@
                       :title="getStatusButtonTitle(status)"
                     >
                       <span class="flex items-center justify-center w-5 h-5">
-                        <!-- ✅ Show checkmark for completed statuses -->
                         <component v-if="isStatusCompleted(status)" :is="statusIcon('Completed')" class="w-3 h-3 text-green-500" />
-                        <!-- ✅ Show current status indicator (pulsing green dot) -->
                         <span v-else-if="isCurrentStatus(status)" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                        <!-- ✅ Show step number for future statuses -->
                         <span v-else class="text-xs font-black" :class="getStepNumberClass(status)">{{ index + 1 }}</span>
                       </span>
                       <span class="text-xs font-semibold leading-tight" :class="getStatusTextClass(status)">
                         {{ getStatusDisplayName(status) }}
                       </span>
                     </button>
-                    <!-- ✅ Arrow indicator -->
                     <svg v-if="index < statusFlow.length - 1" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mx-0.5" :class="getArrowClass(statusFlow[index + 1])">
                       <path d="m9 18 6-6-6-6"/>
                     </svg>
@@ -305,14 +308,12 @@
                         <p class="text-xs font-bold" :class="historyText(h.status)">
                           {{ h.status === 'Out for Delivery' && order?.receivingMode === 'Pick-up' ? 'Ready for Pickup' : h.status }}
                         </p>
-                          <p class="text-xs text-gray-400">{{ formatDateTimeShort(h.timestamp) }}</p>
-                        
+                        <p class="text-xs text-gray-400">{{ formatDateTimeShort(h.timestamp) }}</p>
                       </div>
                       <div class="flex items-center justify-between">
-                        <p v-if="h.notes " class="text-xs text-gray-500">{{ h.notes }}</p>
-                      <div v-if="h.updatedBy" class="text-xs text-blue-400 ml-2">Updated by: {{ h.updatedBy }}</div>
+                        <p v-if="h.notes" class="text-xs text-gray-500">{{ h.notes }}</p>
+                        <div v-if="h.updatedBy" class="text-xs text-blue-400 ml-2">Updated by: {{ h.updatedBy }}</div>
                       </div>
-
                     </div>
                   </div>
                 </div>
@@ -356,7 +357,8 @@
           <!-- Footer -->
           <div class="flex items-center justify-end px-6 py-3 border-t border-gray-100 flex-shrink-0">
             <button
-              v-if="localStatus === 'Out for Delivery' || localStatus === 'Ready to Pick-up' || localStatus === 'Completed'"               
+              v-if="localStatus === 'Out for Delivery' || localStatus === 'Ready to Pick-up' || localStatus === 'Completed'"
+              @click="openReceiptModal"
               class="flex items-center justify-center px-5 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-semibold"
             >
               <Printer class="w-4 h-4 text-white mr-2" />
@@ -374,7 +376,6 @@
     </Transition>
   </Teleport>
 
-  <!-- Modals remain the same -->
   <!-- Production Schedule Modal -->
   <Teleport to="body">
     <Transition name="modal">
@@ -528,6 +529,14 @@
       </div>
     </Transition>
   </Teleport>
+
+  <!-- Receipt Modal -->
+  <ReceiptModal
+    :show="showReceiptModal"
+    :order="order"
+    @close="closeReceiptModal"
+    @print="handleReceiptPrint"
+  />
 </template>
 
 <script setup>
@@ -535,6 +544,7 @@ import { ref, watch, computed } from 'vue'
 import { h } from 'vue'
 import { Truck, User, Phone, Car, Loader2, Printer } from 'lucide-vue-next'
 import { adminDriverApi } from '@/api/api'
+import ReceiptModal from '@/components/receipt/ReceiptModal.vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -547,7 +557,10 @@ const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
 const localPayment = ref(props.order?.payment || 'Unpaid')
 
-// Modal states
+// ─── Receipt Modal State ────────────────────────────────────────────────
+const showReceiptModal = ref(false)
+
+// ─── Modal states ─────────────────────────────────────────────────────────
 const showScheduleModal = ref(false)
 const showDriverModal = ref(false)
 const showCompleteConfirmModal = ref(false)
@@ -559,7 +572,7 @@ const scheduleNotes = ref('')
 const completeNotes = ref('')
 const driverNotes = ref('')
 
-// Driver state
+// ─── Driver state ─────────────────────────────────────────────────────────
 const availableDrivers = ref([])
 const selectedDriverId = ref('')
 const isLoadingDrivers = ref(false)
@@ -572,7 +585,6 @@ const driverDetails = ref({
 })
 
 // ─── Cloudinary Configuration ─────────────────────────────────────────────
-const CLOUDINARY_URL = 'https://res.cloudinary.com'
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'vwrxijez'
 
 function getFullImageUrl(path) {
@@ -643,7 +655,7 @@ const designSource = computed(() => {
 
 const designSourceLabel = computed(() => {
   const labels = {
-    'upload': ' Uploaded Design',
+    'upload': 'Uploaded Design',
     'saved': 'Saved Template',
     'no-design': 'No Design'
   }
@@ -835,7 +847,6 @@ const paymentStatuses = [
 
 // ─── Status Display Functions ────────────────────────────────────────────
 
-// ✅ Check if status is the current status
 function isCurrentStatus(status) {
   let effectiveStatus = status
   if (status === 'Ready to Pick-up') {
@@ -1119,6 +1130,20 @@ function closeModal() { emit('close') }
 function closeScheduleModal() { showScheduleModal.value = false; pendingStatus.value = null }
 function closeDriverModal() { showDriverModal.value = false; pendingStatus.value = null }
 function closeCompleteConfirmModal() { showCompleteConfirmModal.value = false; pendingStatus.value = null }
+
+// ─── Receipt Modal Functions ─────────────────────────────────────────────
+function openReceiptModal() {
+  showReceiptModal.value = true
+}
+
+function closeReceiptModal() {
+  showReceiptModal.value = false
+}
+
+function handleReceiptPrint(data) {
+  console.log('Receipt printed:', data)
+  showReceiptModal.value = false
+}
 
 // ─── Badge Functions ─────────────────────────────────────────────────────
 function statusBadge(status) {

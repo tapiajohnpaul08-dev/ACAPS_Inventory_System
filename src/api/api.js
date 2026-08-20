@@ -121,7 +121,7 @@ export const adminManagementApi = {
 };
 
 // =============================================================================
-// PRODUCT MANAGEMENT (Products only - no inventory fields)
+// PRODUCT MANAGEMENT
 // =============================================================================
 
 export const adminProductApi = {
@@ -172,13 +172,13 @@ export const adminProductApi = {
       adminAxiosInstance.delete(`/product/delete/${productId}`)
     );
   },
+
   async updateSizeStock(productId, sizeName, stock) {
     return handleResponse(
       adminAxiosInstance.patch(`/product/${productId}/size/${sizeName}/stock`, { stock })
     );
   },
 
-  // Reduce product size stock (for sales/usage)
   async reduceSizeStock(productId, sizeName, quantity) {
     return handleResponse(
       adminAxiosInstance.post(`/product/${productId}/size/${sizeName}/reduce-stock`, { quantity })
@@ -229,53 +229,46 @@ export const adminSizeApi = {
 };
 
 // =============================================================================
-// SUPPLY MANAGEMENT (Supplies only - no inventory fields)
+// SUPPLY MANAGEMENT
 // =============================================================================
 
 export const supplyApi = {
-  // Get all supplies
   async getAllSupplies() {
     return handleResponse(
       adminAxiosInstance.get('/supplies')
     );
   },
 
-  // Get active supplies
   async getActiveSupplies() {
     return handleResponse(
       adminAxiosInstance.get('/supplies/active')
     );
   },
 
-  // Get supplies by category
   async getSuppliesByCategory(category) {
     return handleResponse(
       adminAxiosInstance.get(`/supplies/category/${category}`)
     );
   },
 
-  // Get supply by ID
   async getSupplyById(supplyId) {
     return handleResponse(
       adminAxiosInstance.get(`/supplies/${supplyId}`)
     );
   },
 
-  // Create supply
   async createSupply(supplyData) {
     return handleResponse(
       adminAxiosInstance.post('/supplies', supplyData)
     );
   },
 
-  // Update supply
   async updateSupply(supplyId, supplyData) {
     return handleResponse(
       adminAxiosInstance.put(`/supplies/${supplyId}`, supplyData)
     );
   },
 
-  // Delete supply
   async deleteSupply(supplyId) {
     return handleResponse(
       adminAxiosInstance.delete(`/supplies/${supplyId}`)
@@ -284,81 +277,70 @@ export const supplyApi = {
 };
 
 // =============================================================================
-// UNIFIED INVENTORY MANAGEMENT (Connects Products and Supplies)
+// UNIFIED INVENTORY MANAGEMENT
 // =============================================================================
 
 export const inventoryApi = {
-  // Get all inventory items (both products and supplies)
   async getAllInventory() {
     return handleResponse(
       adminAxiosInstance.get('/inventory')
     );
   },
 
-  // Get inventory by type ('product' or 'supply')
   async getInventoryByType(type) {
     return handleResponse(
       adminAxiosInstance.get(`/inventory/type/${type}`)
     );
   },
 
-  // Get inventory item by ID
   async getInventoryById(itemId) {
     return handleResponse(
       adminAxiosInstance.get(`/inventory/${itemId}`)
     );
   },
 
-  // Add product to inventory
   async addProductToInventory(productId, inventoryData) {
     return handleResponse(
       adminAxiosInstance.post(`/inventory/products/${productId}`, inventoryData)
     );
   },
 
-  // Add supply to inventory
   async addSupplyToInventory(supplyId, inventoryData) {
     return handleResponse(
       adminAxiosInstance.post(`/inventory/supplies/${supplyId}`, inventoryData)
     );
   },
 
-  // Update inventory item
   async updateInventoryItem(itemId, inventoryData) {
     return handleResponse(
       adminAxiosInstance.put(`/inventory/${itemId}`, inventoryData)
     );
   },
 
-  // Update stock (add/subtract/set)
   async updateStock(itemId, quantity, operation = 'set') {
     return handleResponse(
       adminAxiosInstance.patch(`/inventory/${itemId}/stock`, { quantity, operation })
     );
   },
 
-  // Delete inventory item
   async deleteInventoryItem(itemId) {
     return handleResponse(
       adminAxiosInstance.delete(`/inventory/${itemId}`)
     );
   },
 
-  // Get low stock items
   async getLowStockItems() {
     return handleResponse(
       adminAxiosInstance.get('/inventory/low-stock')
     );
   },
 
-  // Get out of stock items
   async getOutOfStockItems() {
     return handleResponse(
       adminAxiosInstance.get('/inventory/out-of-stock')
     );
   },
 
-  // Get inventory statistics
   async getInventoryStatistics() {
     return handleResponse(
       adminAxiosInstance.get('/inventory/statistics')
@@ -371,7 +353,6 @@ export const inventoryApi = {
 // =============================================================================
 
 export const adminOrderApi = {
-  // Get all orders
   async getAllOrders(filters = {}) {
     const params = new URLSearchParams(filters).toString();
     return handleResponse(
@@ -379,22 +360,19 @@ export const adminOrderApi = {
     );
   },
 
-  // Get order by ID
   async getOrderById(orderId) {
     return handleResponse(
       adminAxiosInstance.get(`/order/admin/orders/${orderId}`)
     );
   },
 
-  // Update order status - Send status as object with status property
-updateOrderStatus: async (orderId, data) => {
-  return handleResponse(
-    adminAxiosInstance.patch(`/order/admin/orders/${orderId}/status`, data)
-  );
-},
-  // Update payment status - Send paymentStatus as object
+  updateOrderStatus: async (orderId, data) => {
+    return handleResponse(
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/status`, data)
+    );
+  },
+
   async updatePaymentStatus(orderId, paymentData) {
-    // Handle both string and object input
     const paymentStatus = typeof paymentData === 'string' ? paymentData : paymentData.paymentStatus;
     const amountPaid = paymentData.amountPaid || null;
     return handleResponse(
@@ -402,35 +380,30 @@ updateOrderStatus: async (orderId, data) => {
     );
   },
 
-  // Update order details
   async updateOrder(orderId, orderData) {
     return handleResponse(
       adminAxiosInstance.put(`/order/admin/orders/${orderId}`, orderData)
     );
   },
 
-  // Delete order
   async deleteOrder(orderId) {
     return handleResponse(
       adminAxiosInstance.delete(`/order/admin/orders/${orderId}`)
     );
   },
 
-  // Get order statistics
   async getOrderStatistics() {
     return handleResponse(
       adminAxiosInstance.get('/order/admin/statistics')
     );
   },
 
-  // Get orders by date range
   async getOrdersByDateRange(startDate, endDate) {
     return handleResponse(
       adminAxiosInstance.get(`/order/admin/date-range?startDate=${startDate}&endDate=${endDate}`)
     );
   },
 
-  // Get orders by customer email
   async getOrdersByCustomer(email) {
     return handleResponse(
       adminAxiosInstance.get(`/order/admin/customers/${email}/orders`)
@@ -441,7 +414,6 @@ updateOrderStatus: async (orderId, data) => {
 // =============================================================================
 // DASHBOARD STATISTICS
 // =============================================================================
-
 
 export const adminDashboardApi = {
   async getStats() {
@@ -456,7 +428,6 @@ export const adminDashboardApi = {
     );
   },
 
-  // ✅ Fix this - use adminAxiosInstance, not regular axiosInstance
   async getLowStockItems() {
     return handleResponse(
       adminAxiosInstance.get('/inventory/low-stock')
@@ -477,11 +448,320 @@ export const adminDashboardApi = {
 };
 
 // =============================================================================
-// BACKWARD COMPATIBILITY (For existing code)
+// ANALYTICS
 // =============================================================================
 
-// For backward compatibility with existing productApi calls
-// Fix the productApi in api.js
+export const analyticsApi = {
+  async getStats(dateFrom, dateTo) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/stats?${params}`));
+  },
+
+  async getTopProducts(limit = 5, dateFrom, dateTo) {
+    const params = new URLSearchParams({ limit });
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/top-products?${params}`));
+  },
+
+  async getOrderStatusDistribution(dateFrom, dateTo) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/order-status-distribution?${params}`));
+  },
+
+  async getRevenueByCategory(dateFrom, dateTo) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/revenue-by-category?${params}`));
+  },
+
+  async getMonthlyRevenue(months = 12) {
+    return handleResponse(adminAxiosInstance.get(`/analytics/monthly-revenue?months=${months}`));
+  },
+
+  async getFilteredAnalytics(dateFrom, dateTo, groupBy = 'month') {
+    const params = new URLSearchParams({ group_by: groupBy });
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo)   params.set('date_to',   dateTo);
+    return handleResponse(adminAxiosInstance.get(`/analytics/filter?${params}`));
+  },
+
+  async getRevenueForecast() {
+    return handleResponse(adminAxiosInstance.get('/analytics/forecast'));
+  },
+
+  async getLowStockProducts(threshold = 500) {
+    return handleResponse(adminAxiosInstance.get(`/analytics/products/low-stock?threshold=${threshold}`));
+  },
+
+  async getTopCustomers(limit = 10) {
+    return handleResponse(adminAxiosInstance.get(`/analytics/customers/top?limit=${limit}`));
+  },
+};
+
+// =============================================================================
+// ALERTS
+// =============================================================================
+
+export const alertApi = {
+  async sendItemAlert(itemId, forceSend = false) {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/item', { itemId, forceSend })
+    );
+  },
+
+  async sendProductSizeAlert(productId, sizeName) {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/product-size', { productId, sizeName })
+    );
+  },
+
+  async scanAndAlertAll() {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/scan-all')
+    );
+  },
+
+  async sendSummaryReport() {
+    return handleResponse(
+      adminAxiosInstance.post('/alerts/summary')
+    );
+  },
+};
+
+// =============================================================================
+// STOCK MOVEMENT
+// =============================================================================
+
+export const stockMovementApi = {
+  async getMovementHistory(itemId, limit = 50) {
+    return handleResponse(
+      adminAxiosInstance.get(`/inventory/${itemId}/movements?limit=${limit}`)
+    );
+  },
+
+  async recordMovement(itemId, movementData) {
+    return handleResponse(
+      adminAxiosInstance.post(`/inventory/${itemId}/movements`, movementData)
+    );
+  }
+};
+
+// =============================================================================
+// CHAT
+// =============================================================================
+
+export const adminChatApi = {
+  async getConversations(status = null, adminId = null) {
+    let url = '/chat/admin/conversations';
+    const params = [];
+    if (status) params.push(`status=${status}`);
+    if (adminId) params.push(`admin_id=${adminId}`);
+    if (params.length) url += `?${params.join('&')}`;
+    return handleResponse(adminAxiosInstance.get(url));
+  },
+
+  async getMessages(conversationId, limit = 50, before = null) {
+    let url = `/chat/admin/conversations/${conversationId}/messages?limit=${limit}`;
+    if (before) url += `&before=${before}`;
+    return handleResponse(adminAxiosInstance.get(url));
+  },
+
+  async sendMessage(conversationId, content, attachments = [], replyToMessageId = null) {
+    console.log('📨 adminChatApi.sendMessage called with:', { 
+      conversationId, 
+      content, 
+      attachments: attachments?.length || 0,
+      replyToMessageId 
+    });
+    return handleResponse(
+      adminAxiosInstance.post('/chat/admin/messages', { 
+        conversationId, 
+        content, 
+        attachments,
+        replyToMessageId 
+      })
+    );
+  },
+
+  async assignConversation(conversationId) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/chat/admin/conversations/${conversationId}/assign`)
+    );
+  },
+
+  async updateStatus(conversationId, status) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/chat/admin/conversations/${conversationId}/status`, { status })
+    );
+  },
+
+  async getUnreadCount() {
+    return handleResponse(adminAxiosInstance.get('/chat/admin/unread-count'));
+  },
+
+  async unsendMessage(messageId) {
+    return handleResponse(
+      adminAxiosInstance.delete(`/chat/admin/messages/${messageId}`)
+    );
+  },
+};
+
+// =============================================================================
+// DRIVER MANAGEMENT
+// =============================================================================
+
+export const adminDriverApi = {
+  async getAllDrivers(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return handleResponse(
+      adminAxiosInstance.get(`/drivers/all${params ? `?${params}` : ''}`)
+    );
+  },
+
+  async getAvailableDrivers() {
+    return handleResponse(
+      adminAxiosInstance.get('/drivers/available')
+    );
+  },
+
+  async getDriverById(driverId) {
+    return handleResponse(
+      adminAxiosInstance.get(`/drivers/${driverId}`)
+    );
+  },
+
+  async createDriver(driverData) {
+    return handleResponse(
+      adminAxiosInstance.post('/drivers/create', driverData)
+    );
+  },
+
+  async updateDriver(driverId, driverData) {
+    return handleResponse(
+      adminAxiosInstance.put(`/drivers/${driverId}`, driverData)
+    );
+  },
+
+  async deleteDriver(driverId) {
+    return handleResponse(
+      adminAxiosInstance.delete(`/drivers/${driverId}`)
+    );
+  },
+
+  async toggleAvailability(driverId) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/drivers/${driverId}/toggle-availability`)
+    );
+  },
+};
+
+// =============================================================================
+// ✅ FEEDBACK API (Customer Insights)
+// =============================================================================
+
+export const feedBackApi = {
+  // ─── Admin Routes ──────────────────────────────────────────────────────────
+
+  // Get all feedback with filters (admin)
+  getAllFeedback: async (filters = {}, limit = 20, page = 1) => {
+    return handleResponse(
+      adminAxiosInstance.get('/feedback/admin/all', {
+        params: { ...filters, limit, page }
+      })
+    );
+  },
+
+  // Get feedback statistics (admin)
+  getAdminFeedbackStats: async () => {
+    return handleResponse(
+      adminAxiosInstance.get('/feedback/admin/stats')
+    );
+  },
+
+  // Update feedback status (admin)
+  updateFeedbackStatus: async (feedbackId, status, adminResponse) => {
+    return handleResponse(
+      adminAxiosInstance.put(`/feedback/admin/${feedbackId}`, {
+        status,
+        adminResponse
+      })
+    );
+  },
+
+  // Delete feedback (admin)
+  deleteFeedback: async (feedbackId) => {
+    return handleResponse(
+      adminAxiosInstance.delete(`/feedback/admin/${feedbackId}`)
+    );
+  },
+
+  // ─── Customer Routes (For reference - these use customer axios instance) ──
+  // Note: These are for customer-side use, not admin
+  // They are included here for completeness but use customer endpoints
+
+  // Submit feedback for an order (customer)
+  submitFeedback: async (data) => {
+    // This would use the customer axios instance
+    // For admin API, this is just a reference
+    return handleResponse(
+      adminAxiosInstance.post('/feedback', data)
+    );
+  },
+
+  // Check if feedback exists for an order
+  checkFeedbackExists: async (orderId) => {
+    return handleResponse(
+      adminAxiosInstance.get(`/feedback/order/${orderId}/check`)
+    );
+  },
+
+  // Get customer's own feedback
+  getMyFeedback: async () => {
+    return handleResponse(
+      adminAxiosInstance.get('/feedback/my-feedback')
+    );
+  },
+
+  // Get feedback for a specific order
+  getFeedbackByOrder: async (orderId) => {
+    return handleResponse(
+      adminAxiosInstance.get(`/feedback/order/${orderId}`)
+    );
+  },
+
+  // Get product feedback (public)
+  getProductFeedback: async (productId, limit = 20, page = 1) => {
+    return handleResponse(
+      adminAxiosInstance.get(`/feedback/product/${productId}`, {
+        params: { limit, page }
+      })
+    );
+  },
+
+  // Get product feedback stats (public)
+  getProductFeedbackStats: async (productId) => {
+    return handleResponse(
+      adminAxiosInstance.get(`/feedback/product/${productId}/stats`)
+    );
+  },
+
+  // Mark feedback as helpful (public)
+  markHelpful: async (feedbackId) => {
+    return handleResponse(
+      adminAxiosInstance.post(`/feedback/${feedbackId}/helpful`)
+    );
+  },
+};
+
+// =============================================================================
+// BACKWARD COMPATIBILITY
+// =============================================================================
 
 export const productApi = {
   async getAllProducts() {
@@ -489,7 +769,6 @@ export const productApi = {
   },
   
   async getProductById(id) {
-    // Try both id types
     return handleResponse(
       adminAxiosInstance.get(`/product/${id}`)
     );
@@ -536,10 +815,8 @@ export const productApi = {
     );
   },
 
-  // FIXED: Reduce stock by getting current stock first
   async reduceSizeStock(productId, sizeName, quantity) {
     try {
-      // First get the current product to find the size stock
       const product = await this.getProductById(productId);
       if (product.success && product.data) {
         const size = product.data.sizes?.find(s => s.name === sizeName);
@@ -556,8 +833,6 @@ export const productApi = {
   },
 };
 
-// For backward compatibility with existing inventoryApi calls (now unified)
-// This will map old calls to new unified inventory system
 export const legacyInventoryApi = {
   async getAllItems() {
     return inventoryApi.getInventoryByType('supply');
@@ -566,7 +841,6 @@ export const legacyInventoryApi = {
     return inventoryApi.getInventoryById(itemId);
   },
   async createItem(data) {
-    // This would need to create a supply first, then add to inventory
     console.warn('createItem is deprecated. Use supplyApi.createSupply() then inventoryApi.addSupplyToInventory()');
     return { success: false, message: 'Use supplyApi.createSupply() instead' };
   },
@@ -595,218 +869,6 @@ export const legacyInventoryApi = {
   }
 };
 
-
-export const analyticsApi = {
-  async getStats(dateFrom, dateTo) {
-    const params = new URLSearchParams();
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo)   params.set('date_to',   dateTo);
-    return handleResponse(adminAxiosInstance.get(`/analytics/stats?${params}`));
-  },
-  async getTopProducts(limit = 5, dateFrom, dateTo) {
-    const params = new URLSearchParams({ limit });
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo)   params.set('date_to',   dateTo);
-    return handleResponse(adminAxiosInstance.get(`/analytics/top-products?${params}`));
-  },
-  async getOrderStatusDistribution(dateFrom, dateTo) {
-    const params = new URLSearchParams();
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo)   params.set('date_to',   dateTo);
-    return handleResponse(adminAxiosInstance.get(`/analytics/order-status-distribution?${params}`));
-  },
-  async getRevenueByCategory(dateFrom, dateTo) {
-    const params = new URLSearchParams();
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo)   params.set('date_to',   dateTo);
-    return handleResponse(adminAxiosInstance.get(`/analytics/revenue-by-category?${params}`));
-  },
-  async getMonthlyRevenue(months = 12) {
-    return handleResponse(adminAxiosInstance.get(`/analytics/monthly-revenue?months=${months}`));
-  },
-  async getFilteredAnalytics(dateFrom, dateTo, groupBy = 'month') {
-    const params = new URLSearchParams({ group_by: groupBy });
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo)   params.set('date_to',   dateTo);
-    return handleResponse(adminAxiosInstance.get(`/analytics/filter?${params}`));
-  },
-  async getRevenueForecast() {
-    return handleResponse(adminAxiosInstance.get('/analytics/forecast'));
-  },
-  async getLowStockProducts(threshold = 500) {
-    return handleResponse(adminAxiosInstance.get(`/analytics/products/low-stock?threshold=${threshold}`));
-  },
-  async getTopCustomers(limit = 10) {
-    return handleResponse(adminAxiosInstance.get(`/analytics/customers/top?limit=${limit}`));
-  },
-};
-
-export const alertApi = {
-  // Send alert for specific inventory item
-  async sendItemAlert(itemId, forceSend = false) {
-    return handleResponse(
-      adminAxiosInstance.post('/alerts/item', { itemId, forceSend })
-    );
-  },
-
-  // Send alert for product size
-  async sendProductSizeAlert(productId, sizeName) {
-    return handleResponse(
-      adminAxiosInstance.post('/alerts/product-size', { productId, sizeName })
-    );
-  },
-
-  // Scan all inventory and send alerts for low/out of stock items
-  async scanAndAlertAll() {
-    return handleResponse(
-      adminAxiosInstance.post('/alerts/scan-all')
-    );
-  },
-
-  // Send summary report of all problematic items
-  async sendSummaryReport() {
-    return handleResponse(
-      adminAxiosInstance.post('/alerts/summary')
-    );
-  },
-};
-
-export const stockMovementApi = {
-  // Get stock movement history for an item
-  async getMovementHistory(itemId, limit = 50) {
-    return handleResponse(
-      adminAxiosInstance.get(`/inventory/${itemId}/movements?limit=${limit}`)
-    );
-  },
-
-  // Record stock movement
-  async recordMovement(itemId, movementData) {
-    return handleResponse(
-      adminAxiosInstance.post(`/inventory/${itemId}/movements`, movementData)
-    );
-  }
-};
-
-export const adminChatApi = {
-  // Get all conversations
-  async getConversations(status = null, adminId = null) {
-    let url = '/chat/admin/conversations';
-    const params = [];
-    if (status) params.push(`status=${status}`);
-    if (adminId) params.push(`admin_id=${adminId}`);
-    if (params.length) url += `?${params.join('&')}`;
-    return handleResponse(adminAxiosInstance.get(url));
-  },
-
-  // Get messages for a conversation
-  async getMessages(conversationId, limit = 50, before = null) {
-    let url = `/chat/admin/conversations/${conversationId}/messages?limit=${limit}`;
-    if (before) url += `&before=${before}`;
-    return handleResponse(adminAxiosInstance.get(url));
-  },
-
-// Send a message - MUST accept 4 parameters
-  async sendMessage(conversationId, content, attachments = [], replyToMessageId = null) {
-    console.log('📨 adminChatApi.sendMessage called with:', { 
-      conversationId, 
-      content, 
-      attachments: attachments?.length || 0,
-      replyToMessageId 
-    })
-    return handleResponse(
-      adminAxiosInstance.post('/chat/admin/messages', { 
-        conversationId, 
-        content, 
-        attachments,
-        replyToMessageId 
-      })
-    );
-  },
-
-  // Assign conversation to current admin
-  async assignConversation(conversationId) {
-    return handleResponse(
-      adminAxiosInstance.patch(`/chat/admin/conversations/${conversationId}/assign`)
-    );
-  },
-
-  // Update conversation status
-  async updateStatus(conversationId, status) {
-    return handleResponse(
-      adminAxiosInstance.patch(`/chat/admin/conversations/${conversationId}/status`, { status })
-    );
-  },
-
-  // Get unread count for admin
-  async getUnreadCount() {
-    return handleResponse(adminAxiosInstance.get('/chat/admin/unread-count'));
-  },
- async unsendMessage(messageId) {
-    return handleResponse(
-      adminAxiosInstance.delete(`/chat/admin/messages/${messageId}`)
-    );
-  },
-};
-
-// src/admin/api/api.js
-// Add this section after the adminChatApi section
-
-// =============================================================================
-// DRIVER MANAGEMENT
-// =============================================================================
-
-export const adminDriverApi = {
-  // Get all drivers
-  async getAllDrivers(filters = {}) {
-    const params = new URLSearchParams(filters).toString();
-    return handleResponse(
-      adminAxiosInstance.get(`/drivers/all${params ? `?${params}` : ''}`)
-    );
-  },
-
-  // Get available drivers
-  async getAvailableDrivers() {
-    return handleResponse(
-      adminAxiosInstance.get('/drivers/available')
-    );
-  },
-
-  // Get driver by ID
-  async getDriverById(driverId) {
-    return handleResponse(
-      adminAxiosInstance.get(`/drivers/${driverId}`)
-    );
-  },
-
-  // Create driver
-  async createDriver(driverData) {
-    return handleResponse(
-      adminAxiosInstance.post('/drivers/create', driverData)
-    );
-  },
-
-  // Update driver
-  async updateDriver(driverId, driverData) {
-    return handleResponse(
-      adminAxiosInstance.put(`/drivers/${driverId}`, driverData)
-    );
-  },
-
-  // Delete driver
-  async deleteDriver(driverId) {
-    return handleResponse(
-      adminAxiosInstance.delete(`/drivers/${driverId}`)
-    );
-  },
-
-  // Toggle driver availability
-  async toggleAvailability(driverId) {
-    return handleResponse(
-      adminAxiosInstance.patch(`/drivers/${driverId}/toggle-availability`)
-    );
-  },
-};
-
 // =============================================================================
 // Export all APIs
 // =============================================================================
@@ -826,5 +888,6 @@ export default {
   stockMovement: stockMovementApi,
   legacyInventory: legacyInventoryApi,
   chat: adminChatApi,
-  drivers: adminDriverApi
+  drivers: adminDriverApi,
+  feedback: feedBackApi, // ✅ Added feedback
 };

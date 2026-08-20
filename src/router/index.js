@@ -44,6 +44,11 @@ const routes = [
         name: 'Messages',
         component: MessagePage,
         meta: { title: 'Messages' }
+      },{
+        path: 'feedback',
+        name: 'Feedback',
+        component: () => import('@/pages/FeedbackPage.vue'),
+        meta: { title: 'Feedback' }
       },
       {
         path: 'analytics',

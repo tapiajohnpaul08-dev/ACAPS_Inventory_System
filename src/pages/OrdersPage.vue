@@ -143,7 +143,7 @@ function transformOrder(order) {
     // Status - USE THE DISPLAY STATUS
     status: displayStatus,  // ← FIXED: Use displayStatus
     payment: (order.paymentStatus || 'Unpaid'),
-
+    hasDesign: order.hasDesign || false,
     // Delivery
     deliveryMethod: order.receivingMode || order.deliveryMethod || order.fulfillment?.method || 'Pick-up',
     deliveryAddress: order.fulfillment?.deliveryAddress || order.address || '',

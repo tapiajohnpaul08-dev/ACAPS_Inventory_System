@@ -25,6 +25,7 @@ export function useOrders(options = {}) {
     return transformOrder(order, getDisplayStatus)
   }
 
+
   /**
    * Fetch all orders. Retries once on network-level failure (no response
    * from server) before giving up - handles the flaky-wifi/cold-start case

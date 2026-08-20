@@ -98,7 +98,7 @@ export function transformOrder(order, getDisplayStatus) {
     status: displayStatus,
     rawStatus,
     payment: order.paymentStatus || 'Unpaid',
-
+    hasDesign: order.hasDesign || false,
     // Delivery
     deliveryMethod: order.receivingMode || order.deliveryMethod || order.fulfillment?.method || 'Pick-up',
     deliveryAddress: order.fulfillment?.deliveryAddress || order.address || '',

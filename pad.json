@@ -1,12 +1,88 @@
 {
-    "id": "6a1ab081d64ba8bbd2f9f319",
-    "name": "Junebert Hachero",
-    "email": "hacherojunebert29@gmail.com",
-    "subject": "Customer Support",
-    "preview": "Hi!!!",
-    "date": "19 min ago",
-    "read": false,
-    "replyStatus": "pending",
-    "conversationId": "6a1ab081d64ba8bbd2f9f319",
-    "status": "open"
+    "id": "ORD-2026-933--COMP",
+    "orderId": "ORD-2026-933--COMP",
+    "_mongoId": "6a85cc838e8e1d984f5da9b4",
+    "customer": "Junebert Hachero",
+    "email": "braceroroxanne@gmail.com",
+    "phone": "09709406573",
+    "address": "Bustos Bulacan",
+    "product": "DOUBLE WALLPAPER CUPS",
+    "size": "8oz",
+    "qty": 500,
+    "amount": "₱1,750",
+    "rawAmount": 1750,
+    "status": "Out for Delivery",
+    "payment": "Unpaid",
+    "deliveryMethod": "Delivery",
+    "deliveryAddress": "Bustos Bulacan",
+    "supplyType": "Company Cups",
+    "expectedDelivery": "Aug 27, 2026",
+    "receivingMode": "Delivery",
+    "date": "Aug 19, 2026",
+    "orderedAt": "2026-08-19T15:32:19.004Z",
+    "updatedAt": "2026-08-19T15:32:40.503Z",
+    "notes": "No Design - Plain product as is | Items: DOUBLE WALLPAPER CUPS",
+    "designDetails": [],
+    "items": [
+        {
+            "selectedTemplate": null,
+            "productId": "PRD-2026-174",
+            "name": "DOUBLE WALLPAPER CUPS",
+            "category": "Paper Cups",
+            "size": "8oz",
+            "quantity": 500,
+            "designSource": "no-design",
+            "designImage": "",
+            "printSize": "",
+            "printPlacement": "",
+            "designNotes": "No design - plain product, as is.",
+            "files": [],
+            "selectedTemplateId": null,
+            "estimatedTotal": 1750,
+            "image": "https://res.cloudinary.com/vwrxijez/image/upload/v1785916841/beverage/products/product-1785916841196-184280702.jpg",
+            "_id": "6a85cc838e8e1d984f5da9b5"
+        }
+    ],
+    "statusHistory": [
+        {
+            "status": "Pending",
+            "timestamp": "2026-08-19T15:32:18.999Z",
+            "notes": "Order created",
+            "productionSchedule": "",
+            "updatedBy": "6a8577d1fa53b93e2e694e68"
+        },
+        {
+            "status": "Scheduled",
+            "timestamp": "2026-08-19T15:32:34.486Z",
+            "notes": "Order scheduled for production on Aug 19, 2026, 11:32 PM",
+            "productionSchedule": "2026-08-19T23:32",
+            "updatedBy": "John Paul Tapia"
+        },
+        {
+            "status": "In Production",
+            "timestamp": "2026-08-19T15:32:36.412Z",
+            "notes": "Order is now in production",
+            "productionSchedule": "",
+            "updatedBy": "John Paul Tapia"
+        },
+        {
+            "driverDetails": {
+                "driverName": "Kevin Salas",
+                "driverPhone": "9452512023",
+                "plateNumber": "KJS-1235",
+                "truckDescription": "White Forward"
+            },
+            "status": "Out for Delivery",
+            "timestamp": "2026-08-19T15:32:40.503Z",
+            "notes": "Order is out for delivery (Driver: Kevin Salas, Phone: 9452512023)",
+            "productionSchedule": "",
+            "updatedBy": "John Paul Tapia"
+        }
+    ],
+    "partialPayments": [],
+    "type": "",
+    "isProvided": false
 }
+
+
+          <img src="@/assets/logo/ACAPS_LOGO_AND_TEXT.png" alt="ACAPS Logo" class="w-60 h-40 object-contain" />

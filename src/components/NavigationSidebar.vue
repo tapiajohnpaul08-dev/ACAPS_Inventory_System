@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <nav class="flex-1 p-3 space-y-0.5">
+    <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
       <!-- Dashboard -->
       <router-link 
         to="/dashboard" 
@@ -21,14 +21,7 @@
           ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-layout-dashboard w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-          <rect width="7" height="9" x="3" y="3" rx="1"></rect>
-          <rect width="7" height="5" x="14" y="3" rx="1"></rect>
-          <rect width="7" height="9" x="14" y="12" rx="1"></rect>
-          <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-        </svg>
+        <LayoutDashboard class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
         <span class="text-sm font-medium">Dashboard</span>
       </router-link>
 
@@ -40,14 +33,7 @@
           ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-package w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-          <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path>
-          <path d="M12 22V12"></path>
-          <polyline points="3.29 7 12 12 20.71 7"></polyline>
-          <path d="m7.5 4.27 9 5.15"></path>
-        </svg>
+        <Package class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
         <span class="text-sm font-medium">Inventory</span>
         <span v-if="lowStockCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
           {{ lowStockCount }}
@@ -62,14 +48,11 @@
           ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-shopping-cart w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-          <circle cx="8" cy="21" r="1"></circle>
-          <circle cx="19" cy="21" r="1"></circle>
-          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
-        </svg>
+        <ShoppingCart class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
         <span class="text-sm font-medium">Orders</span>
+        <span v-if="pendingOrdersCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-orange-500 text-white">
+          {{ pendingOrdersCount }}
+        </span>
       </router-link>
 
       <!-- Messages - Only for sales department -->
@@ -81,14 +64,27 @@
             ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            class="lucide lucide-message-square w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
+          <MessageSquare class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
           <span class="text-sm font-medium">Messages</span>
           <span v-if="unreadMessagesCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
             {{ unreadMessagesCount }}
+          </span>
+        </router-link>
+      </template>
+
+      <!-- ✅ Feedback - Only for sales department -->
+      <template v-if="adminRole === 'Sales' || adminRole === 'Super Admin'">
+        <router-link 
+          to="/dashboard/feedback"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group" 
+          :class="isActive('/dashboard/feedback')
+            ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
+        >
+          <Star class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
+          <span class="text-sm font-medium">Feedback</span>
+          <span v-if="pendingFeedbackCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-yellow-500 text-white">
+            {{ pendingFeedbackCount }}
           </span>
         </router-link>
       </template>
@@ -102,18 +98,10 @@
             ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            class="lucide lucide-chart-column w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;">
-            <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
-            <path d="M18 17V9"></path>
-            <path d="M13 17V5"></path>
-            <path d="M8 17v-3"></path>
-          </svg>
+          <ChartColumn class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
           <span class="text-sm font-medium">Analytics</span>
         </router-link>
       </template>
-
 
       <!-- Accounts - Only for Super Admin -->
       <template v-if="adminRole === 'Super Admin'">
@@ -124,10 +112,7 @@
             ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' 
             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
+          <Users class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
           <span class="text-sm font-medium">Accounts</span>
         </router-link>
       </template>
@@ -141,13 +126,7 @@
       @click="navigateToInventory"
     >
       <div class="flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-triangle-alert w-4 h-4 text-red-600 flex-shrink-0">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path>
-          <path d="M12 9v4"></path>
-          <path d="M12 17h.01"></path>
-        </svg>
+        <TriangleAlert class="w-4 h-4 text-red-600 flex-shrink-0" />
         <div>
           <p class="text-xs font-semibold text-red-800">Low Stock Alert</p>
           <p class="text-xs text-red-600">{{ lowStockCount }} item{{ lowStockCount > 1 ? 's' : '' }} running low</p>
@@ -167,11 +146,7 @@
             <p class="text-sm font-semibold text-gray-900 truncate">{{ userName }}</p>
             <p class="text-xs text-gray-400 truncate">{{ userDepartment }}</p>
           </div>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            class="w-4 h-4 text-gray-400 transition-transform" :class="{ 'rotate-180': showUserMenu }">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
+          <ChevronDown class="w-4 h-4 text-gray-400 transition-transform" :class="{ 'rotate-180': showUserMenu }" />
         </button>
 
         <!-- User dropdown menu -->
@@ -185,12 +160,7 @@
           </div>
           <button @click="logout"
             class="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" x2="9" y1="12" y2="12"></line>
-            </svg>
+            <LogOut class="w-4 h-4" />
             Logout
           </button>
         </div>
@@ -202,13 +172,27 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { adminAuthApi, inventoryApi, adminChatApi } from '@/api/api'
+import { 
+  LayoutDashboard, 
+  Package, 
+  ShoppingCart, 
+  MessageSquare, 
+  Star, 
+  ChartColumn, 
+  Users, 
+  TriangleAlert, 
+  ChevronDown, 
+  LogOut 
+} from 'lucide-vue-next'
+import { adminAuthApi, inventoryApi, adminChatApi, feedBackApi } from '@/api/api'
 
 const route = useRoute()
 const router = useRouter()
 const showUserMenu = ref(false)
 const lowStockCount = ref(0)
 const unreadMessagesCount = ref(0)
+const pendingOrdersCount = ref(0)
+const pendingFeedbackCount = ref(0)
 const isLoading = ref(true)
 
 // Get user info from localStorage
@@ -263,8 +247,7 @@ async function fetchLowStockCount() {
 
 // Fetch unread messages count
 async function fetchUnreadMessagesCount() {
-  // Only fetch if user is in Sales department
-  if (adminRole !== 'Sales') {
+  if (adminRole !== 'Sales' && adminRole !== 'Super Admin') {
     return
   }
 
@@ -285,6 +268,42 @@ async function fetchUnreadMessagesCount() {
   }
 }
 
+// ✅ Fetch pending feedback count
+async function fetchPendingFeedbackCount() {
+  if (adminRole !== 'Sales' && adminRole !== 'Super Admin') {
+    return
+  }
+
+  try {
+    const response = await feedBackApi.getAllFeedback({ status: 'pending' }, 1, 1)
+    
+    if (response.success && response.pagination) {
+      pendingFeedbackCount.value = response.pagination.total || 0
+    } else {
+      pendingFeedbackCount.value = 0
+    }
+  } catch (error) {
+    console.error('Error fetching pending feedback count:', error)
+    pendingFeedbackCount.value = 0
+  }
+}
+
+// Fetch pending orders count
+async function fetchPendingOrdersCount() {
+  try {
+    // This would need to be implemented in your orders API
+    // For now, we'll use a placeholder
+    const response = await fetch('/api/v1/order/status/Pending/count')
+    if (response.ok) {
+      const data = await response.json()
+      pendingOrdersCount.value = data.count || 0
+    }
+  } catch (error) {
+    console.error('Error fetching pending orders count:', error)
+    pendingOrdersCount.value = 0
+  }
+}
+
 // Close dropdown when clicking outside
 function handleClickOutside(event) {
   const userMenu = event.target.closest('.p-3.border-t')
@@ -293,10 +312,13 @@ function handleClickOutside(event) {
   }
 }
 
-// Watch for route changes to refresh unread count
+// Watch for route changes to refresh counts
 watch(() => route.path, (newPath) => {
   if (newPath === '/dashboard/messages' || newPath.startsWith('/dashboard/messages/')) {
     setTimeout(fetchUnreadMessagesCount, 500)
+  }
+  if (newPath === '/dashboard/feedback') {
+    setTimeout(fetchPendingFeedbackCount, 500)
   }
 })
 
@@ -308,14 +330,21 @@ function handleUnreadCountUpdate(event) {
   }
 }
 
-// Listen for message read events
 function handleMessageRead() {
   fetchUnreadMessagesCount()
 }
 
-// Listen for new messages from socket
 function handleNewMessage() {
   fetchUnreadMessagesCount()
+}
+
+// ✅ Listen for feedback events
+function handleFeedbackSubmitted() {
+  fetchPendingFeedbackCount()
+}
+
+function handleFeedbackReviewed() {
+  fetchPendingFeedbackCount()
 }
 
 let intervalId = null
@@ -323,6 +352,9 @@ let intervalId = null
 onMounted(() => {
   fetchLowStockCount()
   fetchUnreadMessagesCount()
+  fetchPendingFeedbackCount()
+  fetchPendingOrdersCount()
+  
   document.addEventListener('click', handleClickOutside)
   
   // Listen for chat events
@@ -330,10 +362,17 @@ onMounted(() => {
   window.addEventListener('messageRead', handleMessageRead)
   window.addEventListener('newMessageReceived', handleNewMessage)
   
-  // Refresh unread count periodically when on messages page
+  // Listen for feedback events
+  window.addEventListener('feedbackSubmitted', handleFeedbackSubmitted)
+  window.addEventListener('feedbackReviewed', handleFeedbackReviewed)
+  
+  // Refresh counts periodically
   intervalId = setInterval(() => {
     if (route.path === '/dashboard/messages' || route.path.startsWith('/dashboard/messages/')) {
       fetchUnreadMessagesCount()
+    }
+    if (route.path === '/dashboard/feedback') {
+      fetchPendingFeedbackCount()
     }
   }, 30000)
 })
@@ -343,6 +382,8 @@ onUnmounted(() => {
   window.removeEventListener('unreadCountUpdated', handleUnreadCountUpdate)
   window.removeEventListener('messageRead', handleMessageRead)
   window.removeEventListener('newMessageReceived', handleNewMessage)
+  window.removeEventListener('feedbackSubmitted', handleFeedbackSubmitted)
+  window.removeEventListener('feedbackReviewed', handleFeedbackReviewed)
   
   if (intervalId) {
     clearInterval(intervalId)
@@ -363,5 +404,20 @@ onUnmounted(() => {
   50% {
     opacity: 0.5;
   }
+}
+
+/* Scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 </style>
