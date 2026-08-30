@@ -105,7 +105,7 @@
                         placeholder="Contact number or email"
                       />
                     </div>
-                    <div>
+                    <!-- <div>
                       <label class="block text-xs font-medium text-gray-700 mb-1">Lead Time (days)</label>
                       <input
                         v-model.number="form.leadTime"
@@ -115,7 +115,7 @@
                         placeholder="7"
                       />
                       <p class="text-[10px] text-gray-400 mt-0.5">Days for delivery after order</p>
-                    </div>
+                    </div> -->
                   </div>
                 </div>
               </div>
