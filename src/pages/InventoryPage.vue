@@ -880,9 +880,10 @@ async function handleNotify(item) {
 async function handleScanAll() {
   isScanningAll.value = true
   try {
+    // ✅ Uses the same endpoint - now returns consolidated email
     const result = await alertApi.scanAndAlertAll()
     if (result.success) {
-      showToast('success', `Scan complete — ${result.alertsSent} alert(s) sent`)
+      showToast('success', `✅ Scan complete — ${result.alertsSent} item(s) reported in one email`)
     } else {
       showToast('error', result.message || 'Scan failed')
     }

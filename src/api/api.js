@@ -509,29 +509,33 @@ export const analyticsApi = {
 // =============================================================================
 
 export const alertApi = {
-  async sendItemAlert(itemId, forceSend = false) {
+  // Send alert for a specific inventory item (supply)
+  sendItemAlert: async (itemId, forceSend = false) => {
     return handleResponse(
       adminAxiosInstance.post('/alerts/item', { itemId, forceSend })
     );
   },
 
-  async sendProductSizeAlert(productId, sizeName) {
+  // Send alert for a specific product size
+  sendProductSizeAlert: async (productId, sizeName) => {
     return handleResponse(
       adminAxiosInstance.post('/alerts/product-size', { productId, sizeName })
     );
   },
 
-  async scanAndAlertAll() {
+  // Scan all inventory and send consolidated summary email
+  scanAndAlertAll: async () => {
     return handleResponse(
       adminAxiosInstance.post('/alerts/scan-all')
     );
   },
 
-  async sendSummaryReport() {
+  // Send summary report (alias for scan-and-alert-all)
+  sendSummaryReport: async () => {
     return handleResponse(
       adminAxiosInstance.post('/alerts/summary')
     );
-  },
+  }
 };
 
 // =============================================================================

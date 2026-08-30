@@ -11,14 +11,14 @@
         @click="closeModal"
       ></div>
       
-      <!-- Modal Panel - Wider -->
+      <!-- Modal Panel -->
       <div 
         class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col animate-in fade-in zoom-in duration-300"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <!-- Header - Compact -->
+        <!-- Header -->
         <div class="flex items-start justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0 rounded-t-2xl"
           :class="type === 'products' ? 'bg-gradient-to-r from-green-50 to-white' : 'bg-gradient-to-r from-blue-50 to-white'">
           <div>
@@ -41,9 +41,8 @@
           </button>
         </div>
 
-        <!-- Content - Compact with better spacing -->
+        <!-- Content -->
         <div class="flex-1 overflow-y-auto px-6 py-4">
-          <!-- Loading State -->
           <div v-if="!item" class="flex flex-col items-center justify-center py-8">
             <div class="inline-block w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
             <p class="mt-3 text-gray-500">Loading item details...</p>
@@ -53,7 +52,7 @@
             
             <!-- PRODUCT VIEW -->
             <template v-if="type === 'products'">
-              <!-- Product Info - Compact Grid -->
+              <!-- Product Info -->
               <div class="grid grid-cols-3 gap-3">
                 <div class="bg-green-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Product Name</p>
@@ -72,7 +71,7 @@
                 </div>
               </div>
 
-              <!-- Stock Information - Compact -->
+              <!-- Stock Information -->
               <div class="border border-gray-200 rounded-xl p-3">
                 <div class="grid grid-cols-4 gap-3">
                   <div class="p-2 rounded-lg" :class="getStockStatusClass(calculateTotalStock(item.sizes), 800)">
@@ -94,7 +93,7 @@
                 </div>
               </div>
 
-              <!-- Sizes Section - Compact Table Style -->
+              <!-- Sizes Section -->
               <div v-if="item.sizes && item.sizes.length > 0" class="border border-gray-200 rounded-xl overflow-hidden">
                 <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
                   <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Available Sizes</p>
@@ -118,18 +117,22 @@
                         In Stock
                       </span>
                       
-                      <!-- Notify button -->
+                      <!-- Notify button for product size -->
                       <button 
                         v-if="needsUrgentAttention(size.stock, item.threshold || 800)"
                         @click="handleNotifyForSize(size)"
+                        :disabled="notifyingSize === size.name"
                         :class="isSizeOutOfStock(size.stock) ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'"
-                        class="px-2 py-1 text-xs font-semibold text-white rounded-lg transition-all duration-200 flex items-center gap-1"
+                        class="px-2 py-1 text-xs font-semibold text-white rounded-lg transition-all duration-200 flex items-center gap-1 disabled:opacity-50"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg v-if="notifyingSize === size.name" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
                           <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path>
                         </svg>
-                        Notify
+                        {{ notifyingSize === size.name ? 'Sending...' : 'Notify' }}
                       </button>
                     </div>
                   </div>
@@ -145,7 +148,7 @@
 
             <!-- SUPPLY VIEW -->
             <template v-else>
-              <!-- Item Info - Compact -->
+              <!-- Item Info -->
               <div class="grid grid-cols-3 gap-3">
                 <div class="bg-blue-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Item Name</p>
@@ -162,7 +165,7 @@
                 </div>
               </div>
 
-              <!-- Stock Status - Compact -->
+              <!-- Stock Status -->
               <div class="grid grid-cols-4 gap-3">
                 <div class="rounded-xl p-3" :class="getStockStatusClass(item.stock, item.threshold)">
                   <p class="text-xs text-gray-500">Current Stock</p>
@@ -185,7 +188,7 @@
                 </div>
               </div>
 
-              <!-- Additional Info - Compact -->
+              <!-- Additional Info -->
               <div class="border border-gray-200 rounded-xl overflow-hidden">
                 <div class="grid grid-cols-2 divide-x divide-gray-200">
                   <div class="px-4 py-2 flex justify-between">
@@ -204,7 +207,7 @@
               </div>
             </template>
 
-            <!-- Action Buttons - Compact -->
+            <!-- Action Buttons -->
             <div class="flex gap-3 pt-2">
               <button 
                 @click="handleEdit"
@@ -242,7 +245,7 @@
   </Teleport>
 
   <!-- Toast Notification -->
-  <div v-if="toast.show" class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold max-w-sm bg-gray-900 text-white animate-slide-in-right">
+  <!-- <div v-if="toast.show" class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold max-w-sm bg-gray-900 text-white animate-slide-in-right">
     <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <path d="M20 6L9 17l-5-5"/>
     </svg>
@@ -250,7 +253,7 @@
       <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
     </svg>
     {{ toast.message }}
-  </div>
+  </div> -->
 </template>
 
 <script setup>
@@ -268,6 +271,7 @@ const emit = defineEmits(['close', 'edit', 'notify', 'stockIn', 'stockOut'])
 // Toast notification
 const toast = ref({ show: false, type: 'success', message: '' })
 const notifyingSupply = ref(false)
+const notifyingSize = ref(null) // Track which size is being notified
 
 let toastTimeout = null
 
@@ -390,12 +394,63 @@ function formatDate(dateString) {
   }
 }
 
-function handleNotifyForSize(size) {
-  const isOutOfStock = isSizeOutOfStock(size.stock)
-  const message = `🔴 ${isOutOfStock ? 'OUT OF STOCK' : 'LOW STOCK'} ALERT 🔴\n\nProduct: ${props.item?.name}\nSize: ${size.name}\nCurrent Stock: ${size.stock || 0} pcs\nThreshold: ${props.item?.threshold || 100} pcs\n\nPlease restock immediately!`
+// ✅ Handle notify for a specific product size
+async function handleNotifyForSize(size) {
+  if (notifyingSize.value) return // Prevent double click
   
-  showToast('success', `${isOutOfStock ? 'Out of stock' : 'Low stock'} notification sent for ${props.item?.name} - ${size.name}`)
-  console.log('Notification:', message)
+  const productId = props.item?.id
+  const sizeName = size.name
+  
+  if (!productId || !sizeName) {
+    showToast('error', 'Missing product or size information')
+    return
+  }
+  
+  notifyingSize.value = sizeName
+  
+  try {
+    const result = await alertApi.sendProductSizeAlert(productId, sizeName)
+    if (result.success) {
+      const isOutOfStock = isSizeOutOfStock(size.stock)
+      showToast('success', `${isOutOfStock ? 'Out of stock' : 'Low stock'} alert emailed for ${props.item.name} - ${sizeName}`)
+      emit('notify', { productId, sizeName, type: 'product_size' })
+    } else {
+      showToast('error', result.message || 'Failed to send notification')
+    }
+  } catch (err) {
+    console.error('Notify error:', err)
+    showToast('error', 'Failed to send notification')
+  } finally {
+    notifyingSize.value = null
+  }
+}
+
+// Handle notify for supply item
+async function handleNotify() {
+  if (!props.item || notifyingSupply.value) return
+  
+  const itemId = props.item.itemId || props.item.id
+  if (!itemId) {
+    showToast('error', 'Missing item ID')
+    return
+  }
+  
+  notifyingSupply.value = true
+  try {
+    const result = await alertApi.sendItemAlert(itemId, true)
+    if (result.success) {
+      const isOutOfStock = isSizeOutOfStock(props.item.stock)
+      emit('notify', props.item)
+      showToast('success', `${isOutOfStock ? 'Out of stock' : 'Low stock'} alert emailed for ${props.item?.name}`)
+    } else {
+      showToast('error', result.message || 'Failed to send notification')
+    }
+  } catch (err) {
+    console.error('Notify error:', err)
+    showToast('error', 'Failed to send notification')
+  } finally {
+    notifyingSupply.value = false
+  }
 }
 
 function handleEscKey(event) {
@@ -422,29 +477,10 @@ function handleEdit() {
   emit('edit', props.item)
   closeModal()
 }
-
-async function handleNotify() {
-  if (!props.item || notifyingSupply.value) return
-  notifyingSupply.value = true
-  try {
-    const result = await alertApi.sendItemAlert(props.item.itemId, true)
-    if (result.success) {
-      const isOutOfStock = isSizeOutOfStock(props.item.stock)
-      emit('notify', props.item)
-      showToast('success', `${isOutOfStock ? 'Out of stock' : 'Low stock'} alert emailed for ${props.item?.name}`)
-    } else {
-      showToast('error', result.message || 'Failed to send notification')
-    }
-  } catch (err) {
-    console.error('Notify error:', err)
-    showToast('error', 'Failed to send notification')
-  } finally {
-    notifyingSupply.value = false
-  }
-}
 </script>
 
 <style scoped>
+/* (Same styles as before) */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
