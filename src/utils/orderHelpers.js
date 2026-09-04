@@ -105,7 +105,7 @@ export function transformOrder(order, getDisplayStatus) {
     supplyType: order.isProvided ? 'Own Cups' : 'Company Cups',
     expectedDelivery: formatDate(order.expectedDelivery),
     receivingMode: order.receivingMode, // keep original for status logic
-
+    proofOfDelivery: order.proofOfDelivery || null,
     // Driver
     driverDetails: order.driverDetails || null,
 
