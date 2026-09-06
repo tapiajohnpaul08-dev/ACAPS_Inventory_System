@@ -1,22 +1,20 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div
-        v-if="show"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        @click.self="closeModal"
-      >
+      <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="closeModal">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal" />
 
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
 
           <!-- Header - Compact -->
-          <div class="flex items-start justify-between px-6 py-3 border-b border-gray-100 flex-shrink-0 bg-gradient-to-r from-blue-50 to-white rounded-t-2xl">
+          <div
+            class="flex items-start justify-between px-6 py-3 border-b border-gray-100 flex-shrink-0 bg-gradient-to-r from-blue-50 to-white rounded-t-2xl">
             <div>
               <div class="flex items-center gap-2.5">
                 <h1 class="text-lg font-bold text-gray-900">Order ID:</h1>
                 <h2 class="text-lg font-bold text-gray-900">{{ order?.orderId || order?.id || 'N/A' }}</h2>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold" :class="statusBadge(localStatus)">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold"
+                  :class="statusBadge(localStatus)">
                   <component :is="statusIcon(localStatus)" class="w-3 h-3" />
                   {{ getStatusDisplayName(localStatus) }}
                 </span>
@@ -24,15 +22,22 @@
               <p class="text-sm text-gray-500 mt-0.5">{{ order?.customer }} · {{ order?.date }}</p>
             </div>
             <div class="flex items-center gap-2 ml-4">
-              <button
-                @click="$emit('edit', order)"
-                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+              <button @click="$emit('edit', order)"
+                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                </svg>
                 Edit
               </button>
-              <button @click="closeModal" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <button @click="closeModal"
+                class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
               </button>
             </div>
           </div>
@@ -57,7 +62,8 @@
                 </div>
                 <div class="bg-gray-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Payment</p>
-                  <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-bold capitalize" :class="paymentBadge(order.payment || localPayment)">
+                  <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-bold capitalize"
+                    :class="paymentBadge(order.payment || localPayment)">
                     {{ order.payment || localPayment || 'Unpaid' }}
                   </span>
                 </div>
@@ -72,7 +78,8 @@
                   </div>
                   <div class="p-3 space-y-2">
                     <div class="flex items-center gap-2">
-                      <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
+                      <div
+                        class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
                         {{ (order.customer?.[0] || '?').toUpperCase() }}
                       </div>
                       <div>
@@ -82,19 +89,40 @@
                     </div>
                     <div class="space-y-1 text-xs">
                       <div v-if="order.email" class="flex items-center gap-2 text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect width="20" height="16" x="2" y="4" rx="2" />
+                          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                        </svg>
                         <span>{{ order.email }}</span>
                       </div>
                       <div v-if="order.phone" class="flex items-center gap-2 text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path
+                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
                         <span>{{ order.phone }}</span>
                       </div>
                       <div class="flex items-center gap-2 text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+                          <path d="M15 18H9" />
+                          <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+                          <circle cx="17" cy="18" r="2" />
+                          <circle cx="7" cy="18" r="2" />
+                        </svg>
                         <span class="capitalize">{{ order.deliveryMethod || 'Pick-up' }}</span>
                       </div>
-                      <div v-if="order.address && order.deliveryMethod === 'Delivery'" class="flex items-start gap-2 text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                      <div v-if="order.address && order.deliveryMethod === 'Delivery'"
+                        class="flex items-start gap-2 text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3 mt-0.5"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path
+                            d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
                         <span class="text-xs">{{ order.address }}</span>
                       </div>
                     </div>
@@ -109,37 +137,53 @@
                   </div>
                   <div class="p-3 space-y-2 max-h-40 overflow-y-auto">
                     <template v-if="order.items && order.items.length > 0">
-                      <div v-for="(item, i) in order.items" :key="i" class="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
+                      <div v-for="(item, i) in order.items" :key="i"
+                        class="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
                         <div class="flex items-center gap-2">
                           <div class="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="text-blue-600 w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="text-blue-600 w-3 h-3" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2">
+                              <path
+                                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                              <path d="M12 22V12" />
+                              <polyline points="3.29 7 12 12 20.71 7" />
+                            </svg>
                           </div>
                           <div>
                             <p class="text-xs font-semibold text-gray-900">{{ item.name }}</p>
-                            <p class="text-xs text-gray-400">{{ item.size || 'N/A' }} · {{ (item.quantity || 0).toLocaleString() }} pcs</p>
+                            <p class="text-xs text-gray-400">{{ item.size || 'N/A' }} · {{ (item.quantity ||
+                              0).toLocaleString() }} pcs</p>
                           </div>
                         </div>
-                        <p class="text-xs font-bold text-gray-900">₱{{ (item.estimatedTotal || 0).toLocaleString() }}</p>
+                        <p class="text-xs font-bold text-gray-900">₱{{ (item.estimatedTotal || 0).toLocaleString() }}
+                        </p>
                       </div>
                     </template>
                     <template v-else>
                       <div class="flex items-center justify-between py-1">
                         <div class="flex items-center gap-2">
                           <div class="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="text-blue-600 w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="text-blue-600 w-3 h-3" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2">
+                              <path
+                                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                              <path d="M12 22V12" />
+                              <polyline points="3.29 7 12 12 20.71 7" />
+                            </svg>
                           </div>
                           <div>
                             <p class="text-xs font-semibold text-gray-900">{{ order.product }}</p>
-                            <p class="text-xs text-gray-400">{{ order.size || 'N/A' }} · {{ (order.qty || 0).toLocaleString() }} pcs</p>
+                            <p class="text-xs text-gray-400">{{ order.size || 'N/A' }} · {{ (order.qty ||
+                              0).toLocaleString() }} pcs</p>
                           </div>
                         </div>
                         <p class="text-xs font-bold text-gray-900">{{ order.amount }}</p>
                       </div>
                     </template>
-                    
+
                     <div class="border-t border-gray-100 pt-1 flex flex-col items-start justify-between">
-                      <div v-if="order.hasDesign" class="flex items-center justify-between w-full" >
-                        <span  class="text-xs font-medium text-gray-600">Design & Printing Fee</span>
+                      <div v-if="order.hasDesign" class="flex items-center justify-between w-full">
+                        <span class="text-xs font-medium text-gray-600">Design & Printing Fee</span>
                         <span class="text-xs font-black text-black-600">₱500</span>
                       </div>
                       <div class="flex items-center justify-between w-full">
@@ -155,37 +199,47 @@
               <div v-if="hasDesignData" class="border border-gray-200 rounded-xl overflow-hidden">
                 <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 border-b border-gray-100">
                   <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" class="text-purple-600">
+                      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                      <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
+                      <path d="M9 13h6" />
+                      <path d="M9 17h4" />
+                    </svg>
                     <p class="text-xs font-bold text-purple-700 uppercase tracking-wide">Design Preview</p>
-                    <span v-if="designSource" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ml-2" :class="designSourceBadgeClass">
+                    <span v-if="designSource"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ml-2"
+                      :class="designSourceBadgeClass">
                       {{ designSourceLabel }}
                     </span>
                   </div>
                 </div>
-                
+
                 <div class="p-3 space-y-3">
                   <div v-if="designImageUrl" class="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                    <img 
-                      :src="designImageUrl" 
-                      alt="Design preview" 
-                      class="w-full h-auto max-h-64 object-contain"
-                      @error="handleImageError"
-                    />
+                    <img :src="designImageUrl" alt="Design preview" class="w-full h-auto max-h-64 object-contain"
+                      @error="handleImageError" />
                   </div>
-                  
-                  <div v-else-if="hasDesignWithoutImage" class="flex flex-col items-center justify-center py-6 bg-amber-50 rounded-lg border border-amber-200">
+
+                  <div v-else-if="hasDesignWithoutImage"
+                    class="flex flex-col items-center justify-center py-6 bg-amber-50 rounded-lg border border-amber-200">
                     <p class="text-sm font-medium text-amber-700">Design Uploaded</p>
                     <p class="text-xs text-amber-600 mt-1">The design was uploaded but the image URL is missing</p>
-                    <p class="text-xs text-amber-500 mt-1">Print Size: {{ printSize || 'N/A' }} · Placement: {{ printPlacement || 'N/A' }}</p>
-                    <p v-if="designFiles.length > 0" class="text-xs text-amber-500 mt-1">Files: {{ designFiles.length }} uploaded</p>
+                    <p class="text-xs text-amber-500 mt-1">Print Size: {{ printSize || 'N/A' }} · Placement: {{
+                      printPlacement ||
+                      'N/A' }}</p>
+                    <p v-if="designFiles.length > 0" class="text-xs text-amber-500 mt-1">Files: {{ designFiles.length }}
+                      uploaded</p>
                   </div>
-                  
-                  <div v-else-if="!hasDesignData" class="flex flex-col items-center justify-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+
+                  <div v-else-if="!hasDesignData"
+                    class="flex flex-col items-center justify-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
                     <span class="text-3xl mb-1">📋</span>
                     <p class="text-sm text-gray-500">No design available for this order</p>
                   </div>
-                  
-                  <div v-if="printSize || printPlacement || designNotes" class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+
+                  <div v-if="printSize || printPlacement || designNotes"
+                    class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
                     <div v-if="printSize">
                       <span class="text-xs text-gray-500">Print Size</span>
                       <span class="text-xs font-medium ml-2">{{ printSize }}</span>
@@ -203,12 +257,8 @@
                   <div v-if="designFiles.length > 0" class="border-t border-gray-100 pt-2">
                     <p class="text-xs font-medium text-gray-600 mb-1">📎 Attached Files ({{ designFiles.length }})</p>
                     <div class="flex flex-wrap gap-1">
-                      <button
-                        v-for="(file, idx) in designFiles"
-                        :key="idx"
-                        @click="previewFile(file)"
-                        class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
-                      >
+                      <button v-for="(file, idx) in designFiles" :key="idx" @click="previewFile(file)"
+                        class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors">
                         <span>📄</span>
                         <span class="max-w-[100px] truncate">{{ file.name || 'File ' + (idx + 1) }}</span>
                         <span class="text-gray-400 text-[10px]">{{ formatFileSize(file.size) }}</span>
@@ -222,17 +272,31 @@
               <div class="grid grid-cols-2 gap-4">
                 <div v-if="order?.productionSchedule" class="bg-blue-50 border border-blue-200 rounded-xl p-3">
                   <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
                     <span class="text-xs font-semibold text-blue-700">Production:</span>
                     <span class="text-xs text-blue-600">{{ formatDateTime(order.productionSchedule) }}</span>
                   </div>
                 </div>
-                <div v-if="order?.driverDetails?.driverName && localStatus === 'Out for Delivery' && order?.receivingMode === 'Delivery'" class="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                <div
+                  v-if="order?.driverDetails?.driverName && localStatus === 'Out for Delivery' && order?.receivingMode === 'Delivery'"
+                  class="bg-purple-50 border border-purple-200 rounded-xl p-3">
                   <p class="text-xs font-bold text-purple-700 uppercase tracking-wide">Driver</p>
                   <div class="flex flex-wrap gap-2 text-xs text-purple-600">
-                    <span class="flex items-center gap-1"><User class="w-3 h-3" /> {{ order.driverDetails.driverName }}</span>
-                    <span class="flex items-center gap-1"><Phone class="w-3 h-3" /> {{ order.driverDetails.driverPhone }}</span>
-                    <span class="flex items-center gap-1"><Car class="w-3 h-3" /> {{ order.driverDetails.plateNumber }}</span>
+                    <span class="flex items-center gap-1">
+                      <User class="w-3 h-3" /> {{ order.driverDetails.driverName }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <Phone class="w-3 h-3" /> {{ order.driverDetails.driverPhone }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <Car class="w-3 h-3" /> {{ order.driverDetails.plateNumber }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -241,72 +305,150 @@
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Order Status</p>
-                  <button
-                    v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'"
-                    @click="handleCancelClick"
+                  <button v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'" @click="handleCancelClick"
                     :disabled="isSaving"
-                    class="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-0.5 rounded-lg transition-colors disabled:opacity-50"
-                  >
+                    class="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-0.5 rounded-lg transition-colors disabled:opacity-50">
                     Cancel
                   </button>
                 </div>
 
                 <!-- Status banners -->
-                <div v-if="localStatus === 'Cancelled'" class="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-semibold mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                <div v-if="localStatus === 'Cancelled'"
+                  class="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-semibold mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="m15 9-6 6" />
+                    <path d="m9 9 6 6" />
+                  </svg>
                   Cancelled
                 </div>
-                <div v-else-if="localStatus === 'Completed'" class="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 font-semibold mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                <div v-else-if="localStatus === 'Completed'"
+                  class="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 font-semibold mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
                   Completed
                 </div>
-                <div v-else-if="localStatus === 'Out for Delivery' && order?.receivingMode === 'Pick-up'" class="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 font-semibold mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h3l3-9 3 18 3-9h3"/></svg>
+                <div v-else-if="localStatus === 'Out for Delivery' && order?.receivingMode === 'Pick-up'"
+                  class="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 font-semibold mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h3l3-9 3 18 3-9h3" />
+                  </svg>
                   Ready for Pickup
                 </div>
 
                 <!-- Progress flow with proper status management -->
                 <div v-if="localStatus !== 'Completed' && localStatus !== 'Cancelled'" class="flex items-center gap-1">
                   <div v-for="(status, index) in statusFlow" :key="status" class="flex items-center flex-1">
-                    <button
-                      @click="handleStatusClickWithPrompt(status)"
+                    <button @click="handleStatusClickWithPrompt(status)"
                       :disabled="isSaving || isStatusDisabled(status) || isStatusCompleted(status)"
                       class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
-                      :class="getStatusButtonClass(status)"
-                      :title="getStatusButtonTitle(status)"
-                    >
+                      :class="getStatusButtonClass(status)" :title="getStatusButtonTitle(status)">
                       <span class="flex items-center justify-center w-5 h-5">
-                        <component v-if="isStatusCompleted(status)" :is="statusIcon('Completed')" class="w-3 h-3 text-green-500" />
-                        <span v-else-if="isCurrentStatus(status)" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                        <span v-else class="text-xs font-black" :class="getStepNumberClass(status)">{{ index + 1 }}</span>
+                        <component v-if="isStatusCompleted(status)" :is="statusIcon('Completed')"
+                          class="w-3 h-3 text-green-500" />
+                        <span v-else-if="isCurrentStatus(status)"
+                          class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                        <span v-else class="text-xs font-black" :class="getStepNumberClass(status)">{{ index + 1
+                          }}</span>
                       </span>
                       <span class="text-xs font-semibold leading-tight" :class="getStatusTextClass(status)">
                         {{ getStatusDisplayName(status) }}
                       </span>
                     </button>
-                    <svg v-if="index < statusFlow.length - 1" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mx-0.5" :class="getArrowClass(statusFlow[index + 1])">
-                      <path d="m9 18 6-6-6-6"/>
+                    <svg v-if="index < statusFlow.length - 1" xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      class="flex-shrink-0 mx-0.5" :class="getArrowClass(statusFlow[index + 1])">
+                      <path d="m9 18 6-6-6-6" />
                     </svg>
                   </div>
                 </div>
               </div>
 
+<!-- Proof of Delivery Section (Compact) -->
+<div>
+  <div >
+    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Proof of Delivery</p>
+  </div>
+
+  <div v-if="podImageUrl || podDriverDetails" class="p-2 flex flex-col md:flex-row gap-2">
+    <!-- POD Image -->
+    <div class="flex-1 min-w-0">
+      <div
+        v-if="podImageUrl"
+        class="relative bg-gray-50 rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:ring-1 hover:ring-blue-300 transition-all"
+        @click="previewPODImage"
+      >
+        <img
+          :src="podImageUrl"
+          alt="Proof of Delivery"
+          class="w-full h-auto max-h-32 object-contain"
+          @error="handleImageError"
+        />
+        <div class="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
+          <span class="bg-white/80 rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-700">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </span>
+        </div>
+      </div>
+      <div v-else class="flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
+        <span class="text-xs text-gray-400">No image uploaded</span>
+      </div>
+    </div>
+
+    <!-- Driver Details -->
+    <div class="flex-1 min-w-0">
+      <div class="bg-gray-50 rounded-lg border border-gray-200 p-2 h-full">
+        <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Driver Details</p>
+        <div v-if="podDriverDetails && podDriverDetails.driverName" class="space-y-1 text-xs">
+          <div class="flex items-center gap-1.5 text-gray-700">
+            <User class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <span>{{ podDriverDetails.driverName }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-gray-700">
+            <Phone class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <span>{{ podDriverDetails.driverPhone || 'N/A' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-gray-700">
+            <Car class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <span>{{ podDriverDetails.plateNumber || 'N/A' }}</span>
+          </div>
+          <div v-if="podDriverDetails.truckDescription" class="flex items-start gap-1.5 text-gray-700">
+            <Truck class="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
+            <span class="text-xs">{{ podDriverDetails.truckDescription }}</span>
+          </div>
+        </div>
+        <div v-else class="text-xs text-gray-400 italic">No driver assigned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div v-else class="p-4 text-center text-xs text-gray-400">
+    No proof of delivery uploaded yet
+  </div>
+</div>
+
               <!-- Status History - Compact -->
               <div v-if="order.statusHistory && order.statusHistory.length">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Status History</p>
                 <div class="space-y-1 max-h-32 overflow-y-auto">
-                  <div
-                    v-for="(h, i) in [...order.statusHistory].reverse()"
-                    :key="i"
-                    class="flex items-start gap-2 px-3 py-1.5 bg-gray-50 rounded-lg"
-                  >
+                  <div v-for="(h, i) in [...order.statusHistory].reverse()" :key="i"
+                    class="flex items-start gap-2 px-3 py-1.5 bg-gray-50 rounded-lg">
                     <div class="mt-0.5 flex-shrink-0 p-1 rounded-full" :class="historyBg(h.status)">
                       <component :is="statusIcon(h.status)" class="w-3 h-3" />
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center justify-between">
                         <p class="text-xs font-bold" :class="historyText(h.status)">
-                          {{ h.status === 'Out for Delivery' && order?.receivingMode === 'Pick-up' ? 'Ready for Pickup' : h.status }}
+                          {{ h.status === 'Out for Delivery' && order?.receivingMode === 'Pick-up' ? 'Ready for Pickup'
+                          : h.status }}
                         </p>
                         <p class="text-xs text-gray-400">{{ formatDateTimeShort(h.timestamp) }}</p>
                       </div>
@@ -321,7 +463,14 @@
 
               <!-- Special Instructions -->
               <div v-if="order.notes" class="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="text-amber-600 flex-shrink-0 mt-0.5 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="text-amber-600 flex-shrink-0 mt-0.5 w-4 h-4"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                  <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                  <path d="M10 9H8" />
+                  <path d="M16 13H8" />
+                  <path d="M16 17H8" />
+                </svg>
                 <div>
                   <p class="text-xs font-bold text-amber-600 uppercase tracking-wide">Notes</p>
                   <p class="text-xs text-amber-900">{{ order.notes }}</p>
@@ -332,21 +481,18 @@
               <div v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'">
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Payment</p>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold capitalize" :class="paymentBadge(localPayment)">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold capitalize"
+                    :class="paymentBadge(localPayment)">
                     {{ localPayment }}
                   </span>
                 </div>
                 <div class="flex gap-2">
-                  <button
-                    v-for="ps in paymentStatuses"
-                    :key="ps.value"
-                    @click="handlePaymentClick(ps.value)"
+                  <button v-for="ps in paymentStatuses" :key="ps.value" @click="handlePaymentClick(ps.value)"
                     :disabled="isSaving"
                     class="flex-1 py-1.5 rounded-lg text-xs font-bold capitalize border-2 transition-all disabled:opacity-50"
                     :class="localPayment === ps.value
                       ? 'border-current ' + ps.activeClass
-                      : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'"
-                  >
+                      : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'">
                     {{ ps.label }}
                   </button>
                 </div>
@@ -359,15 +505,12 @@
             <button
               v-if="localStatus === 'Out for Delivery' || localStatus === 'Ready to Pick-up' || localStatus === 'Completed'"
               @click="openReceiptModal"
-              class="flex items-center justify-center px-5 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-semibold"
-            >
+              class="flex items-center justify-center px-5 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-semibold">
               <Printer class="w-4 h-4 text-white mr-2" />
               Print Receipt
             </button>
-            <button
-              @click="closeModal"
-              class="px-5 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition-colors font-semibold"
-            >
+            <button @click="closeModal"
+              class="px-5 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition-colors font-semibold">
               Close
             </button>
           </div>
@@ -379,34 +522,31 @@
   <!-- Production Schedule Modal -->
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="showScheduleModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4" @click.self="closeScheduleModal">
+      <div v-if="showScheduleModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        @click.self="closeScheduleModal">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeScheduleModal" />
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="p-6">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Set Production Schedule</h3>
             <div class="mb-4">
               <label class="block text-sm font-semibold text-gray-700 mb-2">Production Date & Time</label>
-              <input 
-                v-model="scheduleDate" 
-                type="datetime-local" 
+              <input v-model="scheduleDate" type="datetime-local"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                :min="minDateTime"
-              />
+                :min="minDateTime" />
             </div>
             <div class="mb-4">
               <label class="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
-              <textarea 
-                v-model="scheduleNotes" 
-                rows="3" 
+              <textarea v-model="scheduleNotes" rows="3"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                placeholder="Add any production notes..."
-              ></textarea>
+                placeholder="Add any production notes..."></textarea>
             </div>
             <div class="flex gap-3">
-              <button @click="confirmSchedule" :disabled="!scheduleDate" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50">
+              <button @click="confirmSchedule" :disabled="!scheduleDate"
+                class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50">
                 Confirm Schedule
               </button>
-              <button @click="closeScheduleModal" class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+              <button @click="closeScheduleModal"
+                class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
                 Cancel
               </button>
             </div>
@@ -419,7 +559,8 @@
   <!-- Driver Details Modal -->
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="showDriverModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4" @click.self="closeDriverModal">
+      <div v-if="showDriverModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        @click.self="closeDriverModal">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDriverModal" />
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="p-6">
@@ -429,24 +570,17 @@
             </h3>
             <div class="space-y-3">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Select Driver <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Select Driver <span
+                    class="text-red-500">*</span></label>
                 <div v-if="isLoadingDrivers" class="flex items-center gap-2 text-sm text-gray-500">
                   <Loader2 class="w-4 h-4 animate-spin" />
                   Loading...
                 </div>
-                <select 
-                  v-else 
-                  v-model="selectedDriverId" 
-                  @change="onDriverSelect"
+                <select v-else v-model="selectedDriverId" @change="onDriverSelect"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  :class="{ 'border-red-400 ring-1 ring-red-300': driverError }"
-                >
+                  :class="{ 'border-red-400 ring-1 ring-red-300': driverError }">
                   <option value="">Select a driver...</option>
-                  <option 
-                    v-for="driver in availableDrivers" 
-                    :key="driver.driverId" 
-                    :value="driver.driverId"
-                  >
+                  <option v-for="driver in availableDrivers" :key="driver.driverId" :value="driver.driverId">
                     {{ driver.fullName || driver.firstName + ' ' + driver.lastName }} - {{ driver.plateNumber }}
                   </option>
                 </select>
@@ -454,27 +588,19 @@
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Notes</label>
-                <textarea 
-                  v-model="driverNotes" 
-                  rows="2" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none" 
-                  placeholder="Additional delivery notes..."
-                ></textarea>
+                <textarea v-model="driverNotes" rows="2"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Additional delivery notes..."></textarea>
               </div>
             </div>
             <div class="flex gap-3 mt-6">
-              <button 
-                @click="confirmDriver" 
-                :disabled="!selectedDriverId || isSaving"
-                class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
+              <button @click="confirmDriver" :disabled="!selectedDriverId || isSaving"
+                class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                 <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
                 {{ isSaving ? 'Assigning...' : 'Confirm' }}
               </button>
-              <button 
-                @click="closeDriverModal" 
-                class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-              >
+              <button @click="closeDriverModal"
+                class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
                 Cancel
               </button>
             </div>
@@ -487,41 +613,40 @@
   <!-- File Preview Modal -->
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="showPreviewModal" class="fixed inset-0 z-[80] flex items-center justify-center p-4" @click.self="closePreviewModal">
+      <div v-if="showPreviewModal" class="fixed inset-0 z-[80] flex items-center justify-center p-4"
+        @click.self="closePreviewModal">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closePreviewModal" />
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h3 class="font-semibold text-gray-900">{{ previewFileData?.name || 'File Preview' }}</h3>
-            <button @click="closePreviewModal" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            <button @click="closePreviewModal"
+              class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
             </button>
           </div>
           <div class="p-6 flex items-center justify-center min-h-[300px]">
-            <img 
-              v-if="previewFileData && isImageFile(previewFileData)" 
-              :src="getFileUrl(previewFileData)" 
-              :alt="previewFileData.name"
-              class="max-w-full max-h-[50vh] object-contain"
-              @error="handleImageError"
-            />
+            <img v-if="previewFileData && isImageFile(previewFileData)" :src="getFileUrl(previewFileData)"
+              :alt="previewFileData.name" class="max-w-full max-h-[50vh] object-contain" @error="handleImageError" />
             <div v-else class="text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-gray-400 mx-auto mb-3">
-                <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
-                <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" class="text-gray-400 mx-auto mb-3">
+                <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
               </svg>
               <p class="text-gray-500 text-sm">Preview not available</p>
             </div>
           </div>
           <div class="flex justify-end px-6 py-3 border-t border-gray-100">
-            <a 
-              v-if="previewFileData" 
-              :href="getFileUrl(previewFileData)" 
-              download 
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold"
-            >
+            <a v-if="previewFileData" :href="getFileUrl(previewFileData)" download
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
               Download
             </a>
-            <button @click="closePreviewModal" class="px-4 py-2 ml-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold">
+            <button @click="closePreviewModal"
+              class="px-4 py-2 ml-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold">
               Close
             </button>
           </div>
@@ -531,12 +656,7 @@
   </Teleport>
 
   <!-- Receipt Modal -->
-  <ReceiptModal
-    :show="showReceiptModal"
-    :order="order"
-    @close="closeReceiptModal"
-    @print="handleReceiptPrint"
-  />
+  <ReceiptModal :show="showReceiptModal" :order="order" @close="closeReceiptModal" @print="handleReceiptPrint" />
 </template>
 
 <script setup>
@@ -550,6 +670,8 @@ const props = defineProps({
   show: { type: Boolean, required: true },
   order: { type: Object, required: true },
 })
+
+console.log('OrderDetailModal props:', props.order)
 
 const emit = defineEmits(['close', 'statusUpdate', 'paymentUpdate', 'edit'])
 
@@ -589,21 +711,21 @@ const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'vwr
 
 function getFullImageUrl(path) {
   if (!path) return ''
-  
+
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path
   }
-  
+
   if (path.startsWith('beverage/') || path.includes('beverage/')) {
     const cleanPath = path.replace(/^\/+/, '')
     return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/${cleanPath}`
   }
-  
+
   if (path.startsWith('uploads/')) {
     const filename = path.split('/').pop()
     return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/beverage/designs/${filename}`
   }
-  
+
   return path
 }
 
@@ -611,7 +733,7 @@ function getFullImageUrl(path) {
 
 const designFiles = computed(() => {
   const files = []
-  
+
   if (props.order?.items && Array.isArray(props.order.items)) {
     for (const item of props.order.items) {
       if (item.files && Array.isArray(item.files)) {
@@ -620,7 +742,7 @@ const designFiles = computed(() => {
       }
     }
   }
-  
+
   if (props.order?.designDetails && Array.isArray(props.order.designDetails)) {
     for (const design of props.order.designDetails) {
       if (design.files && Array.isArray(design.files)) {
@@ -629,12 +751,12 @@ const designFiles = computed(() => {
       }
     }
   }
-  
+
   if (props.order?.files && Array.isArray(props.order.files)) {
     const validFiles = props.order.files.filter(f => f.path || f.url || f.name)
     files.push(...validFiles)
   }
-  
+
   return files
 })
 
@@ -646,10 +768,10 @@ const designSource = computed(() => {
       }
     }
   }
-  
+
   if (designFiles.value.length > 0) return 'upload'
   if (selectedTemplate.value) return 'saved'
-  
+
   return null
 })
 
@@ -663,11 +785,11 @@ const designSourceLabel = computed(() => {
 })
 
 const designSourceBadgeClass = computed(() => {
-  return designSource.value === 'upload' 
-    ? 'bg-blue-100 text-blue-700' 
+  return designSource.value === 'upload'
+    ? 'bg-blue-100 text-blue-700'
     : designSource.value === 'saved'
-    ? 'bg-purple-100 text-purple-700'
-    : 'bg-gray-100 text-gray-500'
+      ? 'bg-purple-100 text-purple-700'
+      : 'bg-gray-100 text-gray-500'
 })
 
 const printSize = computed(() => {
@@ -705,19 +827,19 @@ const designNotes = computed(() => {
 
 const selectedTemplate = computed(() => {
   if (props.order?.selectedTemplate) return props.order.selectedTemplate
-  
+
   if (props.order?.items && Array.isArray(props.order.items)) {
     for (const item of props.order.items) {
       if (item.selectedTemplate) return item.selectedTemplate
     }
   }
-  
+
   return null
 })
 
 const designImageUrl = computed(() => {
   if (!props.order) return ''
-  
+
   if (props.order.items && Array.isArray(props.order.items)) {
     for (const item of props.order.items) {
       if (item.designImage && item.designImage.length > 0) {
@@ -725,7 +847,7 @@ const designImageUrl = computed(() => {
       }
     }
   }
-  
+
   if (props.order.items && Array.isArray(props.order.items)) {
     for (const item of props.order.items) {
       if (item.files && Array.isArray(item.files)) {
@@ -740,7 +862,7 @@ const designImageUrl = computed(() => {
       }
     }
   }
-  
+
   if (selectedTemplate.value) {
     const template = selectedTemplate.value
     if (template.thumbnail && template.thumbnail.length > 0) {
@@ -750,7 +872,7 @@ const designImageUrl = computed(() => {
       return getFullImageUrl(template.imagePath)
     }
   }
-  
+
   if (props.order.designDetails && Array.isArray(props.order.designDetails)) {
     for (const design of props.order.designDetails) {
       if (design.imagePaths && Array.isArray(design.imagePaths) && design.imagePaths.length > 0) {
@@ -760,27 +882,51 @@ const designImageUrl = computed(() => {
       }
     }
   }
-  
+
   return ''
 })
 
 const hasDesignData = computed(() => {
-  return !!(designImageUrl.value || 
-            designSource.value || 
-            printSize.value || 
-            printPlacement.value || 
-            designNotes.value || 
-            designFiles.value.length > 0 ||
-            selectedTemplate.value)
+  return !!(designImageUrl.value ||
+    designSource.value ||
+    printSize.value ||
+    printPlacement.value ||
+    designNotes.value ||
+    designFiles.value.length > 0 ||
+    selectedTemplate.value)
 })
 
 const hasDesignWithoutImage = computed(() => {
-  return !designImageUrl.value && 
-         (designSource.value === 'upload' || 
-          designFiles.value.length > 0 || 
-          printSize.value || 
-          printPlacement.value)
+  return !designImageUrl.value &&
+    (designSource.value === 'upload' ||
+      designFiles.value.length > 0 ||
+      printSize.value ||
+      printPlacement.value)
 })
+
+// Proof of Delivery Image URL
+const podImageUrl = computed(() => {
+  return getFullImageUrl(props.order?.proofOfDelivery)
+})
+
+// Driver Details from order or status history
+const podDriverDetails = computed(() => {
+  // Try direct driverDetails first
+  if (props.order?.driverDetails && props.order.driverDetails.driverName) {
+    return props.order.driverDetails
+  }
+  // Fallback to latest status history entry
+  const history = props.order?.statusHistory
+  if (history && history.length > 0) {
+    const last = history[history.length - 1]
+    if (last?.driverDetails && last.driverDetails.driverName) {
+      return last.driverDetails
+    }
+  }
+  return null
+})
+
+
 
 // ─── File Preview Functions ──────────────────────────────────────────────
 function isImageFile(file) {
@@ -799,6 +945,15 @@ function getFileUrl(file) {
 function previewFile(file) {
   previewFileData.value = file
   showPreviewModal.value = true
+}
+
+function previewPODImage() {
+  if (!podImageUrl.value) return
+  previewFile({
+    name: 'Proof of Delivery',
+    url: podImageUrl.value,
+    type: 'image/jpeg' // or just treat as image
+  })
 }
 
 function closePreviewModal() {
@@ -863,13 +1018,13 @@ function getStatusDisplayName(status) {
   if (status === 'Out for Delivery' && props.order?.receivingMode === 'Pick-up') {
     return 'Ready to Pick-up'
   }
-  const names = { 
-    'Pending': 'Pending', 
-    'Scheduled': 'Scheduled', 
-    'In Production': 'In Prod.', 
+  const names = {
+    'Pending': 'Pending',
+    'Scheduled': 'Scheduled',
+    'In Production': 'In Prod.',
     'Out for Delivery': 'Out for Delivery',
     'Ready to Pick-up': 'Ready',
-    'Completed': 'Done' 
+    'Completed': 'Done'
   }
   return names[status] || status
 }
@@ -891,7 +1046,7 @@ function isStatusDisabled(status) {
   }
   const ci = statusFlow.indexOf(localStatus.value === 'Ready to Pick-up' ? 'Out for Delivery' : localStatus.value)
   const si = statusFlow.indexOf(effectiveStatus)
-  
+
   if (localStatus.value === 'Out for Delivery' && status === 'Ready to Pick-up' && props.order?.receivingMode === 'Pick-up') {
     return false
   }
@@ -906,7 +1061,7 @@ function getStatusButtonClass(status) {
   const ci = statusFlow.indexOf(localStatus.value === 'Ready to Pick-up' ? 'Out for Delivery' : localStatus.value)
   const si = statusFlow.indexOf(effectiveStatus)
   const isActive = isCurrentStatus(status)
-  
+
   if (isActive) {
     return 'bg-green-100 text-green-700 ring-2 ring-inset ring-green-400 cursor-default'
   }
@@ -1049,29 +1204,29 @@ function openDriverModal(status) {
 async function updateStatus(status, notes, productionSchedule = null) {
   isSaving.value = true
   localStatus.value = status
-  
-  const payload = { 
-    orderId: props.order.id, 
-    status: status, 
+
+  const payload = {
+    orderId: props.order.id,
+    status: status,
     notes: notes || ''
   }
-  
+
   if (productionSchedule) {
     payload.productionSchedule = productionSchedule
   }
-  
+
   emit('statusUpdate', payload)
   setTimeout(() => { isSaving.value = false }, 1500)
 }
 
 function handleStatusClickWithPrompt(status) {
   if (isStatusDisabled(status) || isStatusCompleted(status) || isCurrentStatus(status) || isSaving.value) return
-  
+
   let updateStatusParam = status
   if (status === 'Ready to Pick-up') {
     updateStatusParam = 'Out for Delivery'
   }
-  
+
   if (status === 'Scheduled') {
     pendingStatus.value = status
     scheduleDate.value = ''
@@ -1197,32 +1352,32 @@ function historyText(status) {
 
 function formatDateTime(ts) {
   if (!ts) return ''
-  return new Date(ts).toLocaleString('en-PH', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(ts).toLocaleString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
 
 function formatDateTimeShort(ts) {
   if (!ts) return ''
-  return new Date(ts).toLocaleString('en-PH', { 
-    month: 'short', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(ts).toLocaleString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
 
 // ─── Status Icons ─────────────────────────────────────────────────────────
-const CheckIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('path',{d:'M20 6L9 17l-5-5'})])
-const PackageIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('path',{d:'M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z'}), h('path',{d:'M12 22V12'}), h('polyline',{points:'3.29 7 12 12 20.71 7'})])
-const ClockIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('circle',{cx:12,cy:12,r:10}), h('polyline',{points:'12 6 12 12 16 14'})])
-const CalendarIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('rect',{x:3,y:4,width:18,height:18,rx:2}), h('line',{x1:16,y1:2,x2:16,y2:6}), h('line',{x1:8,y1:2,x2:8,y2:6}), h('line',{x1:3,y1:10,x2:21,y2:10})])
-const TruckIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('path',{d:'M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2'}), h('path',{d:'M15 18H9'}), h('path',{d:'M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14'}), h('circle',{cx:17,cy:18,r:2}), h('circle',{cx:7,cy:18,r:2})])
-const XIcon = () => h('svg', { xmlns:'http://www.w3.org/2000/svg', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', 'stroke-width':2 }, [h('circle',{cx:12,cy:12,r:10}), h('path',{d:'m15 9-6 6'}), h('path',{d:'m9 9 6 6'})])
+const CheckIcon = () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [h('path', { d: 'M20 6L9 17l-5-5' })])
+const PackageIcon = () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [h('path', { d: 'M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z' }), h('path', { d: 'M12 22V12' }), h('polyline', { points: '3.29 7 12 12 20.71 7' })])
+const ClockIcon = () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [h('circle', { cx: 12, cy: 12, r: 10 }), h('polyline', { points: '12 6 12 12 16 14' })])
+const CalendarIcon = () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [h('rect', { x: 3, y: 4, width: 18, height: 18, rx: 2 }), h('line', { x1: 16, y1: 2, x2: 16, y2: 6 }), h('line', { x1: 8, y1: 2, x2: 8, y2: 6 }), h('line', { x1: 3, y1: 10, x2: 21, y2: 10 })])
+const TruckIcon = () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [h('path', { d: 'M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2' }), h('path', { d: 'M15 18H9' }), h('path', { d: 'M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14' }), h('circle', { cx: 17, cy: 18, r: 2 }), h('circle', { cx: 7, cy: 18, r: 2 })])
+const XIcon = () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [h('circle', { cx: 12, cy: 12, r: 10 }), h('path', { d: 'm15 9-6 6' }), h('path', { d: 'm9 9 6 6' })])
 
 function statusIcon(status) {
   const icons = {
@@ -1246,17 +1401,56 @@ const minDateTime = computed(() => {
 </script>
 
 <style scoped>
-.modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
-.modal-enter-active .relative, .modal-leave-active .relative { transition: transform 0.2s ease, opacity 0.2s ease; }
-.modal-enter-from, .modal-leave-to { opacity: 0; }
-.modal-enter-from .relative { transform: scale(0.95) translateY(8px); opacity: 0; }
-.modal-leave-to .relative { transform: scale(0.95) translateY(8px); opacity: 0; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-.animate-spin { animation: spin 0.7s linear infinite; }
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
 }
-.animate-pulse { animation: pulse 1.5s ease-in-out infinite; }
+
+.modal-enter-active .relative,
+.modal-leave-active .relative {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .relative {
+  transform: scale(0.95) translateY(8px);
+  opacity: 0;
+}
+
+.modal-leave-to .relative {
+  transform: scale(0.95) translateY(8px);
+  opacity: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
 </style>

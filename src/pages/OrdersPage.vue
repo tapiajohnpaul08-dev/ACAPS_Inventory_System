@@ -150,7 +150,7 @@ function transformOrder(order) {
     supplyType: order.isProvided ? 'Own Cups' : 'Company Cups',
     expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
     receivingMode: order.receivingMode,  // Keep original for logic
-    
+    proofOfDelivery: order.proofOfDelivery || '',  // New field for proof of delivery image
     // Dates
     date: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
     orderedAt: order.orderedAt,
