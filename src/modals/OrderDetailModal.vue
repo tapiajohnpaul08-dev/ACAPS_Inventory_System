@@ -19,7 +19,7 @@
                   {{ getStatusDisplayName(localStatus) }}
                 </span>
               </div>
-              <p class="text-sm text-gray-500 mt-0.5">{{ order?.customer }} · {{ order?.date }}</p>
+              <p class="text-sm text-gray-500 mt-0.5">{{ order?.customerName || order?.customer || 'N/A' }} · {{ order?.date || formatDate(order?.createdAt) }}</p>
             </div>
             <div class="flex items-center gap-2 ml-4">
               <button @click="$emit('edit', order)"
@@ -42,11 +42,11 @@
             </div>
           </div>
 
-          <!-- Scrollable body - Compact -->
+          <!-- Scrollable body -->
           <div class="flex-1 overflow-y-auto px-6 py-4">
             <div v-if="order" class="space-y-4">
 
-              <!-- Dates row - Compact -->
+              <!-- Dates row -->
               <div class="grid grid-cols-4 gap-3">
                 <div class="bg-gray-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Type</p>
@@ -54,24 +54,28 @@
                 </div>
                 <div class="bg-gray-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ordered</p>
-                  <p class="text-sm font-bold text-gray-900">{{ order.date }}</p>
+                  <p class="text-sm font-bold text-gray-900">{{ formatDate(order.createdAt) || order.date || 'N/A' }}</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Expected Delivery</p>
-                  <p class="text-sm font-bold text-gray-900">{{ order.expectedDelivery || 'N/A' }}</p>
+                  <p class="text-sm font-bold text-gray-900">{{ formatDate(order.expectedDelivery) || 'N/A' }}</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Payment</p>
                   <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-bold capitalize"
-                    :class="paymentBadge(order.payment || localPayment)">
-                    {{ order.payment || localPayment || 'Unpaid' }}
+                    :class="paymentBadge(order.paymentStatus || localPayment)">
+                    {{ order.paymentStatus || localPayment }}
+                  </span>
+                  <span v-if="(order.paymentStatus || localPayment) === 'Partial' && getTotalPaid() > 0"
+                    class="block text-xs text-gray-500 mt-1">
+                    ₱{{ getTotalPaid().toLocaleString() }} paid
                   </span>
                 </div>
               </div>
 
               <!-- Two Column Layout: Customer + Items -->
               <div class="grid grid-cols-2 gap-4">
-                <!-- Customer Information - Compact -->
+                <!-- Customer Information -->
                 <div class="border border-gray-200 rounded-xl overflow-hidden">
                   <div class="bg-gray-50 px-4 py-2 border-b border-gray-100">
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Customer</p>
@@ -80,29 +84,29 @@
                     <div class="flex items-center gap-2">
                       <div
                         class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
-                        {{ (order.customer?.[0] || '?').toUpperCase() }}
+                        {{ (order.customerName || order.customer || '?')[0].toUpperCase() }}
                       </div>
                       <div>
-                        <p class="text-sm font-bold text-gray-900">{{ order.customer }}</p>
-                        <p class="text-xs text-gray-400">{{ order.supplyType }}</p>
+                        <p class="text-sm font-bold text-gray-900">{{ order.customerName || order.customer || 'N/A' }}</p>
+                        <p class="text-xs text-gray-400">{{ order.supplyType || 'N/A' }}</p>
                       </div>
                     </div>
                     <div class="space-y-1 text-xs">
-                      <div v-if="order.email" class="flex items-center gap-2 text-gray-600">
+                      <div v-if="order.customerEmail" class="flex items-center gap-2 text-gray-600">
                         <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3"
                           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <rect width="20" height="16" x="2" y="4" rx="2" />
                           <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                         </svg>
-                        <span>{{ order.email }}</span>
+                        <span>{{ order.customerEmail }}</span>
                       </div>
-                      <div v-if="order.phone" class="flex items-center gap-2 text-gray-600">
+                      <div v-if="order.customerPhone" class="flex items-center gap-2 text-gray-600">
                         <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3"
                           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path
                             d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                         </svg>
-                        <span>{{ order.phone }}</span>
+                        <span>{{ order.customerPhone }}</span>
                       </div>
                       <div class="flex items-center gap-2 text-gray-600">
                         <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3"
@@ -113,9 +117,9 @@
                           <circle cx="17" cy="18" r="2" />
                           <circle cx="7" cy="18" r="2" />
                         </svg>
-                        <span class="capitalize">{{ order.deliveryMethod || 'Pick-up' }}</span>
+                        <span class="capitalize">{{ order.receivingMode || order.deliveryMethod || 'Pick-up' }}</span>
                       </div>
-                      <div v-if="order.address && order.deliveryMethod === 'Delivery'"
+                      <div v-if="order.address && (order.receivingMode === 'Delivery' || order.deliveryMethod === 'Delivery')"
                         class="flex items-start gap-2 text-gray-600">
                         <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3 mt-0.5"
                           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -129,7 +133,7 @@
                   </div>
                 </div>
 
-                <!-- Order Items - Compact -->
+                <!-- Order Items -->
                 <div class="border border-gray-200 rounded-xl overflow-hidden">
                   <div class="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center">
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Items</p>
@@ -172,12 +176,12 @@
                             </svg>
                           </div>
                           <div>
-                            <p class="text-xs font-semibold text-gray-900">{{ order.product }}</p>
-                            <p class="text-xs text-gray-400">{{ order.size || 'N/A' }} · {{ (order.qty ||
+                            <p class="text-xs font-semibold text-gray-900">{{ order.product || 'Product' }}</p>
+                            <p class="text-xs text-gray-400">{{ order.size || 'N/A' }} · {{ (order.quantity ||
                               0).toLocaleString() }} pcs</p>
                           </div>
                         </div>
-                        <p class="text-xs font-bold text-gray-900">{{ order.amount }}</p>
+                        <p class="text-xs font-bold text-gray-900"> {{ formatCurrency(order.amount) }}</p>
                       </div>
                     </template>
 
@@ -188,7 +192,15 @@
                       </div>
                       <div class="flex items-center justify-between w-full">
                         <span class="text-xs font-bold text-gray-700">Total</span>
-                        <span class="text-sm font-black text-gray-900">{{ order.amount }}</span>
+                        <span class="text-sm font-black text-gray-900">{{ formatCurrency(order.amount || order.totalAmount || 0) }}</span>
+                      </div>
+                      <!-- Show remaining balance if partial payment -->
+                      <div v-if="(order.paymentStatus || localPayment) === 'Partial' && getTotalPaid() > 0"
+                        class="flex items-center justify-between w-full mt-1 pt-1 border-t border-dashed border-gray-200">
+                        <span class="text-xs font-medium text-orange-600">Remaining Balance</span>
+                        <span class="text-xs font-bold text-orange-600">
+                          {{ formatCurrency(getRemainingBalance()) }}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -301,7 +313,7 @@
                 </div>
               </div>
 
-              <!-- Order Status Flow - Compact -->
+              <!-- Order Status Flow -->
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Order Status</p>
@@ -340,7 +352,7 @@
                   Ready for Pickup
                 </div>
 
-                <!-- Progress flow with proper status management -->
+                <!-- Progress flow -->
                 <div v-if="localStatus !== 'Completed' && localStatus !== 'Cancelled'" class="flex items-center gap-1">
                   <div v-for="(status, index) in statusFlow" :key="status" class="flex items-center flex-1">
                     <button @click="handleStatusClickWithPrompt(status)"
@@ -368,74 +380,73 @@
                 </div>
               </div>
 
-<!-- Proof of Delivery Section (Compact) -->
-<div>
-  <div >
-    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Proof of Delivery</p>
-  </div>
+              <!-- Proof of Delivery Section -->
+              <div>
+                <div>
+                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Proof of Delivery</p>
+                </div>
 
-  <div v-if="podImageUrl || podDriverDetails" class="p-2 flex flex-col md:flex-row gap-2">
-    <!-- POD Image -->
-    <div class="flex-1 min-w-0">
-      <div
-        v-if="podImageUrl"
-        class="relative bg-gray-50 rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:ring-1 hover:ring-blue-300 transition-all"
-        @click="previewPODImage"
-      >
-        <img
-          :src="podImageUrl"
-          alt="Proof of Delivery"
-          class="w-full h-auto max-h-32 object-contain"
-          @error="handleImageError"
-        />
-        <div class="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
-          <span class="bg-white/80 rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-700">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </span>
-        </div>
-      </div>
-      <div v-else class="flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
-        <span class="text-xs text-gray-400">No image uploaded</span>
-      </div>
-    </div>
+                <div v-if="podImageUrl || podDriverDetails" class="p-2 flex flex-col md:flex-row gap-2">
+                  <!-- POD Image -->
+                  <div class="flex-1 min-w-0">
+                    <div
+                      v-if="podImageUrl"
+                      class="relative bg-gray-50 rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:ring-1 hover:ring-blue-300 transition-all"
+                      @click="previewPODImage"
+                    >
+                      <img
+                        :src="podImageUrl"
+                        alt="Proof of Delivery"
+                        class="w-full h-auto max-h-32 object-contain"
+                        @error="handleImageError"
+                      />
+                      <div class="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
+                        <span class="bg-white/80 rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-700">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                    <div v-else class="flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
+                      <span class="text-xs text-gray-400">No image uploaded</span>
+                    </div>
+                  </div>
 
-    <!-- Driver Details -->
-    <div class="flex-1 min-w-0">
-      <div class="bg-gray-50 rounded-lg border border-gray-200 p-2 h-full">
-        <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Driver Details</p>
-        <div v-if="podDriverDetails && podDriverDetails.driverName" class="space-y-1 text-xs">
-          <div class="flex items-center gap-1.5 text-gray-700">
-            <User class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-            <span>{{ podDriverDetails.driverName }}</span>
-          </div>
-          <div class="flex items-center gap-1.5 text-gray-700">
-            <Phone class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-            <span>{{ podDriverDetails.driverPhone || 'N/A' }}</span>
-          </div>
-          <div class="flex items-center gap-1.5 text-gray-700">
-            <Car class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-            <span>{{ podDriverDetails.plateNumber || 'N/A' }}</span>
-          </div>
-          <div v-if="podDriverDetails.truckDescription" class="flex items-start gap-1.5 text-gray-700">
-            <Truck class="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
-            <span class="text-xs">{{ podDriverDetails.truckDescription }}</span>
-          </div>
-        </div>
-        <div v-else class="text-xs text-gray-400 italic">No driver assigned</div>
-      </div>
-    </div>
-  </div>
+                  <!-- Driver Details -->
+                  <div class="flex-1 min-w-0">
+                    <div class="bg-gray-50 rounded-lg border border-gray-200 p-2 h-full">
+                      <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Driver Details</p>
+                      <div v-if="podDriverDetails && podDriverDetails.driverName" class="space-y-1 text-xs">
+                        <div class="flex items-center gap-1.5 text-gray-700">
+                          <User class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                          <span>{{ podDriverDetails.driverName }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-gray-700">
+                          <Phone class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                          <span>{{ podDriverDetails.driverPhone || 'N/A' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-gray-700">
+                          <Car class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                          <span>{{ podDriverDetails.plateNumber || 'N/A' }}</span>
+                        </div>
+                        <div v-if="podDriverDetails.truckDescription" class="flex items-start gap-1.5 text-gray-700">
+                          <Truck class="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <span class="text-xs">{{ podDriverDetails.truckDescription }}</span>
+                        </div>
+                      </div>
+                      <div v-else class="text-xs text-gray-400 italic">No driver assigned</div>
+                    </div>
+                  </div>
+                </div>
 
-  <!-- Empty state -->
-  <div v-else class="p-4 text-center text-xs text-gray-400">
-    No proof of delivery uploaded yet
-  </div>
-</div>
+                <div v-else class="p-4 text-center text-xs text-gray-400">
+                  No proof of delivery uploaded yet
+                </div>
+              </div>
 
-              <!-- Status History - Compact -->
+              <!-- Status History -->
               <div v-if="order.statusHistory && order.statusHistory.length">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Status History</p>
                 <div class="space-y-1 max-h-32 overflow-y-auto">
@@ -484,6 +495,9 @@
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold capitalize"
                     :class="paymentBadge(localPayment)">
                     {{ localPayment }}
+                    <span v-if="localPayment === 'Partial' && getTotalPaid() > 0" class="ml-1 text-[10px] opacity-75">
+                      (₱{{ getTotalPaid().toLocaleString() }} paid)
+                    </span>
                   </span>
                 </div>
                 <div class="flex gap-2">
@@ -496,6 +510,83 @@
                     {{ ps.label }}
                   </button>
                 </div>
+
+<!-- Partial payment management -->
+<div class="mt-2">
+  <!-- Add new partial payment -->
+  <div v-if="localPayment !== 'Paid'" class="mb-3">
+    <label class="block text-xs font-semibold text-gray-600 mb-1">Add Partial Payment</label>
+    <div class="flex gap-2">
+      <input v-model.number="partialAmount" type="number" step="0.01" min="0"
+        class="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="Enter amount" />
+      <button @click="updatePartialPayment" :disabled="isSaving || !partialAmount || partialAmount <= 0"
+        class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap">
+        Add Payment
+      </button>
+    </div>
+  </div>
+
+  <!-- Partial payments list - ✅ ALWAYS show if payments exist, regardless of payment status -->
+  <div v-if="order.partialPayments && order.partialPayments.length > 0" class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+    <div class="px-3 py-2 bg-gray-100 border-b border-gray-200">
+      <p class="text-xs font-bold text-gray-600 uppercase tracking-wide">Payment History</p>
+    </div>
+    <div class="p-2 space-y-1 max-h-40 overflow-y-auto">
+      <div v-for="(payment, idx) in order.partialPayments" :key="idx"
+        class="flex items-center justify-between px-2 py-1.5 bg-white rounded border border-gray-100 hover:border-blue-200 transition-colors">
+        <div class="flex items-center">
+          <div class="flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-green-600">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-900">₱{{ payment.amount.toLocaleString() }}</p>
+            <p class="text-[10px] text-gray-400">{{ formatDate(payment.date) }}</p>
+          </div>
+          </div>
+          
+        </div>
+        <div v-if="payment.referenceNumber" class="text-center">
+            <p class="text-xs font-semibold text-gray-900">Reference Number</p>
+            <p class="text-[11px] font-bold text-gray-500">{{ payment.referenceNumber }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span v-if="payment.updatedBy" class="text-[10px] text-gray-400">
+            by {{ payment.updatedBy }}
+          </span>
+          <button @click="removePartialPayment(idx)" 
+            :disabled="isSaving"
+            class="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+            title="Remove payment">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Summary -->
+    <div class="px-3 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs">
+      <span class="font-semibold text-gray-600">Total Paid</span>
+      <span class="font-bold text-green-600">{{ formatCurrency(getTotalPaid()) }}</span>
+    </div>
+    <div class="px-3 py-2 bg-amber-50 border-t border-amber-200 flex items-center justify-between text-xs">
+      <span class="font-semibold text-amber-700">Remaining Balance</span>
+      <span class="font-bold text-amber-700">{{ formatCurrency(getRemainingBalance()) }}</span>
+    </div>
+  </div>
+  
+  <!-- No payments yet -->
+  <div v-else class="text-center py-3 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+    <p class="text-xs text-gray-400">No partial payments recorded yet</p>
+  </div>
+</div>
               </div>
             </div>
           </div>
@@ -610,6 +701,38 @@
     </Transition>
   </Teleport>
 
+  <!-- Complete Confirmation Modal -->
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="showCompleteConfirmModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        @click.self="closeCompleteConfirmModal">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeCompleteConfirmModal" />
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div class="p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Complete Order</h3>
+            <p class="text-sm text-gray-600 mb-4">Confirm that the customer has picked up this order.</p>
+            <div class="mb-4">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
+              <textarea v-model="completeNotes" rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                placeholder="Add any completion notes..."></textarea>
+            </div>
+            <div class="flex gap-3">
+              <button @click="confirmComplete"
+                class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                Confirm Complete
+              </button>
+              <button @click="closeCompleteConfirmModal"
+                class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
   <!-- File Preview Modal -->
   <Teleport to="body">
     <Transition name="modal">
@@ -671,13 +794,13 @@ const props = defineProps({
   order: { type: Object, required: true },
 })
 
-console.log('OrderDetailModal props:', props.order)
-
 const emit = defineEmits(['close', 'statusUpdate', 'paymentUpdate', 'edit'])
 
 const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
-const localPayment = ref(props.order?.payment || 'Unpaid')
+const localPayment = ref(props.order?.paymentStatus)
+console.log('LocalPayment',localPayment.value)
+const partialAmount = ref(0)
 
 // ─── Receipt Modal State ────────────────────────────────────────────────
 const showReceiptModal = ref(false)
@@ -705,6 +828,18 @@ const driverDetails = ref({
   plateNumber: '',
   truckDescription: ''
 })
+
+// ─── Get current admin user from localStorage ────────────────────────────
+const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}')
+console.log('Current admin:', currentAdmin)
+
+// ─── Helper to get admin name ────────────────────────────────────────────
+function getAdminName() {
+  if (currentAdmin?.firstName && currentAdmin?.lastName) {
+    return `${currentAdmin.firstName} ${currentAdmin.lastName}`
+  }
+  return currentAdmin?.email || 'Admin'
+}
 
 // ─── Cloudinary Configuration ─────────────────────────────────────────────
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'vwrxijez'
@@ -769,6 +904,14 @@ const designSource = computed(() => {
     }
   }
 
+  if (props.order?.designDetails && Array.isArray(props.order.designDetails)) {
+    for (const design of props.order.designDetails) {
+      if (design.designSource) {
+        return design.designSource
+      }
+    }
+  }
+
   if (designFiles.value.length > 0) return 'upload'
   if (selectedTemplate.value) return 'saved'
 
@@ -798,6 +941,11 @@ const printSize = computed(() => {
       if (item.printSize) return item.printSize
     }
   }
+  if (props.order?.designDetails && Array.isArray(props.order.designDetails)) {
+    for (const design of props.order.designDetails) {
+      if (design.printSize) return design.printSize
+    }
+  }
   if (props.order?.printSize) return props.order.printSize
   if (selectedTemplate.value?.printSize) return selectedTemplate.value.printSize
   return null
@@ -809,6 +957,11 @@ const printPlacement = computed(() => {
       if (item.printPlacement) return item.printPlacement
     }
   }
+  if (props.order?.designDetails && Array.isArray(props.order.designDetails)) {
+    for (const design of props.order.designDetails) {
+      if (design.printPlacement) return design.printPlacement
+    }
+  }
   if (props.order?.printPlacement) return props.order.printPlacement
   if (selectedTemplate.value?.placement) return selectedTemplate.value.placement
   return null
@@ -818,6 +971,11 @@ const designNotes = computed(() => {
   if (props.order?.items && Array.isArray(props.order.items)) {
     for (const item of props.order.items) {
       if (item.designNotes) return item.designNotes
+    }
+  }
+  if (props.order?.designDetails && Array.isArray(props.order.designDetails)) {
+    for (const design of props.order.designDetails) {
+      if (design.designNotes) return design.designNotes
     }
   }
   if (props.order?.designNotes) return props.order.designNotes
@@ -926,8 +1084,6 @@ const podDriverDetails = computed(() => {
   return null
 })
 
-
-
 // ─── File Preview Functions ──────────────────────────────────────────────
 function isImageFile(file) {
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif']
@@ -952,7 +1108,7 @@ function previewPODImage() {
   previewFile({
     name: 'Proof of Delivery',
     url: podImageUrl.value,
-    type: 'image/jpeg' // or just treat as image
+    type: 'image/jpeg'
   })
 }
 
@@ -984,16 +1140,144 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-// ─── Keep local state in sync ────────────────────────────────────────────
+// ─── Currency Formatting ─────────────────────────────────────────────────
+function formatCurrency(amount) {
+  // Handle null, undefined, or empty
+  if (amount === null || amount === undefined || amount === '') {
+    return '₱0.00'
+  }
+  
+  // If it's already a string with ₱, extract the number
+  if (typeof amount === 'string' && amount.includes('₱')) {
+    const cleaned = amount.replace(/[₱,]/g, '').trim()
+    const num = parseFloat(cleaned)
+    if (isNaN(num)) {
+      return '₱0.00'
+    }
+    return `₱${num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+  
+  // If it's a string without ₱
+  if (typeof amount === 'string') {
+    const cleaned = amount.replace(/,/g, '').trim()
+    const num = parseFloat(cleaned)
+    if (isNaN(num)) {
+      return '₱0.00'
+    }
+    return `₱${num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+  
+  // If it's a number
+  if (typeof amount === 'number') {
+    if (isNaN(amount)) {
+      return '₱0.00'
+    }
+    return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+  
+  // Fallback
+  return '₱0.00'
+}
+
+function formatDate(date) {
+  if (!date) return 'N/A'
+  try {
+    return new Date(date).toLocaleDateString('en-PH', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  } catch {
+    return 'N/A'
+  }
+}
+
+// ─── Partial Payment Helper Functions ─────────────────────────────────────
+
+function getTotalPaid() {
+  if (!props.order?.partialPayments || props.order.partialPayments.length === 0) {
+    return 0
+  }
+  return props.order.partialPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
+}
+
+function getRemainingBalance() {
+  // Get the total amount - handle both string and number formats
+  let total = props.order?.amount || props.order?.totalAmount || 0
+  
+  // If total is a string with ₱, clean it
+  if (typeof total === 'string') {
+    total = parseFloat(total.replace(/[₱,]/g, '').trim()) || 0
+  }
+  
+  const paid = getTotalPaid()
+  const remaining = Math.max(0, total - paid)
+  return remaining
+}
+async function removePartialPayment(index) {
+  if (isSaving.value) return
+  
+  if (!confirm('Remove this partial payment record?')) return
+  
+  const payment = props.order.partialPayments[index]
+  if (!payment) return
+  
+  isSaving.value = true
+  
+  // Remove from local array
+  const updatedPayments = [...props.order.partialPayments]
+  updatedPayments.splice(index, 1)
+  props.order.partialPayments = updatedPayments
+  
+  // Calculate new total paid
+  const totalPaid = getTotalPaid()
+  const totalAmount = parseFloat(props.order?.amount || props.order?.totalAmount || 0)
+
+  // Determine new payment status
+  let newStatus = 'Unpaid'
+  if (totalPaid > 0 && totalPaid < totalAmount) {
+    newStatus = 'Partial'
+  } else if (totalPaid >= totalAmount) {
+    newStatus = 'Paid'
+  }
+  
+  // Emit payment update with the updated partialPayments array
+  emit('paymentUpdate', { 
+    orderId: props.order.id, 
+    paymentStatus: newStatus,
+    amountPaid: totalPaid,
+    partialPayments: updatedPayments // Send the updated array
+  })
+  
+  // Update local state
+  localPayment.value = newStatus
+  
+  // If still Partial, update the partialAmount to remaining balance
+  if (newStatus === 'Partial') {
+    partialAmount.value = getRemainingBalance()
+  } else {
+    partialAmount.value = 0
+  }
+  
+  setTimeout(() => { isSaving.value = false }, 1500)
+}
+// ─── Keep local sate in sync ────────────────────────────────────────────
 watch(() => props.order, (o) => {
   if (o) {
     localStatus.value = o.status || 'Pending'
-    localPayment.value = o.payment || 'Unpaid'
+    localPayment.value = o.paymentStatus || 'Unpaid'
+    
+    // Set partialAmount to remaining balance if payment is Partial
+    if (localPayment.value === 'Partial') {
+      partialAmount.value = getRemainingBalance()
+    } else {
+      partialAmount.value = 0
+    }
   }
 }, { immediate: true, deep: true })
 
 // ─── Status flow ──────────────────────────────────────────────────────────
-const statusFlow = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed']
+const statusFlow = ['Pending', 'Confirmed', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed']
 const paymentStatuses = [
   { value: 'Paid', label: 'Paid', activeClass: 'border-green-500 bg-green-50 text-green-700' },
   { value: 'Partial', label: 'Partial', activeClass: 'border-orange-400 bg-orange-50 text-orange-700' },
@@ -1020,6 +1304,7 @@ function getStatusDisplayName(status) {
   }
   const names = {
     'Pending': 'Pending',
+    'Confirmed': 'Confirmed',
     'Scheduled': 'Scheduled',
     'In Production': 'In Prod.',
     'Out for Delivery': 'Out for Delivery',
@@ -1227,6 +1512,41 @@ function handleStatusClickWithPrompt(status) {
     updateStatusParam = 'Out for Delivery'
   }
 
+  // Handle Confirmed status
+  if (status === 'Confirmed') {
+    // Check if payment is Partial or Unpaid
+    if (localPayment.value === 'Unpaid' || localPayment.value === 'Partial') {
+      // For Confirmed, we require at least partial payment
+      // You might want to show a prompt or automatically set to Partial
+      if (localPayment.value === 'Unpaid') {
+        // Auto-set to Partial with 50% downpayment
+        const totalAmount = parseFloat(props.order?.amount || props.order?.totalAmount || 0)
+        const downpayment = Math.round(totalAmount * 0.5)
+        partialAmount.value = downpayment
+        localPayment.value = 'Partial'
+        // Add the downpayment
+        const newPayment = {
+          amount: downpayment,
+          date: new Date().toISOString(),
+          updatedBy: getAdminName(), // ✅ Use admin name
+        }
+        if (!props.order.partialPayments) {
+          props.order.partialPayments = []
+        }
+        props.order.partialPayments.push(newPayment)
+        emit('paymentUpdate', { 
+          orderId: props.order.id, 
+          paymentStatus: 'Partial',
+          amountPaid: downpayment,
+          partialPayments: props.order.partialPayments
+        })
+      }
+    }
+    // Update status to Confirmed
+    updateStatus(updateStatusParam, 'Order confirmed - downpayment received')
+    return
+  }
+
   if (status === 'Scheduled') {
     pendingStatus.value = status
     scheduleDate.value = ''
@@ -1251,6 +1571,124 @@ function handleStatusClickWithPrompt(status) {
   }
 }
 
+async function handlePaymentClick(paymentDisplayValue) {
+  const backendValue = paymentDisplayValue
+  if (localPayment.value === backendValue || isSaving.value) return
+  
+  // If setting to Partial, set the input to remaining balance
+  if (backendValue === 'Partial') {
+    localPayment.value = backendValue
+    partialAmount.value = getRemainingBalance() // Set to remaining balance
+    // Don't emit yet - wait for user to enter amount or click Add Payment
+    return
+  }
+  
+  isSaving.value = true
+  localPayment.value = backendValue
+  
+  // Get total amount properly
+  let totalAmount = props.order?.amount || props.order?.totalAmount || 0
+  if (typeof totalAmount === 'string') {
+    totalAmount = parseFloat(totalAmount.replace(/[₱,]/g, '').trim()) || 0
+  }
+  
+  let amountPaid = 0
+  let partialPayments = []
+  
+  if (backendValue === 'Paid') {
+    amountPaid = totalAmount
+    partialPayments = [{ 
+      amount: totalAmount, 
+      date: new Date().toISOString(), 
+      updatedBy: getAdminName(), // ✅ Use admin name
+    }]
+    
+    // If order is in Confirmed status, move to Scheduled
+    if (localStatus.value === 'Confirmed') {
+      emit('statusUpdate', { 
+        orderId: props.order.id, 
+        status: 'Scheduled', 
+        notes: 'Full payment received - moving to production' 
+      })
+      localStatus.value = 'Scheduled'
+    }
+  } else if (backendValue === 'Unpaid') {
+    // Clear partial payments when setting to Unpaid
+    props.order.partialPayments = []
+    amountPaid = 0
+  }
+  
+  // Emit payment update with partialPayments array
+  emit('paymentUpdate', { 
+    orderId: props.order.id, 
+    paymentStatus: backendValue,
+    amountPaid: amountPaid,
+    partialPayments: partialPayments // Send the full array
+  })
+  
+  setTimeout(() => { isSaving.value = false }, 1500)
+}
+
+async function updatePartialPayment() {
+  if (!partialAmount.value || partialAmount.value <= 0 || isSaving.value) return
+  
+  // Get total amount properly
+  let totalAmount = props.order?.amount || props.order?.totalAmount || 0
+  if (typeof totalAmount === 'string') {
+    totalAmount = parseFloat(totalAmount.replace(/[₱,]/g, '').trim()) || 0
+  }
+  
+  // Check if amount exceeds remaining balance
+  const paid = getTotalPaid()
+  const remaining = Math.max(0, totalAmount - paid)
+  
+  if (partialAmount.value > remaining) {
+    alert(`Payment amount (${formatCurrency(partialAmount.value)}) exceeds remaining balance (${formatCurrency(remaining)})`)
+    return
+  }
+  
+  isSaving.value = true
+  
+  // Create new payment record
+  const newPayment = {
+    amount: partialAmount.value,
+    date: new Date().toISOString(),
+    updatedBy: getAdminName(), // ✅ Use admin name
+  }
+  
+  // Add to partialPayments array
+  if (!props.order.partialPayments) {
+    props.order.partialPayments = []
+  }
+  props.order.partialPayments.push(newPayment)
+  
+  // Calculate total paid
+  const totalPaid = getTotalPaid()
+  
+  // If total paid equals or exceeds total, set to Paid
+  const newPaymentStatus = totalPaid >= totalAmount ? 'Paid' : 'Partial'
+  
+  // Emit payment update with the full partialPayments array
+  emit('paymentUpdate', { 
+    orderId: props.order.id, 
+    paymentStatus: newPaymentStatus,
+    amountPaid: totalPaid,
+    partialPayments: props.order.partialPayments // Send the full array
+  })
+  
+  // Update local state
+  localPayment.value = newPaymentStatus
+  
+  // If still Partial, set to remaining balance, else reset to 0
+  if (newPaymentStatus === 'Partial') {
+    partialAmount.value = getRemainingBalance()
+  } else {
+    partialAmount.value = 0
+  }
+  
+  setTimeout(() => { isSaving.value = false }, 1500)
+}
+
 async function confirmSchedule() {
   if (!scheduleDate.value) return
   await updateStatus(pendingStatus.value, scheduleNotes.value, scheduleDate.value)
@@ -1260,15 +1698,6 @@ async function confirmSchedule() {
 async function confirmComplete() {
   await updateStatus(pendingStatus.value, completeNotes.value || 'Customer picked up the order')
   closeCompleteConfirmModal()
-}
-
-async function handlePaymentClick(paymentDisplayValue) {
-  const backendValue = paymentDisplayValue
-  if (localPayment.value === backendValue || isSaving.value) return
-  isSaving.value = true
-  localPayment.value = backendValue
-  emit('paymentUpdate', { orderId: props.order.id, paymentStatus: backendValue, amountPaid: null })
-  setTimeout(() => { isSaving.value = false }, 1500)
 }
 
 async function handleCancelClick() {
@@ -1305,6 +1734,7 @@ function statusBadge(status) {
   const displayStatus = getStatusDisplayName(status)
   const classes = {
     'Completed': 'bg-green-100 text-green-700',
+    'Confirmed': 'bg-green-100 text-green-700',
     'In Production': 'bg-blue-100 text-blue-700',
     'Scheduled': 'bg-purple-100 text-purple-700',
     'Pending': 'bg-yellow-100 text-yellow-700',
@@ -1327,6 +1757,7 @@ function paymentBadge(payment) {
 function historyBg(status) {
   const classes = {
     'Completed': 'bg-green-100',
+    'Confirmed': 'bg-green-100',
     'In Production': 'bg-blue-100',
     'Scheduled': 'bg-purple-100',
     'Pending': 'bg-yellow-100',
@@ -1340,6 +1771,7 @@ function historyBg(status) {
 function historyText(status) {
   const classes = {
     'Completed': 'text-green-700',
+    'Confirmed': 'text-green-700',
     'In Production': 'text-blue-700',
     'Scheduled': 'text-purple-700',
     'Pending': 'text-yellow-700',
@@ -1382,6 +1814,7 @@ const XIcon = () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 
 function statusIcon(status) {
   const icons = {
     'Completed': CheckIcon,
+    'Confirmed': CheckIcon,
     'In Production': PackageIcon,
     'Scheduled': CalendarIcon,
     'Pending': ClockIcon,

@@ -18,6 +18,7 @@ import { h } from 'vue'
 // The status as it is actually persisted in MongoDB.
 export const DB_STATUSES = [
   'Pending',
+  'Confirmed',
   'Scheduled',
   'In Production',
   'Out for Delivery',
@@ -73,7 +74,7 @@ export function isStatusGroupMatch(displayStatus, dbStatus) {
  * @param {string} receivingMode - 'Pick-up' | 'Delivery'
  */
 export function getStatusFlow(receivingMode) {
-  const flow = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed']
+  const flow = ['Pending', 'Confirmed', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed']  // ← Add Confirmed here
   if (receivingMode === 'Pick-up') {
     return flow.map(s => PICKUP_ALIAS[s] || s)
   }
@@ -104,6 +105,7 @@ export function getNextStatuses(currentDisplayStatus, receivingMode) {
 // ─── Badge styling ──────────────────────────────────────────────────────
 const STATUS_BADGE_CLASSES = {
   Pending: 'bg-yellow-100 text-yellow-700',
+  Confirmed: 'bg-green-100 text-green-700',
   Scheduled: 'bg-purple-100 text-purple-700',
   'In Production': 'bg-blue-100 text-blue-700',
   'Out for Delivery': 'bg-cyan-100 text-cyan-700',
@@ -142,6 +144,9 @@ const ICONS = {
   Completed: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
     h('path', { d: 'M21.801 10A10 10 0 1 1 17 3.335' }),
     h('path', { d: 'm9 11 3 3L22 4' }),
+  ]),
+  Confirmed: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
+    h('path', { d: 'M20 6L9 17l-5-5' }),
   ]),
   'In Production': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
     h('path', { d: 'M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z' }),

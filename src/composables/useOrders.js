@@ -104,19 +104,28 @@ export function useOrders(options = {}) {
     }
   }
 
-  async function updatePayment(orderId, { paymentStatus, amountPaid } = {}) {
-    try {
-      const response = await adminOrderApi.updatePaymentStatus(orderId, { paymentStatus, amountPaid })
-      if (response.success) {
-        const updated = patchLocalOrder(orderId, response.data)
-        return { success: true, order: updated }
-      }
-      return { success: false, message: response.message || 'Failed to update payment' }
-    } catch (e) {
-      console.error('Payment update error:', e)
-      return { success: false, message: 'Failed to update payment' }
+async function updatePayment(orderId, { paymentStatus, amountPaid, partialPayments } = {}) {
+  try {
+    const payload = { paymentStatus }
+    if (amountPaid !== undefined && amountPaid !== null) {
+      payload.amountPaid = amountPaid
     }
+    if (partialPayments !== undefined && Array.isArray(partialPayments)) {
+      payload.partialPayments = partialPayments
+    }
+    
+    console.log('Updating payment for orderId:', orderId, 'with payload:', payload)
+    const response = await adminOrderApi.updatePaymentStatus(orderId, payload)
+    if (response.success) {
+      const updated = patchLocalOrder(orderId, response.data)
+      return { success: true, order: updated }
+    }
+    return { success: false, message: response.message || 'Failed to update payment' }
+  } catch (e) {
+    console.error('Payment update error:', e)
+    return { success: false, message: 'Failed to update payment' }
   }
+}
 
   async function deleteOrder(orderId) {
     try {
@@ -137,6 +146,7 @@ export function useOrders(options = {}) {
     return {
       all: list.length,
       pending: list.filter(o => o.status === 'Pending').length,
+      confirmed: list.filter(o => o.status === 'Confirmed').length,
       scheduled: list.filter(o => o.status === 'Scheduled').length,
       inProduction: list.filter(o => o.status === 'In Production').length,
       // Counts BOTH "Out for Delivery" and its pickup alias "Ready to Pick-up"

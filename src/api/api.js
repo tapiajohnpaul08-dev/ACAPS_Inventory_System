@@ -372,11 +372,34 @@ export const adminOrderApi = {
     );
   },
 
+ // ✅ FIX: Accept full payload with partialPayments
   async updatePaymentStatus(orderId, paymentData) {
-    const paymentStatus = typeof paymentData === 'string' ? paymentData : paymentData.paymentStatus;
-    const amountPaid = paymentData.amountPaid || null;
+    // If paymentData is a string, convert to object
+    if (typeof paymentData === 'string') {
+      return handleResponse(
+        adminAxiosInstance.patch(`/order/admin/orders/${orderId}/payment`, { 
+          paymentStatus: paymentData 
+        })
+      );
+    }
+    
+    // Build payload with all fields
+    const payload = {
+      paymentStatus: paymentData.paymentStatus
+    }
+    
+    // Include amountPaid if provided
+    if (paymentData.amountPaid !== undefined && paymentData.amountPaid !== null) {
+      payload.amountPaid = paymentData.amountPaid
+    }
+    
+    // Include partialPayments if provided
+    if (paymentData.partialPayments !== undefined && Array.isArray(paymentData.partialPayments)) {
+      payload.partialPayments = paymentData.partialPayments
+    }
+    
     return handleResponse(
-      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/payment`, { paymentStatus, amountPaid })
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/payment`, payload)
     );
   },
 

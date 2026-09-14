@@ -142,7 +142,8 @@ function transformOrder(order) {
 
     // Status - USE THE DISPLAY STATUS
     status: displayStatus,  // ← FIXED: Use displayStatus
-    payment: (order.paymentStatus || 'Unpaid'),
+    payment: order.paymentStatus,
+    paymentStatus: order.paymentStatus,
     hasDesign: order.hasDesign || false,
     // Delivery
     deliveryMethod: order.receivingMode || order.deliveryMethod || order.fulfillment?.method || 'Pick-up',
@@ -281,17 +282,26 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
 }
 
 // Called from OrderDetailModal when admin clicks a payment button
-async function handlePaymentUpdate({ orderId, paymentStatus, amountPaid }) {
+async function handlePaymentUpdate({ orderId, paymentStatus, amountPaid, partialPayments }) {
   try {
     const validPayments = ['Paid', 'Partial', 'Unpaid'];
     const normalizedPayment = validPayments.find(p => p.toLowerCase() === paymentStatus.toLowerCase()) || paymentStatus;
     
-    console.log('Updating payment:', { orderId, paymentStatus: normalizedPayment, amountPaid });
+    console.log('Updating payment:', { orderId, paymentStatus: normalizedPayment, amountPaid, partialPayments });
     
-    const response = await adminOrderApi.updatePaymentStatus(orderId, { 
-      paymentStatus: normalizedPayment, 
-      amountPaid 
-    })
+    // Build payload with partialPayments if provided
+    const payload = { 
+      paymentStatus: normalizedPayment,
+      amountPaid: amountPaid
+      
+    }
+    
+    // If partialPayments array is provided, include it
+    if (partialPayments !== undefined && Array.isArray(partialPayments)) {
+      payload.partialPayments = partialPayments
+    }
+    
+    const response = await adminOrderApi.updatePaymentStatus(orderId, payload)
     
     if (response.success) {
       patchLocalOrder(orderId, transformOrder(response.data))
