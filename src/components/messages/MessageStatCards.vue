@@ -1,3 +1,5 @@
+<!-- ADMIN SIDE -->
+
 <template>
   <div class="grid grid-cols-3 gap-3 mb-3">
     <div

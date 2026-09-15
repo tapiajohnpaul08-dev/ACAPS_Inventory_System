@@ -1,3 +1,6 @@
+<!-- ADMIN SIDE -->
+
+
 <template>
   <div class="h-full flex flex-col rounded-2xl overflow-hidden border" style="background: var(--surface, #fff); border-color: var(--border, #e5e7eb);">
 

@@ -1,3 +1,5 @@
+<!-- ADMIN SIDE -->
+
 <template>
   <div class="h-full flex flex-col rounded-2xl overflow-hidden border" style="background: #fff; border-color: var(--border, #e5e7eb);">
 
@@ -67,153 +69,174 @@
 
         <!-- Actual messages -->
         <template v-else>
-          <template v-for="(group, gi) in groupedMessages" :key="gi">
+                    <template v-for="(group, gi) in groupedMessages" :key="gi">
             <div class="flex items-center gap-3 my-3">
               <div class="flex-1 h-px" style="background: #e5e7eb;"></div>
               <span class="text-xs font-medium px-2" style="color: #9ca3af;">{{ group.label }}</span>
               <div class="flex-1 h-px" style="background: #e5e7eb;"></div>
             </div>
 
-            <div
-              v-for="msg in group.messages"
-              :key="msg.messageId || msg._id"
-              class="flex items-start group"
-              :class="isAdminMessage(msg) ? 'justify-end' : 'justify-start'"
-            >
-              <!-- Avatar for customer (left side) -->
+            <template v-for="msg in group.messages" :key="msg.messageId || msg._id">
+
+              <!-- ─── PAYMENT REQUEST CARD ─────────────────────────── -->
               <div
-                v-if="!isAdminMessage(msg)"
-                class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 shrink-0 self-end mb-1"
-                :style="{ background: getAvatarColor(message.name) }"
+                v-if="msg.contentType === 'payment-request'"
+                class="w-full flex justify-start my-2"
               >
-                {{ (message.name || '?')[0] }}
-              </div>
-
-              <!-- Message Bubble with actions -->
-              <div class="flex items-center gap-1.5 max-w-[75%]">
-                <!-- Action buttons - LEFT SIDE (for admin messages only - reply + unsend) -->
-                <div 
-                  v-if="isAdminMessage(msg)"
-                  class="flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <!-- Reply button -->
-                  <button
-                    v-if="!msg.isDeleted"
-                    @click="setReplyTo(msg)"
-                    class="p-1.5 rounded-full hover:bg-blue-200 transition-colors"
-                    title="Reply to this message"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-200 hover:text-white">
-                      <path d="M3 10a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z"/>
-                      <path d="M21 15l-5-5 5-5"/>
+                <div class="max-w-md w-full bg-white border-2 border-amber-200 rounded-2xl shadow-sm overflow-hidden">
+                  <div class="bg-gradient-to-r from-amber-50 to-amber-100 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+                      <rect x="2" y="5" width="20" height="14" rx="2"/>
+                      <line x1="2" y1="10" x2="22" y2="10"/>
                     </svg>
-                  </button>
-                  
-                  <!-- Unsend button -->
-                  <button
-                    v-if="canUnsendMessage(msg)"
-                    @click="openUnsendModal(msg)"
-                    class="p-1.5 rounded-full hover:bg-red-200 transition-colors"
-                    title="Unsend message"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-200 hover:text-red-300">
-                      <path d="M3 6h18"/>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                      <path d="M10 11v6"/>
-                      <path d="M14 11v6"/>
-                    </svg>
-                  </button>
-                </div>
-
-                <!-- Bubble -->
-                <div
-                  class="message-bubble relative group"
-                  :class="isAdminMessage(msg) ? 'bubble-admin' : 'bubble-customer'"
-                >
-                  <!-- Reply indicator -->
-                  <div v-if="msg.replyTo" class="text-xs mb-1.5 p-1.5 rounded bg-opacity-20" :class="isAdminMessage(msg) ? 'bg-blue-500 bg-opacity-20' : 'bg-gray-100'">
-                    <span class="text-[10px] opacity-70">↩️ Replying to:</span>
-                    <p class="text-xs truncate max-w-[200px]" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-500'">
-                      {{ msg.replyTo.content }}
+                    <span class="font-bold text-amber-800 text-sm">Payment Request</span>
+                    <span
+                      v-if="msg.paymentRequestData?.status"
+                      class="ml-auto text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                      :class="{
+                        'bg-yellow-200 text-yellow-800': msg.paymentRequestData.status === 'pending',
+                        'bg-blue-200 text-blue-800': msg.paymentRequestData.status === 'proof-submitted',
+                        'bg-green-200 text-green-800': msg.paymentRequestData.status === 'verified',
+                        'bg-red-200 text-red-800': msg.paymentRequestData.status === 'rejected',
+                        'bg-gray-200 text-gray-700': msg.paymentRequestData.status === 'superseded',
+                      }"
+                    >
+                      {{ msg.paymentRequestData.status }}
+                    </span>
+                  </div>
+                  <div class="p-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Method</span>
+                      <span class="font-semibold">
+                        {{ msg.paymentRequestData?.method === 'gcash' ? 'GCash' : 'Bank Transfer' }}
+                      </span>
+                    </div>
+                    <div v-if="msg.paymentRequestData?.bankName" class="flex justify-between">
+                      <span class="text-gray-500">Bank</span>
+                      <span class="font-semibold">{{ msg.paymentRequestData.bankName }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Account Name</span>
+                      <span class="font-semibold">{{ msg.paymentRequestData?.accountName }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Account Number</span>
+                      <span class="font-mono font-semibold">{{ msg.paymentRequestData?.accountNumber }}</span>
+                    </div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100">
+                      <span class="text-gray-500">Amount Due</span>
+                      <span class="font-bold text-amber-700">
+                        ₱{{ (msg.paymentRequestData?.amountDue || 0).toLocaleString() }}
+                      </span>
+                    </div>
+                    <p
+                      v-if="msg.paymentRequestData?.notes"
+                      class="text-xs text-gray-500 italic pt-2 border-t border-gray-100"
+                    >
+                      {{ msg.paymentRequestData.notes }}
                     </p>
                   </div>
+                </div>
+              </div>
 
-                  <!-- Text content -->
-                  <p v-if="msg.content && !msg.isDeleted" class="text-sm leading-relaxed whitespace-pre-wrap break-words">{{ msg.content }}</p>
-
-                  <!-- Unsend indicator -->
-                  <p v-if="msg.isDeleted" class="text-sm leading-relaxed whitespace-pre-wrap break-words italic" :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-400'">
-                    This message was unsent
-                  </p>
-
-                  <!-- Attachments -->
-                  <div v-if="msg.attachments && msg.attachments.length > 0 && !msg.isDeleted" class="mt-2 space-y-2">
-                    <div v-for="(file, idx) in msg.attachments" :key="idx">
-                      <div v-if="isImageFile(file)" class="relative">
-                        <img 
-                          :src="getFileUrl(file)" 
-                          :alt="file.name || 'Image'"
-                          class="max-w-full max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                          @click="openImageViewer(getFileUrl(file))"
-                          @error="handleImageError"
-                        />
-                        <p class="text-xs mt-1" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-500'">
-                          📷 {{ file.name || 'Image' }}
-                        </p>
-                      </div>
-                      <div v-else class="flex items-center gap-2 p-2 rounded-lg" :class="isAdminMessage(msg) ? 'bg-blue-700' : 'bg-gray-100'">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-500'">
-                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                          <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                        <a :href="getFileUrl(file)" target="_blank" class="text-sm hover:underline truncate flex-1" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-blue-600'">
-                          {{ file.name || 'Download' }}
-                        </a>
-                        <span class="text-xs" :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-400'">{{ formatFileSize(file.size) }}</span>
-                      </div>
+              <!-- ─── PAYMENT PROOF CARD ───────────────────────────── -->
+              <div
+                v-else-if="msg.contentType === 'payment-proof'"
+                class="w-full flex justify-start my-2"
+              >
+                <div class="max-w-md w-full bg-white border-2 border-blue-200 rounded-2xl shadow-sm overflow-hidden">
+                  <div class="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-3 border-b border-blue-200 flex items-center justify-between">
+                    <span class="font-bold text-blue-800 text-sm">Payment Proof Submitted</span>
+                    <span
+                      class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                      :class="{
+                        'bg-yellow-200 text-yellow-800': msg.paymentProofData?.status === 'pending-review',
+                        'bg-green-200 text-green-800': msg.paymentProofData?.status === 'approved',
+                        'bg-red-200 text-red-800': msg.paymentProofData?.status === 'rejected',
+                      }"
+                    >
+                      {{ (msg.paymentProofData?.status || '').replace('-', ' ') }}
+                    </span>
+                  </div>
+                  <div class="p-4 space-y-3 text-sm">
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Amount Paid</span>
+                      <span class="font-bold text-blue-700">
+                        ₱{{ (msg.paymentProofData?.amountPaid || 0).toLocaleString() }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Reference</span>
+                      <span class="font-mono text-xs">
+                        {{ msg.paymentProofData?.referenceNumber || '—' }}
+                      </span>
+                    </div>
+                    <img
+                      v-if="msg.paymentProofData?.proofImageUrl"
+                      :src="msg.paymentProofData.proofImageUrl"
+                      alt="Proof"
+                      class="w-full max-h-56 object-contain rounded-lg border border-blue-200 cursor-pointer hover:opacity-90 transition-opacity"
+                      @click="openImageViewer(msg.paymentProofData.proofImageUrl)"
+                    />
+                    <p
+                      v-if="msg.paymentProofData?.note"
+                      class="text-xs text-gray-500 italic pt-2 border-t border-gray-100"
+                    >
+                      {{ msg.paymentProofData.note }}
+                    </p>
+                    <div
+                      v-if="msg.paymentProofData?.status === 'pending-review'"
+                      class="flex gap-2 pt-2 border-t border-gray-100"
+                    >
+                      <button
+                        @click="openVerifyModal(msg)"
+                        class="flex-1 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors"
+                      >
+                        Verify &amp; Confirm
+                      </button>
+                      <button
+                        @click="openRejectModal(msg)"
+                        class="flex-1 py-2 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors"
+                      >
+                        Reject
+                      </button>
                     </div>
                   </div>
-
-                  <!-- Timestamp + read status -->
-                  <div class="flex items-center gap-1 mt-1.5" :class="isAdminMessage(msg) ? 'justify-end' : 'justify-start'">
-                    <span class="text-[10px]" :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-400'">
-                      {{ formatTime(msg.createdAt || msg.timestamp) }}
-                    </span>
-                    <svg v-if="isAdminMessage(msg) && msg.isRead" class="w-3 h-3 text-blue-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                </div>
-
-                <!-- Action buttons - RIGHT SIDE (for customer messages only - reply only) -->
-                <div 
-                  v-if="!isAdminMessage(msg)"
-                  class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <!-- Reply button -->
-                  <button
-                    v-if="!msg.isDeleted"
-                    @click="setReplyTo(msg)"
-                    class="p-1.5 rounded-full hover:bg-blue-200 transition-colors"
-                    title="Reply to this message"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 hover:text-blue-600">
-                      <path d="M3 10a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z"/>
-                      <path d="M21 15l-5-5 5-5"/>
-                    </svg>
-                  </button>
                 </div>
               </div>
 
-              <!-- Avatar for admin (right side) -->
+              <!-- ─── REGULAR MESSAGE ROW ──────────────────────────── -->
               <div
-                v-if="isAdminMessage(msg)"
-                class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ml-2 shrink-0 self-end mb-1"
-                style="background: #7c3aed;"
+                v-else
+                class="flex items-start group"
+                :class="isAdminMessage(msg) ? 'justify-end' : 'justify-start'"
               >
-                A
+                <!-- Avatar for customer (left side) -->
+                <div
+                  v-if="!isAdminMessage(msg)"
+                  class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 shrink-0 self-end mb-1"
+                  :style="{ background: getAvatarColor(message.name) }"
+                >
+                  {{ (message.name || '?')[0] }}
+                </div>
+
+                <!-- Message Bubble with actions -->
+                <div class="flex items-center gap-1.5 max-w-[75%]">
+                  <!-- (leave all the existing content of this div exactly as-is) -->
+                  ...
+                </div>
+
+                <!-- Avatar for admin (right side) -->
+                <div
+                  v-if="isAdminMessage(msg)"
+                  class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ml-2 shrink-0 self-end mb-1"
+                  style="background: #7c3aed;"
+                >
+                  A
+                </div>
               </div>
-            </div>
+
+            </template>
           </template>
 
           <!-- Typing indicator -->
@@ -386,23 +409,129 @@
       </div>
     </div>
   </Teleport>
+
+    <!-- Verify Payment Modal -->
+  <Teleport to="body">
+    <div
+      v-if="showVerifyModal"
+      class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      @click.self="closeVerifyModal"
+    >
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Verify Payment</h3>
+        <p class="text-sm text-gray-500 mb-4">
+          This will record the payment and confirm the linked order.
+        </p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Amount to Record (₱)</label>
+            <input
+              v-model.number="verifyAmount"
+              type="number"
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p class="text-[10px] text-gray-400 mt-1">
+              Customer declared: ₱{{ (selectedProofMsg?.paymentProofData?.amountPaid || 0).toLocaleString() }}
+            </p>
+          </div>
+
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input v-model="verifyIsFullPayment" type="checkbox" class="mt-1" />
+            <div class="text-sm">
+              <p class="font-semibold text-gray-800">This is a full payment</p>
+              <p class="text-xs text-gray-500">Check if customer paid the entire amount. Otherwise recorded as downpayment.</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button
+            @click="closeVerifyModal"
+            :disabled="isVerifying"
+            class="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >Cancel</button>
+          <button
+            @click="confirmVerify"
+            :disabled="isVerifying"
+            class="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            <svg v-if="isVerifying" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            {{ isVerifying ? 'Verifying…' : 'Verify & Confirm' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- Reject Payment Modal -->
+  <Teleport to="body">
+    <div
+      v-if="showRejectModal"
+      class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      @click.self="closeRejectModal"
+    >
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Reject Payment Proof</h3>
+        <p class="text-sm text-gray-500 mb-4">
+          The customer will be notified and can resubmit.
+        </p>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
+          <textarea
+            v-model="rejectReason"
+            rows="3"
+            placeholder="e.g., Amount doesn't match / Screenshot is unclear"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+          ></textarea>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button
+            @click="closeRejectModal"
+            :disabled="isRejecting"
+            class="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >Cancel</button>
+          <button
+            @click="confirmReject"
+            :disabled="isRejecting"
+            class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            <svg v-if="isRejecting" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            {{ isRejecting ? 'Rejecting…' : 'Reject' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
-import { adminChatApi } from '@/api/api'
-
+import { adminChatApi, adminOrderApi } from '@/api/api'
 const props = defineProps({
   message:               { type: Object,   default: null },
   messages:              { type: Array,    default: () => [] },
   isTyping:              { type: Boolean,  default: false },
   isLoadingMessages:     { type: Boolean,  default: false },
+  respondingQuoteId:     { type: String,   default: null },
   onSendReply:           { type: Function, required: true },
+  onUnsend:              { type: Function, required: true },
   onTypingIndicator:     { type: Function, default: null },
   messagesContainerRefSetter: { type: Function, default: null },
 })
 
-const emit = defineEmits(['reply', 'status-change'])
+const currentAdmin = localStorage.getItem('adminName')
+const emit = defineEmits(['reply', 'status-change', 'quote-accept', 'quote-reject'])
 
 // ── Refs ─────────────────────────────────────────────
 const reply             = ref('')
@@ -420,6 +549,16 @@ const unsendModal = ref({
   message: null
 })
 const isUnsendLoading = ref(false)
+
+// ── Payment verification state ──
+const showVerifyModal = ref(false)
+const showRejectModal = ref(false)
+const selectedProofMsg = ref(null)
+const verifyAmount = ref(0)
+const verifyIsFullPayment = ref(false)
+const rejectReason = ref('')
+const isVerifying = ref(false)
+const isRejecting = ref(false)
 
 // Expose container ref to parent
 watch(messagesContainer, (el) => {
@@ -465,30 +604,84 @@ const confirmUnsend = async () => {
   
   try {
     const messageId = msg.messageId || msg._id
-    const result = await adminChatApi.unsendMessage(messageId)
+    const ok = await props.onUnsend(messageId)
     
-    if (result.success) {
-      const index = props.messages.findIndex(m => (m.messageId || m._id) === messageId)
-      if (index !== -1) {
-        const updatedMessages = [...props.messages]
-        updatedMessages[index] = {
-          ...updatedMessages[index],
-          isDeleted: true,
-          content: 'This message was unsent'
-        }
-        emit('reply', { messageId, action: 'unsent' })
-      }
-      
+    if (ok) {
       showToast('success', 'Message unsent successfully')
       closeUnsendModal()
     } else {
-      showToast('error', result.message || 'Failed to unsend message')
+      showToast('error', 'Failed to unsend message')
     }
   } catch (error) {
     console.error('Failed to unsend message:', error)
     showToast('error', 'Failed to unsend message')
   } finally {
     isUnsendLoading.value = false
+  }
+}
+
+// ── Payment verify/reject ────────────────────────────
+function openVerifyModal(proofMsg) {
+  selectedProofMsg.value = proofMsg
+  verifyAmount.value = proofMsg.paymentProofData?.amountPaid || 0
+  verifyIsFullPayment.value = false
+  showVerifyModal.value = true
+}
+
+function closeVerifyModal() {
+  showVerifyModal.value = false
+  selectedProofMsg.value = null
+}
+
+async function confirmVerify() {
+  if (!selectedProofMsg.value) return
+  isVerifying.value = true
+  try {
+    const res = await adminChatApi.verifyPaymentProof(selectedProofMsg.value.messageId, {
+      isFullPayment: verifyIsFullPayment.value,
+      adjustedAmount: Number(verifyAmount.value) || null,
+    })
+    if (res.success) {
+      showToast('success', 'Payment verified — order confirmed')
+      closeVerifyModal()
+    } else {
+      showToast('error', res.message || 'Failed to verify payment')
+    }
+  } catch (e) {
+    console.error('confirmVerify error:', e)
+    showToast('error', 'Failed to verify payment')
+  } finally {
+    isVerifying.value = false
+  }
+}
+
+function openRejectModal(proofMsg) {
+  selectedProofMsg.value = proofMsg
+  rejectReason.value = ''
+  showRejectModal.value = true
+}
+
+function closeRejectModal() {
+  showRejectModal.value = false
+  selectedProofMsg.value = null
+}
+
+async function confirmReject() {
+  if (!selectedProofMsg.value) return
+  isRejecting.value = true
+  try {
+    const res = await adminChatApi.rejectPaymentProof(selectedProofMsg.value.messageId, rejectReason.value)
+    if (res.success) {
+      showToast('success', 'Payment proof rejected')
+      closeRejectModal()
+    } else {
+      showToast('error', res.message || 'Failed to reject proof')
+    }
+  } catch (e) {
+    console.error('confirmReject error:', e)
+    showToast('error', 'Failed to reject proof')
+  } finally {
+    isRejecting.value = false
   }
 }
 

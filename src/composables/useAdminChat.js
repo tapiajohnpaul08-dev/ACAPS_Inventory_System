@@ -1,6 +1,6 @@
-// composables/useAdminChat.js
+// Admin Side
 import { ref, computed, nextTick } from 'vue'
-import { adminChatApi } from '@/api/api'
+import { adminChatApi, adminOrderApi } from '@/api/api'
 import { useAdminSocket } from './useAdminSocket'
 
 export function useAdminChat() {
@@ -14,7 +14,7 @@ export function useAdminChat() {
   const messagesContainerRef = ref(null)
   const processedMessages = new Set()
   let pendingTempId = null // Add this
-
+  const negotiationUpdate = ref(null)
   // Socket
   const socket = useAdminSocket()
 
@@ -71,6 +71,13 @@ export function useAdminChat() {
     if (token) {
       socket.connect(token, adminId, 'admin')
       setupSocketListeners()
+    }
+  }
+
+    const patchMessage = (messageId, patch) => {
+    const index = messages.value.findIndex(m => m.messageId === messageId)
+    if (index !== -1) {
+      messages.value[index] = { ...messages.value[index], ...patch }
     }
   }
 
@@ -137,6 +144,23 @@ export function useAdminChat() {
       }))
     })
 
+            if (socket.onConversationOrderLinked) {
+      socket.onConversationOrderLinked(({ conversationId, orderId }) => {
+        negotiationUpdate.value = { orderId, conversationId, _linkedHint: true }
+      })
+    }
+
+        // When the customer's order gets updated (e.g. customer accepted a quote,
+    // or an admin edited pricing from another tab), refresh the linked order
+    // in the panel. We'll expose a callback so MessagePage can react.
+    if (socket.onOrderNegotiationUpdated) {
+      socket.onOrderNegotiationUpdated((updatedOrder) => {
+        console.log('📦 Order negotiation updated via socket:', updatedOrder?.orderId)
+        // Bump an internal ref that MessagePage can watch
+        negotiationUpdate.value = updatedOrder
+      })
+    }
+
     socket.onUserTyping(({ userType, isTyping: typing }) => {
       if (userType === 'customer') {
         isCustomerTyping.value = typing
@@ -149,6 +173,40 @@ export function useAdminChat() {
     socket.onMessagesRead(() => {
       // Optionally update read receipts in the UI
     })
+
+    socket.onMessageUnsent(({ messageId }) => {
+      const index = messages.value.findIndex(m => (m.messageId || m._id) === messageId)
+      if (index !== -1) {
+        messages.value[index] = {
+          ...messages.value[index],
+          isDeleted: true,
+          content: 'This message was unsent',
+        }
+      }
+    })
+
+        socket.onPaymentRequestUpdated((updatedRequestMsg) => {
+      if (!updatedRequestMsg) return
+      const index = messages.value.findIndex(m => m.messageId === updatedRequestMsg.messageId)
+      if (index !== -1) {
+        messages.value[index] = {
+          ...messages.value[index],
+          paymentRequestData: updatedRequestMsg.paymentRequestData,
+        }
+      }
+    })
+
+    socket.onPaymentProofUpdated((updatedProofMsg) => {
+      if (!updatedProofMsg) return
+      const index = messages.value.findIndex(m => m.messageId === updatedProofMsg.messageId)
+      if (index !== -1) {
+        messages.value[index] = {
+          ...messages.value[index],
+          paymentProofData: updatedProofMsg.paymentProofData,
+        }
+      }
+    })
+    
 
     socket.onError((error) => {
       console.error('Socket error:', error)
@@ -187,6 +245,8 @@ export function useAdminChat() {
           adminUnreadCount: conv.adminUnreadCount || 0,
           status: conv.status,
           customerId: conv.customerId,
+          orderId: conv.orderId || null,       // ← ADD THIS
+
         }))
       }
     } catch (error) {
@@ -215,10 +275,6 @@ export function useAdminChat() {
     }
   }
 
-  // ─────────────────────────────────────────
-  // Send reply - Same approach as customer side
-  // ─────────────────────────────────────────
- // composables/useAdminChat.js - FIXED sendReply function
 
 // ─────────────────────────────────────────
 // Send reply - MATCHES CUSTOMER SIDE EXACTLY
@@ -320,6 +376,24 @@ const sendReply = async (conversationId, content, attachments = [], replyToMessa
     return false
   }
 }
+
+
+  // ─────────────────────────────────────────
+  // Negotiate an order (edit design fee, quantity, etc.)
+  // Called from the NegotiationPanel. Returns the updated order.
+  // ─────────────────────────────────────────
+  const negotiateOrder = async (orderId, updates) => {
+    try {
+      const result = await adminOrderApi.negotiateOrder(orderId, updates)
+      if (result.success) {
+        return { success: true, order: result.data, changes: result.changes }
+      }
+      return { success: false, message: result.message || 'Failed to negotiate order' }
+    } catch (error) {
+      console.error('Error negotiating order:', error)
+      return { success: false, message: error.message }
+    }
+  }
 
   // ─────────────────────────────────────────
   // Mark as read
@@ -482,6 +556,8 @@ const sendReply = async (conversationId, content, attachments = [], replyToMessa
     loadConversations,
     loadMessages,
     sendReply,
+    negotiateOrder,
+    negotiationUpdate,
     selectConversation,
     markAsRead,
     unsendMessage,
@@ -491,5 +567,6 @@ const sendReply = async (conversationId, content, attachments = [], replyToMessa
     resolveFileUrl,
     cleanup,
     formatDate,
+    patchMessage
   }
 }

@@ -1,3 +1,4 @@
+<!-- ADMIN SIDE -->
 <template>
   <div class="h-screen flex flex-col" style="background: var(--bg-base); font-family: 'DM Sans', 'Segoe UI', sans-serif;">
 
@@ -53,32 +54,51 @@
       />
     </div>
 
-    <!-- Chat Grid -->
+    <!-- Chat Grid (4 columns when negotiation active) -->
     <div class="flex-1 min-h-0 px-6 pb-6 pt-3">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+      <div
+        class="grid gap-4 h-full"
+        :class="selectedConversation && linkedOrder
+          ? 'grid-cols-1 lg:grid-cols-4'
+          : 'grid-cols-1 lg:grid-cols-3'"
+      >
         <!-- Conversation list -->
         <div class="lg:col-span-1 h-full min-h-0">
           <MessageList
             :messages="filteredConversations"
             :selected-id="selectedConversation?.id ?? null"
             :is-loading="isLoading"
-            @select="handleSelectConversation"
+            @select="handleSelectConversationWrapped"
           />
         </div>
 
         <!-- Message detail panel -->
-        <div class="lg:col-span-2 h-full min-h-0">
+        <div
+          class="h-full min-h-0"
+          :class="selectedConversation && linkedOrder ? 'lg:col-span-2' : 'lg:col-span-2'"
+        >
           <MessageDetail
-            :message="selectedConversation"
-            :messages="messages"
-            :is-typing="isCustomerTyping"
-            :is-loading-messages="isLoadingMessages"
-            :on-send-reply="handleSendReply"
-            :on-typing-indicator="handleTyping"
-            :messages-container-ref-setter="(el) => (messagesContainerRef = el)"
-            @reply="handleReplySent"
-            @status-change="handleStatusChange"
-          />
+  :message="selectedConversation"
+  :messages="messages"
+  :is-typing="isCustomerTyping"
+  :is-loading-messages="isLoadingMessages"
+  :on-send-reply="handleSendReply"
+  :on-unsend="handleUnsend"
+  :on-typing-indicator="handleTyping"
+  :messages-container-ref-setter="(el) => (messagesContainerRef = el)"
+  @reply="handleReplySent"
+  @status-change="handleStatusChange"
+/>
+        </div>
+
+        <!-- Negotiation panel (only when a linked Pending order is selected) -->
+        <div v-if="selectedConversation && linkedOrder" class="lg:col-span-1 h-full min-h-0">
+          <NegotiationPanel
+  :order="linkedOrder"
+  :conversation-id="selectedConversation.conversationId"
+  @updated="handleOrderUpdated"
+  @confirmed="handleOrderConfirmed"
+/>
         </div>
       </div>
     </div>
@@ -147,10 +167,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import MessageStatCards from '@/components/messages/MessageStatCards.vue'
 import MessageList from '@/components/messages/MessageList.vue'
 import MessageDetail from '@/components/messages/MessageDetail.vue'
+import NegotiationPanel from '@/components/messages/NegotiationPanel.vue'
+import { adminOrderApi, adminChatApi } from '@/api/api'
 import { useAdminChat } from '@/composables/useAdminChat'
 
 const {
@@ -169,8 +191,10 @@ const {
   loadConversations,
   selectConversation,
   sendReply,
+  unsendMessage,
   handleTyping,
   updateConversationStatus,
+  negotiationUpdate,
   cleanup,
 } = useAdminChat()
 
@@ -179,7 +203,7 @@ const showImageViewer = ref(false)
 const viewerImage     = ref('')
 const statusFilter    = ref('')
 const toast           = ref({ show: false, type: 'success', message: '' })
-
+const linkedOrder = ref(null)
 // ── Filtered conversations ────────────────────────────
 const filteredConversations = computed(() => {
   if (!statusFilter.value) return conversations.value
@@ -210,9 +234,50 @@ const handleSendReply = async (conversationId, content, attachments = [], replyT
   return success
 }
 
+const handleUnsend = async (messageId) => {
+  return await unsendMessage(messageId)
+}
+
 const handleSelectConversation = async (conv) => {
   await selectConversation(conv)
 }
+
+// ── When a conversation is selected, load any linked Pending order ──
+const loadLinkedOrder = async (conversation) => {
+  linkedOrder.value = null
+  if (!conversation) return
+  try {
+    const resp = await adminChatApi.getMessages(conversation.conversationId, 100)
+    if (!resp.success) return
+    // Find the most recent quote message, or fall back to conversation.orderId
+    const quoteMsg = [...(resp.data || [])]
+      .reverse()
+      .find(m => m.contentType === 'quote')
+    const orderId =
+      conversation.orderId ||
+      quoteMsg?.quoteData?.orderId ||
+      null
+    if (!orderId) return
+    const orderResp = await adminOrderApi.getOrderById(orderId)
+    if (orderResp.success) {
+      const o = orderResp.data
+      // Only show panel if it's still negotiable
+      if (o.status === 'Pending' && o.paymentStatus === 'Unpaid') {
+        linkedOrder.value = o
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load linked order:', e)
+  }
+}
+
+// Wrap the existing select handler
+const handleSelectConversationWrapped = async (conv) => {
+  await handleSelectConversation(conv)
+  await loadLinkedOrder(conv)
+}
+
+// Update the template @select to use this wrapper — see below
 
 const handleReplySent = () => {
   // Optionally refresh unread counts
@@ -235,10 +300,53 @@ const refreshConversations = async () => {
 // Forward image-viewer events from MessageDetail
 const handleImageViewerEvent = (e) => openImageViewer(e.detail)
 
+// ── Negotiation panel callbacks ────────────────────────────────
+const handleOrderUpdated = (updatedOrder) => {
+  linkedOrder.value = updatedOrder
+  // If it's no longer negotiable, hide the panel
+  if (updatedOrder.status !== 'Pending' || updatedOrder.paymentStatus !== 'Unpaid') {
+    linkedOrder.value = null
+  }
+}
+
+const handleOrderConfirmed = (updatedOrder) => {
+  linkedOrder.value = null  // panel hides
+  showToast('success', `Order ${updatedOrder.orderId} confirmed`)
+}
+
+
+
+
 // ── Lifecycle ─────────────────────────────────────────
-// In MessagePage.vue - add to onMounted
+
+watch(negotiationUpdate, async (update) => {
+  if (!update) return
+
+  // Hint: an order was just linked — reload the linked order
+  if (update._linkedHint) {
+    const conv = selectedConversation.value
+    if (conv && conv.conversationId === update.conversationId) {
+      // Fetch the fresh order
+      const orderResp = await adminOrderApi.getOrderById(update.orderId)
+      if (orderResp.success && orderResp.data.status === 'Pending' && orderResp.data.paymentStatus === 'Unpaid') {
+        linkedOrder.value = orderResp.data
+      }
+    }
+    return
+  }
+
+  // Normal case — an order was updated
+  if (linkedOrder.value?.orderId === update.orderId) {
+    if (update.status === 'Pending' && update.paymentStatus === 'Unpaid') {
+      linkedOrder.value = update
+    } else {
+      linkedOrder.value = null
+    }
+  }
+})
 onMounted(async () => {
   initSocket()
+  
   await loadConversations()
   window.addEventListener('open-image-viewer', handleImageViewerEvent)
   
@@ -253,11 +361,6 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('open-image-viewer', handleImageViewerEvent)
   window.removeEventListener('show-toast', () => {})
-  cleanup()
-})
-
-onUnmounted(() => {
-  window.removeEventListener('open-image-viewer', handleImageViewerEvent)
   cleanup()
 })
 </script>

@@ -355,10 +355,14 @@
                 <!-- Progress flow -->
                 <div v-if="localStatus !== 'Completed' && localStatus !== 'Cancelled'" class="flex items-center gap-1">
                   <div v-for="(status, index) in statusFlow" :key="status" class="flex items-center flex-1">
-                    <button @click="handleStatusClickWithPrompt(status)"
-                      :disabled="isSaving || isStatusDisabled(status) || isStatusCompleted(status)"
-                      class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
-                      :class="getStatusButtonClass(status)" :title="getStatusButtonTitle(status)">
+                    <button
+  @click="handleStatusClickWithPrompt(status)"
+  :disabled="isSaving || isStatusDisabled(status) || isStatusCompleted(status) || (status === 'Confirmed' && localPayment === 'Unpaid')"
+  class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
+  :class="getStatusButtonClass(status)"
+  :title="status === 'Confirmed' && localPayment === 'Unpaid'
+    ? 'Verify a downpayment in the Messages page first'
+    : getStatusButtonTitle(status)">
                       <span class="flex items-center justify-center w-5 h-5">
                         <component v-if="isStatusCompleted(status)" :is="statusIcon('Completed')"
                           class="w-3 h-3 text-green-500" />
@@ -376,8 +380,26 @@
                       class="flex-shrink-0 mx-0.5" :class="getArrowClass(statusFlow[index + 1])">
                       <path d="m9 18 6-6-6-6" />
                     </svg>
+                    
                   </div>
+                  <!-- Confirmation lock hint -->
                 </div>
+                <div
+  v-if="localStatus === 'Pending' && localPayment === 'Unpaid'"
+  class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-xs"
+>
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600 flex-shrink-0 mt-0.5">
+    <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+    <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+  </svg>
+  <div>
+    <p class="font-semibold text-amber-800">Cannot confirm yet</p>
+    <p class="text-amber-700 mt-0.5">
+      Send payment details and verify the customer's downpayment in the
+      <strong>Messages</strong> page. Once verified, the order will be confirmed automatically.
+    </p>
+  </div>
+</div>
               </div>
 
               <!-- Proof of Delivery Section -->
@@ -486,6 +508,29 @@
                   <p class="text-xs font-bold text-amber-600 uppercase tracking-wide">Notes</p>
                   <p class="text-xs text-amber-900">{{ order.notes }}</p>
                 </div>
+              </div>
+
+                            <!-- COD Collection (shown when admin is about to mark Completed) -->
+              <div
+                v-if="localStatus === 'Out for Delivery' && order?.receivingMode === 'Pick-up' && localPayment === 'Partial'"
+                class="bg-amber-50 border border-amber-200 rounded-lg p-3"
+              >
+                <label class="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    v-model="codCollectedAdmin"
+                    :disabled="isSaving"
+                    class="mt-0.5 w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <div class="text-sm">
+                    <p class="font-semibold text-amber-800">
+                      Collect ₱{{ getRemainingBalance().toLocaleString() }} in cash
+                    </p>
+                    <p class="text-xs text-amber-600 mt-0.5 leading-scoring">
+                      Check this only if the customer has paid the remaining balance.
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <!-- Payment Status -->
@@ -801,6 +846,7 @@ const localStatus = ref(props.order?.status || 'Pending')
 const localPayment = ref(props.order?.paymentStatus)
 console.log('LocalPayment',localPayment.value)
 const partialAmount = ref(0)
+const codCollectedAdmin = ref(false)
 
 // ─── Receipt Modal State ────────────────────────────────────────────────
 const showReceiptModal = ref(false)
@@ -1500,6 +1546,11 @@ async function updateStatus(status, notes, productionSchedule = null) {
     payload.productionSchedule = productionSchedule
   }
 
+  // Pass COD confirmation when marking Completed
+  if (status === 'Completed') {
+    payload.codCollected = codCollectedAdmin.value
+  }
+
   emit('statusUpdate', payload)
   setTimeout(() => { isSaving.value = false }, 1500)
 }
@@ -1512,38 +1563,12 @@ function handleStatusClickWithPrompt(status) {
     updateStatusParam = 'Out for Delivery'
   }
 
-  // Handle Confirmed status
-  if (status === 'Confirmed') {
-    // Check if payment is Partial or Unpaid
-    if (localPayment.value === 'Unpaid' || localPayment.value === 'Partial') {
-      // For Confirmed, we require at least partial payment
-      // You might want to show a prompt or automatically set to Partial
-      if (localPayment.value === 'Unpaid') {
-        // Auto-set to Partial with 50% downpayment
-        const totalAmount = parseFloat(props.order?.amount || props.order?.totalAmount || 0)
-        const downpayment = Math.round(totalAmount * 0.5)
-        partialAmount.value = downpayment
-        localPayment.value = 'Partial'
-        // Add the downpayment
-        const newPayment = {
-          amount: downpayment,
-          date: new Date().toISOString(),
-          updatedBy: getAdminName(), // ✅ Use admin name
-        }
-        if (!props.order.partialPayments) {
-          props.order.partialPayments = []
-        }
-        props.order.partialPayments.push(newPayment)
-        emit('paymentUpdate', { 
-          orderId: props.order.id, 
-          paymentStatus: 'Partial',
-          amountPaid: downpayment,
-          partialPayments: props.order.partialPayments
-        })
-      }
+ if (status === 'Confirmed') {
+    if (localPayment.value === 'Unpaid') {
+      alert('Please verify a downpayment in the Messages page before confirming this order.')
+      return
     }
-    // Update status to Confirmed
-    updateStatus(updateStatusParam, 'Order confirmed - downpayment received')
+    updateStatus(updateStatusParam, 'Order confirmed')
     return
   }
 
@@ -1555,6 +1580,11 @@ function handleStatusClickWithPrompt(status) {
   } else if (status === 'Out for Delivery' || status === 'Ready to Pick-up') {
     if (props.order?.receivingMode === 'Pick-up') {
       if (status === 'Ready to Pick-up') {
+        // Guard: if Partial, must have collected COD
+        if (localPayment.value === 'Partial' && !codCollectedAdmin.value) {
+          alert(`Please check "Collect ₱${getRemainingBalance().toLocaleString()} in cash" before completing.`)
+          return
+        }
         pendingStatus.value = 'Completed'
         completeNotes.value = 'Customer picked up the order'
         showCompleteConfirmModal.value = true

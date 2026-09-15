@@ -1,4 +1,4 @@
-// composables/useAdminSocket.js - Matches customer's socket implementation
+// Admin Side
 import { ref, onUnmounted } from 'vue'
 import io from 'socket.io-client'
 
@@ -83,7 +83,7 @@ export function useAdminSocket() {
   
  // composables/useAdminSocket.js
 const sendMessage = (conversationId, content, attachments = [], replyToMessageId = null) => {
-  console.log('🟢 ADMIN Socket sendMessage with replyToMessageId:', replyToMessageId)
+  console.log('🟢 ADMIN Socket sendMessage with replyToMessageId:', replyToMessageId,)
   if (socketInstance?.connected) {
     socketInstance.emit('send-message', {
       conversationId,
@@ -96,7 +96,12 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
   console.log('🟢 ADMIN Socket not connected')
   return false
 }
-  
+    const onOrderNegotiationUpdated = (callback) => {
+    if (socketInstance) {
+      socketInstance.on('order-negotiation-updated', callback)
+    }
+  }
+
   const sendTyping = (conversationId, isTyping) => {
     if (socketInstance?.connected) {
       socketInstance.emit('typing', { conversationId, isTyping })
@@ -121,6 +126,24 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
       socketInstance.on('message-sent', callback)
     }
   }
+
+  const onMessageUnsent = (callback) => {
+    if (socketInstance) {
+      socketInstance.on('message-unsent', callback)
+    }
+  }
+
+    const onPaymentRequestUpdated = (callback) => {
+    if (socketInstance) {
+      socketInstance.on('payment-request-updated', callback)
+    }
+  }
+
+  const onPaymentProofUpdated = (callback) => {
+    if (socketInstance) {
+      socketInstance.on('payment-proof-updated', callback)
+    }
+  }
   
   const onUserTyping = (callback) => {
     if (socketInstance) {
@@ -131,6 +154,12 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
   const onMessagesRead = (callback) => {
     if (socketInstance) {
       socketInstance.on('messages-read', callback)
+    }
+  }
+
+    const onConversationOrderLinked = (callback) => {
+    if (socketInstance) {
+      socketInstance.on('conversation-order-linked', callback)
     }
   }
   
@@ -154,17 +183,22 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
     isConnected,
     isConnecting,
     socketId,
+    onOrderNegotiationUpdated,
     connect,
     disconnect,
     joinConversation,
     leaveConversation,
     sendMessage,
+    onMessageUnsent,
+    onPaymentRequestUpdated,
+    onPaymentProofUpdated,
     sendTyping,
     markAsRead,
     onNewMessage,
     onMessageSent,
     onUserTyping,
     onMessagesRead,
+    onConversationOrderLinked,
     onError,
     off
   }

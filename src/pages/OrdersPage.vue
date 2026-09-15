@@ -233,7 +233,7 @@ function handleEdit(order) {
 function closeEditModal() { editOrder.value = null }
 
 // In OrdersPage.vue - handleStatusUpdate function
-async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails, driverId }) {
+async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails, driverId, codCollected }) {
   try {
     const validStatuses = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed', 'Cancelled'];
     const normalizedStatus = validStatuses.find(s => s.toLowerCase() === status.toLowerCase()) || status;
@@ -250,6 +250,10 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
     // IMPORTANT: Only send driverId as string, not the whole object
     if (driverId) {
       payload.driverId = driverId // This should be a string like "DRV-6837"
+    }
+
+    if (codCollected !== undefined) {
+      payload.codCollected = codCollected    // ← NEW
     }
     
     // If you want to include driver details for history, add them separately

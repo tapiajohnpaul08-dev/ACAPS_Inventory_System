@@ -432,6 +432,12 @@ export const adminOrderApi = {
       adminAxiosInstance.get(`/order/admin/customers/${email}/orders`)
     );
   },
+
+    async negotiateOrder(orderId, updates) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/negotiate`, updates)
+    );
+  },
 };
 
 // =============================================================================
@@ -637,6 +643,57 @@ export const adminChatApi = {
       adminAxiosInstance.delete(`/chat/admin/messages/${messageId}`)
     );
   },
+
+    async sendQuote(conversationId, orderId, notes = '') {
+    return handleResponse(
+      adminAxiosInstance.post('/chat/admin/quote', {
+        conversationId,
+        orderId,
+        notes,
+      })
+    );
+  },
+
+    // ─────────────────────────────────────────
+  // PAYMENT REQUEST FLOW
+  // ─────────────────────────────────────────
+
+  async getPaymentOptions() {
+    return handleResponse(
+      adminAxiosInstance.get('/chat/admin/payment-options')
+    );
+  },
+
+  async sendPaymentRequest(conversationId, payload) {
+    return handleResponse(
+      adminAxiosInstance.post('/chat/admin/payment-request', {
+        conversationId,
+        orderId: payload.orderId,
+        method: payload.method,
+        amountDue: payload.amountDue,
+        notes: payload.notes || '',
+      })
+    );
+  },
+
+  async verifyPaymentProof(messageId, payload) {
+    return handleResponse(
+      adminAxiosInstance.post(`/chat/admin/payment-proof/${messageId}/verify`, {
+        isFullPayment: payload.isFullPayment ?? false,
+        adjustedAmount: payload.adjustedAmount ?? null,
+      })
+    );
+  },
+
+  async rejectPaymentProof(messageId, reason) {
+    return handleResponse(
+      adminAxiosInstance.post(`/chat/admin/payment-proof/${messageId}/reject`, {
+        reason: reason || '',
+      })
+    );
+  },
+
+  
 };
 
 // =============================================================================
