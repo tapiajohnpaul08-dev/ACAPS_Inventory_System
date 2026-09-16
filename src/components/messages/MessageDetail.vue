@@ -35,18 +35,6 @@
           <span class="hidden sm:inline-block text-xs px-2.5 py-1 rounded-full font-medium" style="background: #eff6ff; color: #2563eb;">
             {{ message.subject || 'General Support' }}
           </span>
-
-          <select
-            :value="message.status"
-            @change="emit('status-change', message.conversationId, $event.target.value)"
-            class="text-xs px-3 py-1.5 rounded-lg border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style="background: #f9fafb; border-color: #e5e7eb; color: #374151;"
-          >
-            <option value="open">Open</option>
-            <option value="in_progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="closed">Closed</option>
-          </select>
         </div>
       </div>
 
@@ -220,10 +208,184 @@
                   {{ (message.name || '?')[0] }}
                 </div>
 
-                <!-- Message Bubble with actions -->
+                                <!-- Message Bubble with actions -->
                 <div class="flex items-center gap-1.5 max-w-[75%]">
-                  <!-- (leave all the existing content of this div exactly as-is) -->
-                  ...
+
+                  <!-- Action buttons - LEFT SIDE (admin messages only) -->
+                  <div
+                    v-if="isAdminMessage(msg)"
+                    class="flex flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <!-- Reply button -->
+                    <button
+                      v-if="!msg.isDeleted"
+                      @click="setReplyTo(msg)"
+                      class="p-1.5 rounded-full hover:bg-blue-200 transition-colors"
+                      title="Reply to this message"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="text-blue-200 hover:text-white">
+                        <path d="M3 10a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z"/>
+                        <path d="M21 15l-5-5 5-5"/>
+                      </svg>
+                    </button>
+
+                    <!-- Unsend button -->
+                    <button
+                      v-if="canUnsendMessage(msg)"
+                      @click="openUnsendModal(msg)"
+                      class="p-1.5 rounded-full hover:bg-red-200 transition-colors"
+                      title="Unsend message"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="text-blue-200 hover:text-red-300">
+                        <path d="M3 6h18"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <path d="M10 11v6"/>
+                        <path d="M14 11v6"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Regular text/attachment bubble -->
+                  <div
+                    class="message-bubble relative group"
+                    :class="isAdminMessage(msg) ? 'bubble-admin' : 'bubble-customer'"
+                  >
+                    <!-- Reply indicator -->
+                    <div
+                      v-if="msg.replyTo"
+                      class="text-xs mb-1.5 p-1.5 rounded bg-opacity-20"
+                      :class="isAdminMessage(msg) ? 'bg-blue-500 bg-opacity-20' : 'bg-gray-100'"
+                    >
+                      <span class="text-[10px] opacity-70">↩️ Replying to:</span>
+                      <p
+                        class="text-xs truncate max-w-[200px]"
+                        :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-500'"
+                      >
+                        {{ msg.replyTo.content }}
+                      </p>
+                    </div>
+
+                    <!-- Text content -->
+                    <p
+                      v-if="msg.content && !msg.isDeleted"
+                      class="text-sm leading-relaxed whitespace-pre-wrap break-words"
+                    >
+                      {{ msg.content }}
+                    </p>
+
+                    <!-- Unsend indicator -->
+                    <p
+                      v-if="msg.isDeleted"
+                      class="text-sm leading-relaxed whitespace-pre-wrap break-words italic"
+                      :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-400'"
+                    >
+                      This message was unsent
+                    </p>
+
+                    <!-- Attachments -->
+                    <div
+                      v-if="msg.attachments && msg.attachments.length > 0 && !msg.isDeleted"
+                      class="mt-2 space-y-2"
+                    >
+                      <div v-for="(file, idx) in msg.attachments" :key="idx">
+                        <!-- Image attachment -->
+                        <div v-if="isImageFile(file)" class="relative">
+                          <img
+                            :src="getFileUrl(file)"
+                            :alt="file.name || 'Image'"
+                            class="max-w-full max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            @click="openImageViewer(getFileUrl(file))"
+                            @error="handleImageError"
+                          />
+                          <p
+                            class="text-xs mt-1"
+                            :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-500'"
+                          >
+                            📷 {{ file.name || 'Image' }}
+                          </p>
+                        </div>
+
+                        <!-- File attachment -->
+                        <div
+                          v-else
+                          class="flex items-center gap-2 p-2 rounded-lg"
+                          :class="isAdminMessage(msg) ? 'bg-blue-700' : 'bg-gray-100'"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2"
+                            :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-500'">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                          <a
+                            :href="getFileUrl(file)"
+                            target="_blank"
+                            class="text-sm hover:underline truncate flex-1"
+                            :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-blue-600'"
+                          >
+                            {{ file.name || 'Download' }}
+                          </a>
+                          <span
+                            class="text-xs"
+                            :class="isAdminMessage(msg) ? 'text-blue-300' : 'text-gray-400'"
+                          >
+                            {{ formatFileSize(file.size) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Timestamp + read status -->
+                    <div
+                      class="flex items-center gap-1 mt-1.5"
+                      :class="isAdminMessage(msg) ? 'justify-end' : 'justify-start'"
+                    >
+                      <span
+                        class="text-[10px]"
+                        :class="isAdminMessage(msg) ? 'text-blue-200' : 'text-gray-400'"
+                      >
+                        {{ formatTime(msg.createdAt || msg.timestamp) }}
+                      </span>
+                      <svg
+                        v-if="isAdminMessage(msg) && msg.isRead"
+                        class="w-3 h-3 text-blue-200"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2.5"
+                      >
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+
+                    <!-- Sent By -->
+                    <div v-if="isAdminMessage(msg)" class="text-[10px] mt-0.5" :class="isAdminMessage(msg) ? 'text-blue-200 text-right' : 'text-gray-400'">
+                      Sent By: {{ isAdminMessage(msg) ? currentAdmin : (msg.senderName || 'Customer') }}
+                    </div>
+                  </div>
+
+                  <!-- Action buttons - RIGHT SIDE (customer messages only) -->
+                  <div
+                    v-if="!isAdminMessage(msg)"
+                    class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <!-- Reply button -->
+                    <button
+                      v-if="!msg.isDeleted"
+                      @click="setReplyTo(msg)"
+                      class="p-1.5 rounded-full hover:bg-blue-200 transition-colors"
+                      title="Reply to this message"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="text-gray-400 hover:text-blue-600">
+                        <path d="M3 10a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z"/>
+                        <path d="M21 15l-5-5 5-5"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Avatar for admin (right side) -->

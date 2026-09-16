@@ -186,6 +186,10 @@ import {
 } from 'lucide-vue-next'
 import { adminAuthApi, inventoryApi, adminChatApi, feedBackApi } from '@/api/api'
 
+import { useAdminChat } from '@/composables/useAdminChat'
+const {initSocket} = useAdminChat()
+
+
 const route = useRoute()
 const router = useRouter()
 const showUserMenu = ref(false)
@@ -354,6 +358,7 @@ onMounted(() => {
   fetchUnreadMessagesCount()
   fetchPendingFeedbackCount()
   fetchPendingOrdersCount()
+  initSocket()
   
   document.addEventListener('click', handleClickOutside)
   

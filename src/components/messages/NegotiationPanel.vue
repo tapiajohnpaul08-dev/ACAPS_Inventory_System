@@ -35,7 +35,9 @@
       </div>
 
       <div class="px-4 py-4 space-y-3">
-        <!-- Quantity -->
+
+        <div class="flex gap-4">
+                  <!-- Quantity -->
         <div>
           <label class="block text-xs font-semibold text-gray-600 mb-1">Quantity (pcs)</label>
           <input
@@ -56,16 +58,17 @@
             class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             style="border-color: #e5e7eb;"
           />
-          <p class="text-[10px] text-gray-400 mt-1">Override to negotiate a custom per-piece price.</p>
+        </div>
         </div>
 
-        <!-- Design fee -->
+        <div class="flex gap-4">
+                  <!-- Design fee -->
         <div>
           <label class="block text-xs font-semibold text-gray-600 mb-1">Design Fee (₱)</label>
           <input
             v-model.number="form.designFee"
             type="number" min="0" :disabled="saving"
-            class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class=" w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             style="border-color: #e5e7eb;"
           />
         </div>
@@ -79,6 +82,7 @@
             <option value="Pick-up">Pick-up</option>
             <option value="Delivery">Delivery</option>
           </select>
+        </div>
         </div>
 
         <!-- Shipping fee -->
@@ -101,7 +105,14 @@
             style="border-color: #e5e7eb;"></textarea>
         </div>
 
-        <!-- Live total -->
+
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div v-if="order" class="shrink-0 px-4 py-3 border-t space-y-2" style="border-color: #e5e7eb; background: #f9fafb;">
+      
+              <!-- Live total -->
         <div class="rounded-lg p-3 border" style="background: #f9fafb; border-color: #e5e7eb;">
           <div class="flex items-center justify-between text-xs text-gray-500">
             <span>Product subtotal</span>
@@ -123,11 +134,7 @@
             Current: ₱{{ formatNumber(order.amount) }} → New: ₱{{ formatNumber(newTotal) }}
           </p>
         </div>
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div v-if="order" class="shrink-0 px-4 py-3 border-t space-y-2" style="border-color: #e5e7eb; background: #f9fafb;">
+      
       <button
         @click="handleSave"
         :disabled="saving || !hasChanges"

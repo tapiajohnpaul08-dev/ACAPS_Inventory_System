@@ -96,12 +96,7 @@
               <span class="text-xs shrink-0 ml-1" style="color: #9ca3af;">{{ msg.date }}</span>
             </div>
 
-            <!-- Row 2: subject -->
-            <p class="text-xs truncate mb-0.5" :class="!msg.read ? 'font-semibold text-gray-800' : 'text-gray-600'">
-              {{ msg.subject }}
-            </p>
-
-            <!-- Row 3: preview + badges -->
+            <!-- Row 2: preview + badges -->
             <div class="flex items-center justify-between gap-1">
               <p class="text-xs truncate flex-1" style="color: #9ca3af;">{{ msg.preview }}</p>
               <div class="flex items-center gap-1 shrink-0">
@@ -112,10 +107,6 @@
                   style="background: #2563eb; min-width: 16px;"
                 >
                   {{ msg.adminUnreadCount > 9 ? '9+' : msg.adminUnreadCount }}
-                </span>
-                <!-- Status badge -->
-                <span class="status-badge" :class="statusClass(msg.status)">
-                  {{ statusLabel(msg.status) }}
                 </span>
               </div>
             </div>

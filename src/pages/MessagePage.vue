@@ -16,31 +16,19 @@
           {{ isConnected ? 'Live' : 'Reconnecting…' }}
         </div>
 
-        <!-- Status filter -->
-        <select
-          v-model="statusFilter"
-          @change="applyFilter"
-          class="text-xs px-3 py-1.5 rounded-lg border cursor-pointer focus:outline-none"
-          style="background: var(--surface); color: var(--text-secondary); border-color: var(--border);"
-        >
-          <option value="">All Status</option>
-          <option value="open">Open</option>
-          <option value="in_progress">In Progress</option>
-          <option value="resolved">Resolved</option>
-          <option value="closed">Closed</option>
-        </select>
-
         <!-- Refresh -->
         <button
           @click="refreshConversations"
           :disabled="isLoading"
-          class="p-2 rounded-lg transition-colors disabled:opacity-40"
+          class="flex items-center justify-center gap-2 p-2 rounded-lg transition-colors disabled:opacity-40 hover:cursor-pointer "
           style="color: var(--text-muted);"
           title="Refresh"
         >
           <svg class="w-4 h-4" :class="{ 'spin': isLoading }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
+
+          Refresh
         </button>
       </div>
     </header>
@@ -326,7 +314,6 @@ watch(negotiationUpdate, async (update) => {
   if (update._linkedHint) {
     const conv = selectedConversation.value
     if (conv && conv.conversationId === update.conversationId) {
-      // Fetch the fresh order
       const orderResp = await adminOrderApi.getOrderById(update.orderId)
       if (orderResp.success && orderResp.data.status === 'Pending' && orderResp.data.paymentStatus === 'Unpaid') {
         linkedOrder.value = orderResp.data
@@ -336,11 +323,35 @@ watch(negotiationUpdate, async (update) => {
   }
 
   // Normal case — an order was updated
-  if (linkedOrder.value?.orderId === update.orderId) {
+  // Determine which order this update is for
+  const updateOrderId = update.orderId || update.data?.orderId
+  if (!updateOrderId) return
+
+  // Case A: linkedOrder is the same order → refresh or clear
+  if (linkedOrder.value?.orderId === updateOrderId) {
     if (update.status === 'Pending' && update.paymentStatus === 'Unpaid') {
       linkedOrder.value = update
-    } else {
+    } else if (update.status) {
+      // Order moved past Pending (e.g. Confirmed) → hide the panel
       linkedOrder.value = null
+    } else {
+      // Partial update (no status field) → merge into existing linkedOrder
+      linkedOrder.value = { ...linkedOrder.value, ...update }
+    }
+    return
+  }
+
+  // Case B: linkedOrder is null but the update is for the currently
+  // selected conversation's order → re-hydrate
+  const conv = selectedConversation.value
+  if (conv && !linkedOrder.value) {
+    const orderResp = await adminOrderApi.getOrderById(updateOrderId)
+    if (
+      orderResp.success &&
+      orderResp.data.status === 'Pending' &&
+      orderResp.data.paymentStatus === 'Unpaid'
+    ) {
+      linkedOrder.value = orderResp.data
     }
   }
 })
