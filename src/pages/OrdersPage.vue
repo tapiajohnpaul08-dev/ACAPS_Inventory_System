@@ -37,6 +37,7 @@
       <OrdersTable
         :orders="filteredOrders"
         :is-loading="isLoading"
+        :pinned-order-id="inProductionOrder?.id || null"
         @select="handleSelect"
         @edit="handleEdit"
         @delete="handleDelete"
@@ -47,6 +48,7 @@
       v-if="selectedOrder"
       :show="true"
       :order="selectedOrder"
+      :in-production-order-id="inProductionOrder?.id || null"
       @close="selectedOrder = null"
       @statusUpdate="handleStatusUpdate"
       @paymentUpdate="handlePaymentUpdate"
@@ -186,13 +188,31 @@ async function loadOrders() {
   }
 }
 
+// ── In-production pin ────────────────────────────────────────────────────
+// Only one order can be In Production at a time (backend-enforced).
+// Pin it to the top of the table so the admin always sees it.
+const inProductionOrder = computed(() =>
+  allOrders.value.find(o => o.status === 'In Production') || null
+)
+
+const ordersWithPinnedProduction = computed(() => {
+  const list = allOrders.value
+  if (!inProductionOrder.value) return list
+  return [
+    inProductionOrder.value,
+    ...list.filter(o => o.id !== inProductionOrder.value.id),
+  ]
+})
+
 // ─── Counts & filtering ───────────────────────────────────────────────────
 const statusCounts = computed(() => ({
   all: allOrders.value.length,
   pending: allOrders.value.filter(o => o.status === 'Pending').length,
   scheduled: allOrders.value.filter(o => o.status === 'Scheduled').length,
   inProduction: allOrders.value.filter(o => o.status === 'In Production').length,
-  outForDelivery: allOrders.value.filter(o => o.status === 'Out for Delivery').length,
+  outForDelivery: allOrders.value.filter(
+    o => o.status === 'Out for Delivery' || o.status === 'Ready to Pick-up'
+  ).length,
   completed: allOrders.value.filter(o => o.status === 'Completed').length,
   cancelled: allOrders.value.filter(o => o.status === 'Cancelled').length,
 }))
@@ -207,7 +227,9 @@ const statusMap = {
 }
 
 const filteredOrders = computed(() => {
-  let list = allOrders.value
+  // Start from the pinned list, so the in-production order always appears
+  // first when it passes the active filters.
+  let list = ordersWithPinnedProduction.value
   if (statusFilter.value !== 'all') {
     list = list.filter(o => o.status === statusMap[statusFilter.value])
   }

@@ -19,7 +19,8 @@
                   {{ getStatusDisplayName(localStatus) }}
                 </span>
               </div>
-              <p class="text-sm text-gray-500 mt-0.5">{{ order?.customerName || order?.customer || 'N/A' }} · {{ order?.date || formatDate(order?.createdAt) }}</p>
+              <p class="text-sm text-gray-500 mt-0.5">{{ order?.customerName || order?.customer || 'N/A' }} · {{
+                order?.date || formatDate(order?.createdAt) }}</p>
             </div>
             <div class="flex items-center gap-2 ml-4">
               <button @click="$emit('edit', order)"
@@ -54,7 +55,8 @@
                 </div>
                 <div class="bg-gray-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Ordered</p>
-                  <p class="text-sm font-bold text-gray-900">{{ formatDate(order.createdAt) || order.date || 'N/A' }}</p>
+                  <p class="text-sm font-bold text-gray-900">{{ formatDate(order.createdAt) || order.date || 'N/A' }}
+                  </p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-3">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Expected Delivery</p>
@@ -87,7 +89,8 @@
                         {{ (order.customerName || order.customer || '?')[0].toUpperCase() }}
                       </div>
                       <div>
-                        <p class="text-sm font-bold text-gray-900">{{ order.customerName || order.customer || 'N/A' }}</p>
+                        <p class="text-sm font-bold text-gray-900">{{ order.customerName || order.customer || 'N/A' }}
+                        </p>
                         <p class="text-xs text-gray-400">{{ order.supplyType || 'N/A' }}</p>
                       </div>
                     </div>
@@ -119,7 +122,8 @@
                         </svg>
                         <span class="capitalize">{{ order.receivingMode || order.deliveryMethod || 'Pick-up' }}</span>
                       </div>
-                      <div v-if="order.address && (order.receivingMode === 'Delivery' || order.deliveryMethod === 'Delivery')"
+                      <div
+                        v-if="order.address && (order.receivingMode === 'Delivery' || order.deliveryMethod === 'Delivery')"
                         class="flex items-start gap-2 text-gray-600">
                         <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-400 flex-shrink-0 w-3 h-3 mt-0.5"
                           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -192,7 +196,8 @@
                       </div>
                       <div class="flex items-center justify-between w-full">
                         <span class="text-xs font-bold text-gray-700">Total</span>
-                        <span class="text-sm font-black text-gray-900">{{ formatCurrency(order.amount || order.totalAmount || 0) }}</span>
+                        <span class="text-sm font-black text-gray-900">{{ formatCurrency(order.amount ||
+                          order.totalAmount || 0) }}</span>
                       </div>
                       <!-- Show remaining balance if partial payment -->
                       <div v-if="(order.paymentStatus || localPayment) === 'Partial' && getTotalPaid() > 0"
@@ -355,21 +360,25 @@
                 <!-- Progress flow -->
                 <div v-if="localStatus !== 'Completed' && localStatus !== 'Cancelled'" class="flex items-center gap-1">
                   <div v-for="(status, index) in statusFlow" :key="status" class="flex items-center flex-1">
-                    <button
-  @click="handleStatusClickWithPrompt(status)"
-  :disabled="isSaving || isStatusDisabled(status) || isStatusCompleted(status) || (status === 'Confirmed' && localPayment === 'Unpaid')"
-  class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
-  :class="getStatusButtonClass(status)"
-  :title="status === 'Confirmed' && localPayment === 'Unpaid'
-    ? 'Verify a downpayment in the Messages page first'
-    : getStatusButtonTitle(status)">
+                    <button @click="handleStatusClickWithPrompt(status)" :disabled="isSaving
+                      || isStatusDisabled(status)
+                      || isStatusCompleted(status)
+                      || (status === 'Confirmed' && localPayment === 'Unpaid')
+                      || (status === 'In Production' && productionLockedByOtherOrder)
+                      " class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
+                      :class="getStatusButtonClass(status)" :title="status === 'Confirmed' && localPayment === 'Unpaid'
+                          ? 'Verify a downpayment in the Messages page first'
+                          : status === 'In Production' && productionLockedByOtherOrder
+                            ? 'Another order is currently in production. Complete or cancel it first.'
+                            : getStatusButtonTitle(status)
+                        ">
                       <span class="flex items-center justify-center w-5 h-5">
                         <component v-if="isStatusCompleted(status)" :is="statusIcon('Completed')"
                           class="w-3 h-3 text-green-500" />
                         <span v-else-if="isCurrentStatus(status)"
                           class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
                         <span v-else class="text-xs font-black" :class="getStepNumberClass(status)">{{ index + 1
-                          }}</span>
+                        }}</span>
                       </span>
                       <span class="text-xs font-semibold leading-tight" :class="getStatusTextClass(status)">
                         {{ getStatusDisplayName(status) }}
@@ -380,26 +389,63 @@
                       class="flex-shrink-0 mx-0.5" :class="getArrowClass(statusFlow[index + 1])">
                       <path d="m9 18 6-6-6-6" />
                     </svg>
-                    
+
                   </div>
-                  <!-- Confirmation lock hint -->
+
                 </div>
+                <!-- COD Collection (shown when admin is about to mark Completed) -->
                 <div
-  v-if="localStatus === 'Pending' && localPayment === 'Unpaid'"
-  class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-xs"
->
-  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600 flex-shrink-0 mt-0.5">
-    <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
-    <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
-  </svg>
-  <div>
-    <p class="font-semibold text-amber-800">Cannot confirm yet</p>
-    <p class="text-amber-700 mt-0.5">
-      Send payment details and verify the customer's downpayment in the
-      <strong>Messages</strong> page. Once verified, the order will be confirmed automatically.
-    </p>
-  </div>
-</div>
+                  v-if="order.status === 'Ready to Pick-up' && order?.receivingMode === 'Pick-up' && localPayment === 'Partial'"
+                  class="bg-amber-50 border mt-3 border-amber-200 rounded-lg p-3">
+                  <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="codCollectedAdmin" :disabled="isSaving"
+                      class="mt-0.5 w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500" />
+                    <div class="text-sm">
+                      <p class="font-semibold text-amber-800">
+                        Collect ₱{{ getRemainingBalance().toLocaleString() }} in cash
+                      </p>
+                      <p class="text-xs text-amber-600 mt-0.5 leading-scoring">
+                        Check this only if the customer has paid the remaining balance.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+                                  <!-- Confirmation lock hint -->
+                <div v-if="localStatus === 'Pending' && localPayment === 'Unpaid'"
+                  class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" class="text-amber-600 flex-shrink-0 mt-0.5">
+                    <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                    <path
+                      d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+                  </svg>
+                  <div>
+                    <p class="font-semibold text-amber-800">Cannot confirm yet</p>
+                    <p class="text-amber-700 mt-0.5">
+                      Send payment details and verify the customer's downpayment in the
+                      <strong>Messages</strong> page. Once verified, the order will be confirmed automatically.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Production lock hint -->
+                <div v-if="productionLockedByOtherOrder && (localStatus === 'Scheduled')"
+                  class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2 text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0 mt-0.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 8v4" />
+                    <path d="M12 16h.01" />
+                  </svg>
+                  <div>
+                    <p class="font-semibold text-blue-800">Production line busy</p>
+                    <p class="text-blue-700 mt-0.5">
+                      Another order is currently <strong>In Production</strong>. This order can't move to In Production
+                      until that one
+                      is completed or cancelled.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <!-- Proof of Delivery Section -->
@@ -411,27 +457,24 @@
                 <div v-if="podImageUrl || podDriverDetails" class="p-2 flex flex-col md:flex-row gap-2">
                   <!-- POD Image -->
                   <div class="flex-1 min-w-0">
-                    <div
-                      v-if="podImageUrl"
+                    <div v-if="podImageUrl"
                       class="relative bg-gray-50 rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:ring-1 hover:ring-blue-300 transition-all"
-                      @click="previewPODImage"
-                    >
-                      <img
-                        :src="podImageUrl"
-                        alt="Proof of Delivery"
-                        class="w-full h-auto max-h-32 object-contain"
-                        @error="handleImageError"
-                      />
-                      <div class="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
+                      @click="previewPODImage">
+                      <img :src="podImageUrl" alt="Proof of Delivery" class="w-full h-auto max-h-32 object-contain"
+                        @error="handleImageError" />
+                      <div
+                        class="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
                         <span class="bg-white/80 rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-700">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" class="text-gray-700">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
                           </svg>
                         </span>
                       </div>
                     </div>
-                    <div v-else class="flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
+                    <div v-else
+                      class="flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
                       <span class="text-xs text-gray-400">No image uploaded</span>
                     </div>
                   </div>
@@ -481,7 +524,7 @@
                       <div class="flex items-center justify-between">
                         <p class="text-xs font-bold" :class="historyText(h.status)">
                           {{ h.status === 'Out for Delivery' && order?.receivingMode === 'Pick-up' ? 'Ready for Pickup'
-                          : h.status }}
+                            : h.status }}
                         </p>
                         <p class="text-xs text-gray-400">{{ formatDateTimeShort(h.timestamp) }}</p>
                       </div>
@@ -510,28 +553,7 @@
                 </div>
               </div>
 
-                            <!-- COD Collection (shown when admin is about to mark Completed) -->
-              <div
-                v-if="localStatus === 'Out for Delivery' && order?.receivingMode === 'Pick-up' && localPayment === 'Partial'"
-                class="bg-amber-50 border border-amber-200 rounded-lg p-3"
-              >
-                <label class="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    v-model="codCollectedAdmin"
-                    :disabled="isSaving"
-                    class="mt-0.5 w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div class="text-sm">
-                    <p class="font-semibold text-amber-800">
-                      Collect ₱{{ getRemainingBalance().toLocaleString() }} in cash
-                    </p>
-                    <p class="text-xs text-amber-600 mt-0.5 leading-scoring">
-                      Check this only if the customer has paid the remaining balance.
-                    </p>
-                  </div>
-                </label>
-              </div>
+
 
               <!-- Payment Status -->
               <div v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'">
@@ -556,82 +578,87 @@
                   </button>
                 </div>
 
-<!-- Partial payment management -->
-<div class="mt-2">
-  <!-- Add new partial payment -->
-  <div v-if="localPayment !== 'Paid'" class="mb-3">
-    <label class="block text-xs font-semibold text-gray-600 mb-1">Add Partial Payment</label>
-    <div class="flex gap-2">
-      <input v-model.number="partialAmount" type="number" step="0.01" min="0"
-        class="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        placeholder="Enter amount" />
-      <button @click="updatePartialPayment" :disabled="isSaving || !partialAmount || partialAmount <= 0"
-        class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap">
-        Add Payment
-      </button>
-    </div>
-  </div>
+                <!-- Partial payment management -->
+                <div class="mt-2">
+                  <!-- Add new partial payment -->
+                  <div v-if="localPayment !== 'Paid'" class="mb-3">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Add Partial Payment</label>
+                    <div class="flex gap-2">
+                      <input v-model.number="partialAmount" type="number" step="0.01" min="0"
+                        class="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter amount" />
+                      <button @click="updatePartialPayment" :disabled="isSaving || !partialAmount || partialAmount <= 0"
+                        class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap">
+                        Add Payment
+                      </button>
+                    </div>
+                  </div>
 
-  <!-- Partial payments list - ✅ ALWAYS show if payments exist, regardless of payment status -->
-  <div v-if="order.partialPayments && order.partialPayments.length > 0" class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-    <div class="px-3 py-2 bg-gray-100 border-b border-gray-200">
-      <p class="text-xs font-bold text-gray-600 uppercase tracking-wide">Payment History</p>
-    </div>
-    <div class="p-2 space-y-1 max-h-40 overflow-y-auto">
-      <div v-for="(payment, idx) in order.partialPayments" :key="idx"
-        class="flex items-center justify-between px-2 py-1.5 bg-white rounded border border-gray-100 hover:border-blue-200 transition-colors">
-        <div class="flex items-center">
-          <div class="flex items-center gap-2">
-            <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-green-600">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-gray-900">₱{{ payment.amount.toLocaleString() }}</p>
-            <p class="text-[10px] text-gray-400">{{ formatDate(payment.date) }}</p>
-          </div>
-          </div>
-          
-        </div>
-        <div v-if="payment.referenceNumber" class="text-center">
-            <p class="text-xs font-semibold text-gray-900">Reference Number</p>
-            <p class="text-[11px] font-bold text-gray-500">{{ payment.referenceNumber }}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <span v-if="payment.updatedBy" class="text-[10px] text-gray-400">
-            by {{ payment.updatedBy }}
-          </span>
-          <button @click="removePartialPayment(idx)" 
-            :disabled="isSaving"
-            class="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
-            title="Remove payment">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Summary -->
-    <div class="px-3 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs">
-      <span class="font-semibold text-gray-600">Total Paid</span>
-      <span class="font-bold text-green-600">{{ formatCurrency(getTotalPaid()) }}</span>
-    </div>
-    <div class="px-3 py-2 bg-amber-50 border-t border-amber-200 flex items-center justify-between text-xs">
-      <span class="font-semibold text-amber-700">Remaining Balance</span>
-      <span class="font-bold text-amber-700">{{ formatCurrency(getRemainingBalance()) }}</span>
-    </div>
-  </div>
-  
-  <!-- No payments yet -->
-  <div v-else class="text-center py-3 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-    <p class="text-xs text-gray-400">No partial payments recorded yet</p>
-  </div>
-</div>
+                  <!-- Partial payments list - ✅ ALWAYS show if payments exist, regardless of payment status -->
+                  <div v-if="order.partialPayments && order.partialPayments.length > 0"
+                    class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                    <div class="px-3 py-2 bg-gray-100 border-b border-gray-200">
+                      <p class="text-xs font-bold text-gray-600 uppercase tracking-wide">Payment History</p>
+                    </div>
+                    <div class="p-2 space-y-1 max-h-40 overflow-y-auto">
+                      <div v-for="(payment, idx) in order.partialPayments" :key="idx"
+                        class="flex items-center justify-between px-2 py-1.5 bg-white rounded border border-gray-100 hover:border-blue-200 transition-colors">
+                        <div class="flex items-center">
+                          <div class="flex items-center gap-2">
+                            <div
+                              class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" class="text-green-600">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p class="text-xs font-semibold text-gray-900">₱{{ payment.amount.toLocaleString() }}</p>
+                              <p class="text-[10px] text-gray-400">{{ formatDate(payment.date) }}</p>
+                            </div>
+                          </div>
+
+                        </div>
+                        <div v-if="payment.referenceNumber" class="text-center">
+                          <p class="text-xs font-semibold text-gray-900">Reference Number</p>
+                          <p class="text-[11px] font-bold text-gray-500">{{ payment.referenceNumber }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span v-if="payment.updatedBy" class="text-[10px] text-gray-400">
+                            by {{ payment.updatedBy }}
+                          </span>
+                          <button @click="removePartialPayment(idx)" :disabled="isSaving"
+                            class="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                            title="Remove payment">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div
+                      class="px-3 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs">
+                      <span class="font-semibold text-gray-600">Total Paid</span>
+                      <span class="font-bold text-green-600">{{ formatCurrency(getTotalPaid()) }}</span>
+                    </div>
+                    <div
+                      class="px-3 py-2 bg-amber-50 border-t border-amber-200 flex items-center justify-between text-xs">
+                      <span class="font-semibold text-amber-700">Remaining Balance</span>
+                      <span class="font-bold text-amber-700">{{ formatCurrency(getRemainingBalance()) }}</span>
+                    </div>
+                  </div>
+
+                  <!-- No payments yet -->
+                  <div v-else class="text-center py-3 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    <p class="text-xs text-gray-400">No partial payments recorded yet</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -837,6 +864,9 @@ import ReceiptModal from '@/components/receipt/ReceiptModal.vue'
 const props = defineProps({
   show: { type: Boolean, required: true },
   order: { type: Object, required: true },
+  // If set, this is the orderId of the order currently in production.
+  // Used to disable the "In Production" step for other orders.
+  inProductionOrderId: { type: String, default: null },
 })
 
 const emit = defineEmits(['close', 'statusUpdate', 'paymentUpdate', 'edit'])
@@ -844,7 +874,7 @@ const emit = defineEmits(['close', 'statusUpdate', 'paymentUpdate', 'edit'])
 const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
 const localPayment = ref(props.order?.paymentStatus)
-console.log('LocalPayment',localPayment.value)
+console.log('LocalPayment', localPayment.value)
 const partialAmount = ref(0)
 const codCollectedAdmin = ref(false)
 
@@ -877,7 +907,7 @@ const driverDetails = ref({
 
 // ─── Get current admin user from localStorage ────────────────────────────
 const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}')
-console.log('Current admin:', currentAdmin)
+console.log('Current order:', props.order?.status)
 
 // ─── Helper to get admin name ────────────────────────────────────────────
 function getAdminName() {
@@ -911,6 +941,12 @@ function getFullImageUrl(path) {
 }
 
 // ─── DESIGN DATA RETRIEVAL ───────────────────────────────────────────────
+
+const productionLockedByOtherOrder = computed(() => {
+  if (!props.inProductionOrderId) return false
+  // If THIS order is the one in production, it's not "locked by another"
+  return props.inProductionOrderId !== props.order?.id
+})
 
 const designFiles = computed(() => {
   const files = []
@@ -1192,7 +1228,7 @@ function formatCurrency(amount) {
   if (amount === null || amount === undefined || amount === '') {
     return '₱0.00'
   }
-  
+
   // If it's already a string with ₱, extract the number
   if (typeof amount === 'string' && amount.includes('₱')) {
     const cleaned = amount.replace(/[₱,]/g, '').trim()
@@ -1202,7 +1238,7 @@ function formatCurrency(amount) {
     }
     return `₱${num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
-  
+
   // If it's a string without ₱
   if (typeof amount === 'string') {
     const cleaned = amount.replace(/,/g, '').trim()
@@ -1212,7 +1248,7 @@ function formatCurrency(amount) {
     }
     return `₱${num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
-  
+
   // If it's a number
   if (typeof amount === 'number') {
     if (isNaN(amount)) {
@@ -1220,7 +1256,7 @@ function formatCurrency(amount) {
     }
     return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
-  
+
   // Fallback
   return '₱0.00'
 }
@@ -1250,31 +1286,31 @@ function getTotalPaid() {
 function getRemainingBalance() {
   // Get the total amount - handle both string and number formats
   let total = props.order?.amount || props.order?.totalAmount || 0
-  
+
   // If total is a string with ₱, clean it
   if (typeof total === 'string') {
     total = parseFloat(total.replace(/[₱,]/g, '').trim()) || 0
   }
-  
+
   const paid = getTotalPaid()
   const remaining = Math.max(0, total - paid)
   return remaining
 }
 async function removePartialPayment(index) {
   if (isSaving.value) return
-  
+
   if (!confirm('Remove this partial payment record?')) return
-  
+
   const payment = props.order.partialPayments[index]
   if (!payment) return
-  
+
   isSaving.value = true
-  
+
   // Remove from local array
   const updatedPayments = [...props.order.partialPayments]
   updatedPayments.splice(index, 1)
   props.order.partialPayments = updatedPayments
-  
+
   // Calculate new total paid
   const totalPaid = getTotalPaid()
   const totalAmount = parseFloat(props.order?.amount || props.order?.totalAmount || 0)
@@ -1286,25 +1322,25 @@ async function removePartialPayment(index) {
   } else if (totalPaid >= totalAmount) {
     newStatus = 'Paid'
   }
-  
+
   // Emit payment update with the updated partialPayments array
-  emit('paymentUpdate', { 
-    orderId: props.order.id, 
+  emit('paymentUpdate', {
+    orderId: props.order.id,
     paymentStatus: newStatus,
     amountPaid: totalPaid,
     partialPayments: updatedPayments // Send the updated array
   })
-  
+
   // Update local state
   localPayment.value = newStatus
-  
+
   // If still Partial, update the partialAmount to remaining balance
   if (newStatus === 'Partial') {
     partialAmount.value = getRemainingBalance()
   } else {
     partialAmount.value = 0
   }
-  
+
   setTimeout(() => { isSaving.value = false }, 1500)
 }
 // ─── Keep local sate in sync ────────────────────────────────────────────
@@ -1312,7 +1348,7 @@ watch(() => props.order, (o) => {
   if (o) {
     localStatus.value = o.status || 'Pending'
     localPayment.value = o.paymentStatus || 'Unpaid'
-    
+
     // Set partialAmount to remaining balance if payment is Partial
     if (localPayment.value === 'Partial') {
       partialAmount.value = getRemainingBalance()
@@ -1563,7 +1599,7 @@ function handleStatusClickWithPrompt(status) {
     updateStatusParam = 'Out for Delivery'
   }
 
- if (status === 'Confirmed') {
+  if (status === 'Confirmed') {
     if (localPayment.value === 'Unpaid') {
       alert('Please verify a downpayment in the Messages page before confirming this order.')
       return
@@ -1604,7 +1640,7 @@ function handleStatusClickWithPrompt(status) {
 async function handlePaymentClick(paymentDisplayValue) {
   const backendValue = paymentDisplayValue
   if (localPayment.value === backendValue || isSaving.value) return
-  
+
   // If setting to Partial, set the input to remaining balance
   if (backendValue === 'Partial') {
     localPayment.value = backendValue
@@ -1612,33 +1648,33 @@ async function handlePaymentClick(paymentDisplayValue) {
     // Don't emit yet - wait for user to enter amount or click Add Payment
     return
   }
-  
+
   isSaving.value = true
   localPayment.value = backendValue
-  
+
   // Get total amount properly
   let totalAmount = props.order?.amount || props.order?.totalAmount || 0
   if (typeof totalAmount === 'string') {
     totalAmount = parseFloat(totalAmount.replace(/[₱,]/g, '').trim()) || 0
   }
-  
+
   let amountPaid = 0
   let partialPayments = []
-  
+
   if (backendValue === 'Paid') {
     amountPaid = totalAmount
-    partialPayments = [{ 
-      amount: totalAmount, 
-      date: new Date().toISOString(), 
+    partialPayments = [{
+      amount: totalAmount,
+      date: new Date().toISOString(),
       updatedBy: getAdminName(), // ✅ Use admin name
     }]
-    
+
     // If order is in Confirmed status, move to Scheduled
     if (localStatus.value === 'Confirmed') {
-      emit('statusUpdate', { 
-        orderId: props.order.id, 
-        status: 'Scheduled', 
-        notes: 'Full payment received - moving to production' 
+      emit('statusUpdate', {
+        orderId: props.order.id,
+        status: 'Scheduled',
+        notes: 'Full payment received - moving to production'
       })
       localStatus.value = 'Scheduled'
     }
@@ -1647,75 +1683,75 @@ async function handlePaymentClick(paymentDisplayValue) {
     props.order.partialPayments = []
     amountPaid = 0
   }
-  
+
   // Emit payment update with partialPayments array
-  emit('paymentUpdate', { 
-    orderId: props.order.id, 
+  emit('paymentUpdate', {
+    orderId: props.order.id,
     paymentStatus: backendValue,
     amountPaid: amountPaid,
     partialPayments: partialPayments // Send the full array
   })
-  
+
   setTimeout(() => { isSaving.value = false }, 1500)
 }
 
 async function updatePartialPayment() {
   if (!partialAmount.value || partialAmount.value <= 0 || isSaving.value) return
-  
+
   // Get total amount properly
   let totalAmount = props.order?.amount || props.order?.totalAmount || 0
   if (typeof totalAmount === 'string') {
     totalAmount = parseFloat(totalAmount.replace(/[₱,]/g, '').trim()) || 0
   }
-  
+
   // Check if amount exceeds remaining balance
   const paid = getTotalPaid()
   const remaining = Math.max(0, totalAmount - paid)
-  
+
   if (partialAmount.value > remaining) {
     alert(`Payment amount (${formatCurrency(partialAmount.value)}) exceeds remaining balance (${formatCurrency(remaining)})`)
     return
   }
-  
+
   isSaving.value = true
-  
+
   // Create new payment record
   const newPayment = {
     amount: partialAmount.value,
     date: new Date().toISOString(),
     updatedBy: getAdminName(), // ✅ Use admin name
   }
-  
+
   // Add to partialPayments array
   if (!props.order.partialPayments) {
     props.order.partialPayments = []
   }
   props.order.partialPayments.push(newPayment)
-  
+
   // Calculate total paid
   const totalPaid = getTotalPaid()
-  
+
   // If total paid equals or exceeds total, set to Paid
   const newPaymentStatus = totalPaid >= totalAmount ? 'Paid' : 'Partial'
-  
+
   // Emit payment update with the full partialPayments array
-  emit('paymentUpdate', { 
-    orderId: props.order.id, 
+  emit('paymentUpdate', {
+    orderId: props.order.id,
     paymentStatus: newPaymentStatus,
     amountPaid: totalPaid,
     partialPayments: props.order.partialPayments // Send the full array
   })
-  
+
   // Update local state
   localPayment.value = newPaymentStatus
-  
+
   // If still Partial, set to remaining balance, else reset to 0
   if (newPaymentStatus === 'Partial') {
     partialAmount.value = getRemainingBalance()
   } else {
     partialAmount.value = 0
   }
-  
+
   setTimeout(() => { isSaving.value = false }, 1500)
 }
 

@@ -54,7 +54,7 @@
                   </div>
                   <div>
                     <p class="text-sm font-semibold text-gray-900">{{ item.name }}</p>
-                    <p class="text-xs text-gray-400">
+                    <p class="text-left text-xs text-gray-400">
                       {{ type === 'products' ? (item.subcategory || item.category) : (item.supplier || 'No supplier') }}
                     </p>
                   </div>

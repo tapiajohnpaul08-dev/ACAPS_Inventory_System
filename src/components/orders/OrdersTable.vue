@@ -39,10 +39,19 @@
             v-for="order in paginatedOrders"
             :key="order.id"
             class="cursor-pointer hover:bg-blue-50/50 transition-all group"
+            :class="{ 'bg-amber-50/60 ring-1 ring-inset ring-amber-200': pinnedOrderId === order.id }"
             @click="$emit('select', order)"
           >
             <td class="px-5 py-4">
-              <p class="text-sm font-bold text-blue-600 group-hover:text-blue-800">{{ order.orderId || order.id }}</p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <p class="text-sm font-bold text-blue-600 group-hover:text-blue-800">{{ order.orderId || order.id }}</p>
+                <span
+                  v-if="pinnedOrderId === order.id"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-800"
+                >
+                  📌 In Production
+                </span>
+              </div>
             </td>
             <td class="px-5 py-4">
               <div class="flex items-center gap-2">
@@ -70,7 +79,7 @@
                 </div>
                 <div>
                   <p class="text-sm font-medium text-gray-900">{{ order.product || 'N/A' }}</p>
-                  <p class="text-xs text-gray-400">{{ order.size || 'N/A' }}</p>
+                  <p class="text-left text-xs text-gray-400">{{ order.size || 'N/A' }}</p>
                 </div>
               </div>
             </td>
@@ -82,7 +91,7 @@
               <p class="text-sm font-bold text-gray-900">{{ order.amount || '₱0' }}</p>
             </td>
             <td class="px-5 py-4">
-              <p class="text-sm text-gray-600">{{ order.date || 'N/A' }}</p>
+              <p class="text-sm text-gray-600">{{ order.expectedDelivery || 'N/A' }}</p>
             </td>
             <td class="px-5 py-4">
               <span
@@ -188,21 +197,22 @@ import { getStatusBadgeClass, getPaymentBadgeClass, getStatusIcon } from '@/comp
 const props = defineProps({
   orders: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
+  pinnedOrderId: { type: String, default: null },
 })
 
 defineEmits(['select', 'edit', 'delete'])
 
 // ─── Columns (declarative -> also drives sorting + alignment) ─────────────
 const columns = [
-  { key: 'orderId', label: 'Order ID', sortable: true },
-  { key: 'customer', label: 'Customer', sortable: true },
-  { key: 'product', label: 'Product', sortable: false },
-  { key: 'qty', label: 'Qty', sortable: true, align: 'right' },
-  { key: 'rawAmount', label: 'Amount', sortable: true, align: 'right' },
-  { key: 'orderedAt', label: 'Date', sortable: true },
-  { key: 'status', label: 'Status', sortable: true },
-  { key: 'payment', label: 'Payment', sortable: false },
-  { key: 'actions', label: 'Actions', sortable: false },
+  { key: 'orderId', label: 'Order ID', },
+  { key: 'customer', label: 'Customer',},
+  { key: 'product', label: 'Product',  },
+  { key: 'qty', label: 'Qty',  align: 'right' },
+  { key: 'rawAmount', label: 'Amount',  align: 'right' },
+  { key: 'orderedAt', label: 'Delivery Date',  },
+  { key: 'status', label: 'Status',  },
+  { key: 'payment', label: 'Payment',},
+  { key: 'actions', label: 'Actions', },
 ]
 
 // ─── Sorting ────────────────────────────────────────────────────────────
@@ -219,11 +229,21 @@ function toggleSort(key) {
 }
 
 const sortedOrders = computed(() => {
-  const list = [...props.orders]
+  // Split out the pinned order (if any) BEFORE sorting.
+  // The pinned order is always forced to the top, regardless of sort column
+  // or direction. Everything else sorts normally.
+  const pinned = props.pinnedOrderId
+    ? props.orders.find(o => o.id === props.pinnedOrderId)
+    : null
+
+  const rest = pinned
+    ? props.orders.filter(o => o.id !== pinned.id)
+    : [...props.orders]
+
   const key = sortKey.value
   const dir = sortDir.value === 'asc' ? 1 : -1
 
-  list.sort((a, b) => {
+  rest.sort((a, b) => {
     let av = a[key]
     let bv = b[key]
 
@@ -239,7 +259,8 @@ const sortedOrders = computed(() => {
     if ((av ?? 0) > (bv ?? 0)) return 1 * dir
     return 0
   })
-  return list
+
+  return pinned ? [pinned, ...rest] : rest
 })
 
 // ─── Pagination ─────────────────────────────────────────────────────────

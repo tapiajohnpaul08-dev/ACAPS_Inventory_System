@@ -141,6 +141,25 @@ async function updatePayment(orderId, { paymentStatus, amountPaid, partialPaymen
     }
   }
 
+    /**
+   * The order (if any) currently in production. There can only ever be one
+   * at a time - the backend enforces this in OrderService.updateOrderStatus.
+   */
+  const inProductionOrder = computed(() => {
+    return allOrders.value.find(o => o.status === 'In Production') || null
+  })
+
+  /**
+   * Same orders list, but with the in-production order pinned to the top.
+   * All other orders retain their relative order.
+   */
+  const ordersWithPinnedProduction = computed(() => {
+    const list = allOrders.value
+    const pinned = list.find(o => o.status === 'In Production')
+    if (!pinned) return list
+    return [pinned, ...list.filter(o => o.id !== pinned.id)]
+  })
+
   const statusCounts = computed(() => {
     const list = allOrders.value
     return {
@@ -162,6 +181,8 @@ async function updatePayment(orderId, { paymentStatus, amountPaid, partialPaymen
     isLoading,
     error,
     statusCounts,
+    inProductionOrder,
+    ordersWithPinnedProduction,
     loadOrders,
     updateStatus,
     updatePayment,
