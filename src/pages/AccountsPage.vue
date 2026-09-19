@@ -178,6 +178,7 @@ const loadData = async () => {
   try {
     if (activeTab.value === 'customers') {
       const response = await adminCustomerApi.getAllCustomers()
+      console.log('accounts response:', response)
       if (response.success && response.data) {
         customers.value = response.data.map(customer => ({
           id: customer._id,
@@ -188,9 +189,9 @@ const loadData = async () => {
           middleName: customer.middleName || '',
           email: customer.email,
           phone: customer.phone || 'N/A',
-          status: 'Active',
+          status: customer.status,
           ordersCount: customer.orders?.length || 0,
-          totalSpent: '₱0',
+          totalSpent: customer.totalSpent,
           lastActive: customer.lastLogin ? new Date(customer.lastLogin).toLocaleDateString() : 'N/A',
           provider: customer.provider || 'local',
           createdAt: customer.createdAt
@@ -215,7 +216,7 @@ const loadData = async () => {
           lastName: admin.lastName,
           email: admin.email,
           phone: admin.phone || 'N/A',
-          status: 'Active',
+          status: admin.status,
           role: admin.role,
           department: admin.role === 'Sales' ? 'Sales Department' : admin.role === 'Production' ? 'Production Department' : 'Super Admin',
           lastLogin: admin.lastLogin ? new Date(admin.lastLogin).toLocaleDateString() : 'N/A',
