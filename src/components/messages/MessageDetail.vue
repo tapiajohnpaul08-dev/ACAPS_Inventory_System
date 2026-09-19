@@ -785,8 +785,28 @@ const confirmUnsend = async () => {
 // ── Payment verify/reject ────────────────────────────
 function openVerifyModal(proofMsg) {
   selectedProofMsg.value = proofMsg
-  verifyAmount.value = proofMsg.paymentProofData?.amountPaid || 0
-  verifyIsFullPayment.value = false
+  const declaredAmount = proofMsg.paymentProofData?.amountPaid || 0
+  verifyAmount.value = declaredAmount
+
+  // ✅ FIX #3 — Auto-detect full payment.
+  // A payment request for a downpayment carries `amountDue = 50% of total`.
+  // If the customer declared twice that, it's a full payment.
+  // We use the payment-request message in the same conversation as a hint.
+  const requestMsgId = proofMsg.paymentProofData?.paymentRequestMessageId
+  let detectedFullPayment = false
+
+  if (requestMsgId) {
+    const requestMsg = props.messages.find(
+      (m) => m.messageId === requestMsgId && m.contentType === 'payment-request',
+    )
+    const requestAmount = Number(requestMsg?.paymentRequestData?.amountDue) || 0
+    // If declared >= 1.9× the downpayment ask, treat as full payment
+    if (requestAmount > 0 && declaredAmount >= requestAmount * 1.9) {
+      detectedFullPayment = true
+    }
+  }
+
+  verifyIsFullPayment.value = detectedFullPayment
   showVerifyModal.value = true
 }
 

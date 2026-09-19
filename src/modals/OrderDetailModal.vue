@@ -365,12 +365,13 @@
                       || isStatusCompleted(status)
                       || (status === 'Confirmed' && localPayment === 'Unpaid')
                       || (status === 'In Production' && productionLockedByOtherOrder)
-                      " class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
+                      "
+                      class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-center transition-all disabled:cursor-not-allowed text-xs"
                       :class="getStatusButtonClass(status)" :title="status === 'Confirmed' && localPayment === 'Unpaid'
-                          ? 'Verify a downpayment in the Messages page first'
-                          : status === 'In Production' && productionLockedByOtherOrder
-                            ? 'Another order is currently in production. Complete or cancel it first.'
-                            : getStatusButtonTitle(status)
+                        ? 'Verify a downpayment in the Messages page first'
+                        : status === 'In Production' && productionLockedByOtherOrder
+                          ? 'Another order is currently in production. Complete or cancel it first.'
+                          : getStatusButtonTitle(status)
                         ">
                       <span class="flex items-center justify-center w-5 h-5">
                         <component v-if="isStatusCompleted(status)" :is="statusIcon('Completed')"
@@ -410,7 +411,7 @@
                     </div>
                   </label>
                 </div>
-                                  <!-- Confirmation lock hint -->
+                <!-- Confirmation lock hint -->
                 <div v-if="localStatus === 'Pending' && localPayment === 'Unpaid'"
                   class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-xs">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -556,7 +557,7 @@
 
 
               <!-- Payment Status -->
-              <div v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'">
+              <div>
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Payment</p>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold capitalize"
@@ -569,7 +570,7 @@
                 </div>
                 <div class="flex gap-2">
                   <button v-for="ps in paymentStatuses" :key="ps.value" @click="handlePaymentClick(ps.value)"
-                    :disabled="isSaving"
+                    :disabled="isSaving || order.status == 'Completed'"
                     class="flex-1 py-1.5 rounded-lg text-xs font-bold capitalize border-2 transition-all disabled:opacity-50"
                     :class="localPayment === ps.value
                       ? 'border-current ' + ps.activeClass
@@ -580,7 +581,7 @@
 
                 <!-- Partial payment management -->
                 <div class="mt-2">
-                  <!-- Add new partial payment -->
+                  <!-- Add new partial payment
                   <div v-if="localPayment !== 'Paid'" class="mb-3">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Add Partial Payment</label>
                     <div class="flex gap-2">
@@ -592,11 +593,10 @@
                         Add Payment
                       </button>
                     </div>
-                  </div>
+                  </div> -->
 
                   <!-- Partial payments list - ✅ ALWAYS show if payments exist, regardless of payment status -->
-                  <div v-if="order.partialPayments && order.partialPayments.length > 0"
-                    class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                  <div class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                     <div class="px-3 py-2 bg-gray-100 border-b border-gray-200">
                       <p class="text-xs font-bold text-gray-600 uppercase tracking-wide">Payment History</p>
                     </div>
@@ -619,15 +619,19 @@
                           </div>
 
                         </div>
-                        <div v-if="payment.referenceNumber" class="text-center">
+                        <div class="text-center">
                           <p class="text-xs font-semibold text-gray-900">Reference Number</p>
-                          <p class="text-[11px] font-bold text-gray-500">{{ payment.referenceNumber }}</p>
+                          <p v-if="payment.referenceNumber" class="text-[11px] font-bold text-gray-500">{{
+                            payment.referenceNumber }}
+                          </p>
+                          <p v-else class="text-[11px] font-bold text-gray-500">N/A</p>
+
                         </div>
                         <div class="flex items-center gap-2">
                           <span v-if="payment.updatedBy" class="text-[10px] text-gray-400">
                             by {{ payment.updatedBy }}
                           </span>
-                          <button @click="removePartialPayment(idx)" :disabled="isSaving"
+                          <button @click="removePartialPayment(idx)" :disabled="isSaving || order.status == 'Completed' "
                             class="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
                             title="Remove payment">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
@@ -654,10 +658,6 @@
                     </div>
                   </div>
 
-                  <!-- No payments yet -->
-                  <div v-else class="text-center py-3 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                    <p class="text-xs text-gray-400">No partial payments recorded yet</p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1349,6 +1349,12 @@ watch(() => props.order, (o) => {
     localStatus.value = o.status || 'Pending'
     localPayment.value = o.paymentStatus || 'Unpaid'
 
+    // ✅ FIX #2b — Reset COD checkbox when switching orders.
+    // Without this, opening order B after checking COD on order A would
+    // carry the stale "true" value, silently completing order B with
+    // an incorrect codCollected flag.
+    codCollectedAdmin.value = false
+
     // Set partialAmount to remaining balance if payment is Partial
     if (localPayment.value === 'Partial') {
       partialAmount.value = getRemainingBalance()
@@ -1663,11 +1669,30 @@ async function handlePaymentClick(paymentDisplayValue) {
 
   if (backendValue === 'Paid') {
     amountPaid = totalAmount
-    partialPayments = [{
-      amount: totalAmount,
-      date: new Date().toISOString(),
-      updatedBy: getAdminName(), // ✅ Use admin name
-    }]
+
+    // ✅ FIX #2a — Preserve existing payment history; append only the
+    // outstanding remaining balance. Prevents wiping the downpayment
+    // that was recorded during chat verification.
+    const existingPayments = Array.isArray(props.order.partialPayments)
+      ? [...props.order.partialPayments]
+      : []
+
+    const alreadyPaid = existingPayments.reduce(
+      (sum, p) => sum + (Number(p.amount) || 0),
+      0,
+    )
+    const remaining = Math.max(0, Number(totalAmount) - alreadyPaid)
+
+    if (remaining > 0) {
+      existingPayments.push({
+        amount: remaining,
+        referenceNumber: null,
+        date: new Date().toISOString(),
+        updatedBy: getAdminName(),
+      })
+    }
+
+    partialPayments = existingPayments
 
     // If order is in Confirmed status, move to Scheduled
     if (localStatus.value === 'Confirmed') {
