@@ -445,6 +445,13 @@ export const adminOrderApi = {
 // =============================================================================
 
 export const adminDashboardApi = {
+  // ✅ NEW — single-shot endpoint for the entire dashboard
+  async getSummary() {
+    return handleResponse(
+      adminAxiosInstance.get('/admin/summary')
+    );
+  },
+
   async getStats() {
     return handleResponse(
       adminAxiosInstance.get('/admin/stats')

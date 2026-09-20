@@ -34,14 +34,15 @@
         @update:search="search = $event"
         @update:statusFilter="statusFilter = $event"
       />
-      <OrdersTable
-        :orders="filteredOrders"
-        :is-loading="isLoading"
-        :pinned-order-id="inProductionOrder?.id || null"
-        @select="handleSelect"
-        @edit="handleEdit"
-        @delete="handleDelete"
-      />
+<OrdersTable
+  :orders="filteredOrders"
+  :is-loading="isLoading"
+  :pinned-order-id="inProductionOrder?.id || null"
+  :highlighted-order-id="highlightedOrderId"
+  @select="handleSelect"
+  @edit="handleEdit"
+  @delete="handleDelete"
+/>
     </template>
 
     <OrderDetailModal
@@ -95,7 +96,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import OrdersStatCards from '@/components/orders/OrdersStatCards.vue'
 import OrdersFilters from '@/components/orders/OrdersFilters.vue'
 import OrdersTable from '@/components/orders/OrdersTable.vue'
@@ -103,6 +105,8 @@ import OrderDetailModal from '@/modals/OrderDetailModal.vue'
 import EditOrderModal from '@/modals/EditOrderModal.vue'
 import ConfirmModal from '@/modals/ConfirmModal.vue'
 import { adminOrderApi } from '@/api/api'
+
+const route = useRoute()
 
 const search = ref('')
 const statusFilter = ref('all')
@@ -112,6 +116,36 @@ const editOrder = ref(null)
 const isLoading = ref(false)
 const toast = ref({ show: false, type: 'success', message: '' })
 const confirmModal = ref({ show: false, type: 'danger', title: '', message: '', itemToDelete: null })
+const highlightedOrderId = ref(null)
+
+// ✅ When arriving from the dashboard (or anywhere else), if ?order=
+// is present, auto-open the OrderDetailModal for that order.
+async function handleQueryParams() {
+  const orderId = route.query.order
+  if (!orderId) return
+
+  if (allOrders.value.length === 0) return
+
+  const match = allOrders.value.find((o) => o.id === orderId || o.orderId === orderId)
+  if (match) {
+    // Flash the row briefly so the user can see where it landed
+    highlightedOrderId.value = match.id
+    setTimeout(() => {
+      highlightedOrderId.value = null
+    }, 3500)
+
+    // Then open the detail modal
+    selectedOrder.value = match
+  } else {
+    showToast('error', `Order ${orderId} not found`)
+  }
+}
+
+// Also handle ?search= (legacy / from other pages)
+function applySearchQuery() {
+  const q = route.query.search
+  if (q) search.value = String(q)
+}
 
 // ─── Transform backend → frontend shape ───────────────────────────────────
 function transformOrder(order) {
@@ -395,7 +429,21 @@ function showToast(type, message) {
 
 let toastTimer = null
 
-onMounted(loadOrders)
+onMounted(async () => {
+  applySearchQuery()
+  await loadOrders()
+  await handleQueryParams()
+})
+
+// ✅ If the user navigates back to this page with a different ?order=
+// query (e.g., clicks another dashboard widget without leaving the
+// page), re-open the new one.
+watch(
+  () => route.query.order,
+  async (newOrderId) => {
+    if (newOrderId) await handleQueryParams()
+  },
+)
 </script>
 
 <style scoped>

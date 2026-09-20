@@ -66,11 +66,13 @@
       :items="filteredItems" 
       :loading="loading"
       :type="activeTab"
+      :has-active-filters="hasActiveFilters"
       @edit="handleEdit" 
       @select="handleSelect"
       @delete="handleDelete"
       @stock-in="openStockMovementModal"
       @stock-out="openStockMovementModal"
+      @clear-filters="clearAllFilters"
     />
     
     <!-- Modals -->
@@ -169,7 +171,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import InventorySearch from '@/components/inventory/InventorySearch.vue'
 import InventoryTable from '@/components/inventory/InventoryTable.vue'
 import ItemDetailModal from '@/modals/ItemDetailModal.vue'
@@ -203,6 +205,8 @@ const isScanningAll = ref(false)
 const stockMovementModal = ref({ show: false, item: null, type: 'in', itemType: 'supply' })
 const highlightedItemIdFromQuery = ref(null)
 
+const router = useRouter()
+
 // Data from backend
 const products = ref([])
 const supplies = ref([])
@@ -230,6 +234,15 @@ const supplyCategories = [
   { value: 'maintenance', label: 'Maintenance' },
   { value: 'other', label: 'Other' }
 ]
+
+// ✅ Whether any filters are currently narrowing the results
+const hasActiveFilters = computed(() =>
+  !!searchQuery.value || statusFilter.value !== 'all' || categoryFilter.value !== 'all'
+)
+
+function clearAllFilters() {
+  resetFilters()
+}
 
 const supplyCategoryValues = computed(() => {
   return supplyCategories.map(cat => cat.value)
@@ -336,30 +349,38 @@ const displayItems = computed(() => {
 // Filter items based on search (name only), category, and status
 const filteredItems = computed(() => {
   let items = displayItems.value || []
-  
+
+  // Search (name only)
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim()
-    items = items.filter(item => 
-      item.name?.toLowerCase().includes(query)
+    items = items.filter((item) =>
+      item.name?.toLowerCase().includes(query),
     )
   }
-  
+
+  // Category filter — but ONLY if the selected category actually
+  // exists in the current tab. If the user switched tabs and left a
+  // stale category filter, fall through instead of hiding everything.
   if (categoryFilter.value !== 'all') {
-    items = items.filter(item => {
-      const itemCategory = activeTab.value === 'products' ? item.category : item.category
-      return itemCategory === categoryFilter.value
-    })
+    const categoryExistsInCurrentTab = items.some(
+      (item) => item.category === categoryFilter.value,
+    )
+    if (categoryExistsInCurrentTab) {
+      items = items.filter((item) => item.category === categoryFilter.value)
+    }
+    // else: the filter refers to the *other* tab's categories — ignore it
   }
-  
+
+  // Status filter
   if (statusFilter.value !== 'all') {
-    items = items.filter(item => {
+    items = items.filter((item) => {
       if (statusFilter.value === 'in-stock') return item.status === 'In Stock'
       if (statusFilter.value === 'low-stock') return item.status === 'Low Stock'
       if (statusFilter.value === 'out-of-stock') return item.status === 'Out of Stock'
       return true
     })
   }
-  
+
   return items
 })
 
@@ -442,56 +463,113 @@ const loadSupplies = async () => {
   }
 }
 
-// ✅ Updated loadInventory with loading modal
-const loadInventory = async () => {
-  loadingInventory.value = true
-  try {
-    const response = await inventoryApi.getAllInventory()
-    if (response.success && response.data) {
-      inventoryItems.value = response.data
-      console.log('Inventory loaded:', inventoryItems.value.length)
+let loadInventoryInFlight = null
+
+const loadInventory = async (retries = 2) => {
+  if (loadInventoryInFlight) return loadInventoryInFlight
+
+  loadInventoryInFlight = (async () => {
+    loadingInventory.value = true
+    try {
+      const response = await inventoryApi.getAllInventory()
+      if (response.success && response.data) {
+        inventoryItems.value = response.data
+        console.log('Inventory loaded:', inventoryItems.value.length)
+        return
+      }
+      throw new Error(response.message || 'Failed to load inventory')
+    } catch (error) {
+      console.error('Error loading inventory:', error)
+      if (retries > 0) {
+        await new Promise((r) => setTimeout(r, 500))
+        loadInventoryInFlight = null
+        return loadInventory(retries - 1)
+      }
+      showFeedback('error', 'Error', 'Failed to load inventory')
+      inventoryItems.value = []
+    } finally {
+      loadingInventory.value = false
+      loadInventoryInFlight = null
     }
-  } catch (error) {
-    console.error('Error loading inventory:', error)
-    showFeedback('error', 'Error', 'Failed to load inventory')
-  } finally {
-    loadingInventory.value = false
-  }
+  })()
+
+  return loadInventoryInFlight
 }
 
-// Combined load function - loadProducts/loadSupplies/loadInventory each
-// manage their own loading ref, which already drives the table's skeleton
-// via the `loading` computed above. No global modal needed here.
+// Combined load function — guarded so rapid re-triggers don't fire
+// duplicate requests.
+let loadAllDataInFlight = null
+
 const loadAllData = async () => {
-  try {
-    await Promise.all([loadProducts(), loadSupplies(), loadInventory()])
-  } catch (error) {
-    console.error('Error loading inventory data:', error)
-    showToast('error', 'Failed to load inventory data')
+  if (loadAllDataInFlight) {
+    // Reuse the in-flight promise instead of starting a new one
+    return loadAllDataInFlight
   }
+
+  loadAllDataInFlight = (async () => {
+    try {
+      await Promise.all([loadProducts(), loadSupplies(), loadInventory()])
+    } catch (error) {
+      console.error('Error loading inventory data:', error)
+      showToast('error', 'Failed to load inventory data')
+    } finally {
+      loadAllDataInFlight = null
+    }
+  })()
+
+  return loadAllDataInFlight
 }
 
 // Initialize on mount
 onMounted(async () => {
   getUserRole()
   await loadAllData()
-  
+
+  // Read query params (from dashboard or other navigation sources)
+  if (route.query.tab) {
+    activeTab.value = route.query.tab
+  }
   if (route.query.search) {
-    searchQuery.value = route.query.search
+    searchQuery.value = String(route.query.search)
   }
   if (route.query.status) {
-    statusFilter.value = route.query.status
+    statusFilter.value = String(route.query.status)
   }
   if (route.query.category) {
-    categoryFilter.value = route.query.category
+    categoryFilter.value = String(route.query.category)
   }
   if (route.query.highlight) {
-    highlightedItemIdFromQuery.value = route.query.highlight
-    setTimeout(() => {
-      highlightAndScrollToItem(route.query.highlight)
-    }, 1000)
+    highlightedItemIdFromQuery.value = String(route.query.highlight)
+    // The watcher below will handle the actual scroll once items load.
   }
 })
+
+// ✅ Whenever the active tab flips, wipe filters so stale product
+// categories don't hide supply items (and vice versa).
+watch(activeTab, (newTab, oldTab) => {
+  if (newTab !== oldTab) {
+    resetFilters()
+    // Also strip stale filter params from the URL
+    const query = { ...route.query }
+    delete query.status
+    delete query.category
+    delete query.search
+    query.tab = newTab
+    router.replace({ query }).catch(() => {})
+  }
+})
+
+// ✅ Once items are loaded (and filteredItems has content), scroll
+// to and highlight the item requested via ?highlight=.
+watch(
+  () => filteredItems.value.length,
+  async (len) => {
+    if (len > 0 && highlightedItemIdFromQuery.value) {
+      await nextTick()
+      await highlightAndScrollToItem(highlightedItemIdFromQuery.value)
+    }
+  },
+)
 
 // Watch for route changes
 watch(() => route.query.search, (newSearch) => {
@@ -531,8 +609,14 @@ async function highlightAndScrollToItem(itemId) {
   }
 }
 
+// ✅ Hardened tab change — resets filters regardless of how the tab
+// was changed (UI click, URL query, programmatic navigation).
 function handleTabChange(tab) {
   console.log('Tab changed to:', tab)
+  resetFilters()
+}
+
+function resetFilters() {
   statusFilter.value = 'all'
   categoryFilter.value = 'all'
   searchQuery.value = ''
@@ -938,5 +1022,15 @@ function closeModal() {
 .toast-leave-to {
   opacity: 0;
   transform: translateY(20px);
+}
+
+@keyframes highlightPulse {
+  0%   { background-color: #fef3c7; box-shadow: inset 0 0 0 2px #f59e0b; }
+  50%  { background-color: #fde68a; box-shadow: inset 0 0 0 2px #f59e0b; }
+  100% { background-color: #fef3c7; box-shadow: inset 0 0 0 2px #f59e0b; }
+}
+
+.highlight-pulse {
+  animation: highlightPulse 1s ease-in-out 3;
 }
 </style>

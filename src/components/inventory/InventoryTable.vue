@@ -12,7 +12,19 @@
         <polyline points="3.29 7 12 12 20.71 7"/>
       </svg>
       <p class="text-gray-400">No {{ type === 'products' ? 'products' : 'supplies' }} found.</p>
-      <p class="text-xs text-gray-400 mt-1">Click "Add New" to get started.</p>
+      <p v-if="hasActiveFilters" class="text-xs text-gray-400 mt-1">
+        Try clearing your search or filters.
+      </p>
+      <p v-else class="text-xs text-gray-400 mt-1">
+        Click "Add New" to get started.
+      </p>
+      <button
+        v-if="hasActiveFilters"
+        @click="$emit('clear-filters')"
+        class="mt-3 px-4 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+      >
+        Clear Filters
+      </button>
     </div>
     
     <div v-else>
@@ -214,7 +226,9 @@ const props = defineProps({
   items: { type: Array, required: true },
   loading: { type: Boolean, default: false },
   type: { type: String, default: 'products' },
-  highlightId: { type: String, default: null }
+  highlightId: { type: String, default: null },
+  hasActiveFilters: { type: Boolean, default: false },
+
 })
 
 const emit = defineEmits(['edit', 'select', 'delete', 'stockIn', 'stockOut'])

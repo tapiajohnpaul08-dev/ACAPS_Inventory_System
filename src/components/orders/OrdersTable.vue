@@ -35,13 +35,17 @@
         </tbody>
 
         <tbody v-else class="divide-y divide-gray-50">
-          <tr
-            v-for="order in paginatedOrders"
-            :key="order.id"
-            class="cursor-pointer hover:bg-blue-50/50 transition-all group"
-            :class="{ 'bg-amber-50/60 ring-1 ring-inset ring-amber-200': pinnedOrderId === order.id }"
-            @click="$emit('select', order)"
-          >
+<tr
+  v-for="order in paginatedOrders"
+  :key="order.id"
+  :data-order-id="order.id"
+  class="cursor-pointer hover:bg-blue-50/50 transition-all group"
+  :class="{
+    'bg-amber-50/60 ring-1 ring-inset ring-amber-200': pinnedOrderId === order.id,
+    'highlight-pulse': highlightedOrderId === order.id,
+  }"
+  @click="$emit('select', order)"
+>
             <td class="px-5 py-4">
               <div class="flex items-center gap-2 flex-wrap">
                 <p class="text-sm font-bold text-blue-600 group-hover:text-blue-800">{{ order.orderId || order.id }}</p>
@@ -198,6 +202,8 @@ const props = defineProps({
   orders: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
   pinnedOrderId: { type: String, default: null },
+  // ✅ Optional — ID of the order to flash (from ?order= navigation)
+  highlightedOrderId: { type: String, default: null },
 })
 
 defineEmits(['select', 'edit', 'delete'])
@@ -299,3 +305,15 @@ watch(totalPages, (max) => {
   if (currentPage.value > max) currentPage.value = max
 })
 </script>
+
+<style scoped>
+@keyframes orderPulse {
+  0%   { background-color: #fef3c7; }
+  50%  { background-color: #fde68a; }
+  100% { background-color: #fef3c7; }
+}
+
+.highlight-pulse {
+  animation: orderPulse 1s ease-in-out 3;
+}
+</style>

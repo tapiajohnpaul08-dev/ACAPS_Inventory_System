@@ -222,23 +222,36 @@ function navigateToInventory() {
   router.push('/dashboard/inventory')
 }
 
+// Navigate to Orders and auto-open the exact order.
+// OrdersPage reads ?order=<orderId> and opens the detail modal.
 function handleOrderClick(order) {
+  const orderId = order.orderId || order.id
+  if (!orderId) return
+
   router.push({
     path: '/dashboard/orders',
-    query: { search: order.orderId || order.id }
+    query: { order: orderId },
   })
 }
 
+// Navigate to Inventory and highlight the exact item.
+// InventoryPage reads ?tab, ?search, ?highlight.
 function handleLowStockItemClick(item) {
+  if (!item) return
+
   const tab = item.type === 'product' ? 'products' : 'supplies'
-  
+  // Products use `id` (custom product id), supplies use `itemId`
+  const highlightId = item.type === 'product'
+    ? (item.id || item.itemId)
+    : (item.itemId || item.id)
+
   router.push({
     path: '/dashboard/inventory',
-    query: { 
-      tab: tab,
-      search: item.name,
-      highlight: item.id 
-    }
+    query: {
+      tab,
+      search: item.name || '',
+      highlight: highlightId || '',
+    },
   })
 }
 

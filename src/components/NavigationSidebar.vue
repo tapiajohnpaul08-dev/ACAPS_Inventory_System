@@ -264,11 +264,21 @@ function navigateToInventory() {
   router.push('/dashboard/inventory?tab=supplies&status=low-stock')
 }
 
-// Fetch low stock count
+// Fetch low stock count — debounced so rapid remounts don't
+// fire duplicate requests.
+let lastLowStockFetchAt = 0
+const LOW_STOCK_DEBOUNCE_MS = 5000
+
 async function fetchLowStockCount() {
+  const now = Date.now()
+  if (now - lastLowStockFetchAt < LOW_STOCK_DEBOUNCE_MS) {
+    // Skip — we already fetched recently
+    return
+  }
+  lastLowStockFetchAt = now
+
   try {
     const response = await inventoryApi.getLowStockItems()
-    
     if (response.success && response.data) {
       lowStockCount.value = response.data.length
     }
