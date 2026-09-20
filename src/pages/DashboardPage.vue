@@ -70,17 +70,26 @@
 
     <template v-else>
       <StatsGrid :stats="filteredStats" @stat-click="handleStatClick" />
-
-      <div v-if="userRole === 'sales'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- <div v-if="userRole !== 'production'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div class="group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-white rounded-2xl border border-gray-100 p-4">
           <RevenueCategoryChart :categories="revenueCategories" />
         </div>
         <div class="group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-white rounded-2xl border border-gray-100 p-4">
           <WeeklySalesTrendChart :sales-data="weeklySales" />
         </div>
-      </div>
+      </div> -->
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- ✅ NEW — Pending Negotiations widget -->
+      <div v-if="userRole != 'production'" class="mb-8">
+        <PendingNegotiations
+          :items="pendingNegotiations"
+          :is-loading="isLoadingNegotiations"
+          @open="handleOpenNegotiation"
+          @refresh="refreshPendingNegotiations"
+          @view-all="navigateToMessages"
+        />
+      </div>
         <div class="transition-all duration-300 hover:shadow-lg rounded-2xl">
           <LowStockAlerts 
             :items="lowStockItems" 
@@ -143,6 +152,8 @@ import AdminLoadingModal from '@/modals/UniversalModals/AdminLoadingModal.vue'
 import { useDashboard } from '@/composables/useDashboard'
 import { useToast } from '@/composables/useToast'
 import { useAdminLoading } from '@/composables/useAdminLoading'
+import { useAdminChat } from '@/composables/useAdminChat'
+import PendingNegotiations from '@/components/dashboard/PendingNegotiations.vue'
 
 const router = useRouter()
 
@@ -166,6 +177,13 @@ const editOrderData = ref(null)
 const adminName = ref(localStorage.getItem('adminName') || 'Admin')
 const isLoading = ref(false)
 
+// ✅ NEW — Pending negotiations
+const {
+  pendingNegotiations,
+  loadPendingNegotiations,
+} = useAdminChat()
+const isLoadingNegotiations = ref(false)
+
 // Filter stats based on user role
 const filteredStats = computed(() => {
   if (userRole.value === 'production') {
@@ -179,6 +197,27 @@ function navigateToOrders() {
   router.push('/dashboard/orders')
 }
 
+// ✅ NEW — Pending negotiations handlers
+function navigateToMessages() {
+  router.push('/dashboard/messages')
+}
+
+function handleOpenNegotiation(item) {
+  // Navigate to Messages page with the specific conversation open
+  router.push({
+    path: '/dashboard/messages',
+    query: { conv: item.conversationId },
+  })
+}
+
+async function refreshPendingNegotiations() {
+  isLoadingNegotiations.value = true
+  try {
+    await loadPendingNegotiations()
+  } finally {
+    isLoadingNegotiations.value = false
+  }
+}
 function navigateToInventory() {
   router.push('/dashboard/inventory')
 }
@@ -291,6 +330,13 @@ function handleComplete() {
 // ✅ Load dashboard on mount - no loading management here
 onMounted(async () => {
   await loadDashboardData()
+  // ✅ NEW — Load pending negotiations
+  isLoadingNegotiations.value = true
+  try {
+    await loadPendingNegotiations()
+  } finally {
+    isLoadingNegotiations.value = false
+  }
 })
 </script>
 

@@ -599,6 +599,13 @@ export const adminChatApi = {
     return handleResponse(adminAxiosInstance.get(url));
   },
 
+  // ✅ NEW — Pending negotiations
+  async getPendingNegotiations() {
+    return handleResponse(
+      adminAxiosInstance.get('/chat/admin/pending-negotiations')
+    );
+  },
+
   async getMessages(conversationId, limit = 50, before = null) {
     let url = `/chat/admin/conversations/${conversationId}/messages?limit=${limit}`;
     if (before) url += `&before=${before}`;

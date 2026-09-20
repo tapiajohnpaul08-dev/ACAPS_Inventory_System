@@ -1,15 +1,23 @@
 <template>
   <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm">
     <div class="p-6 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-          <span class="text-white font-black text-sm">A</span>
-        </div>
+      <router-link
+              to="/dashboard" 
+      >
+        <div class="flex items-center">
+        <div class="w-12 h-12 flex items-center justify-center">
+          <img 
+            src="../assets/logo/acapsLogo.png" 
+            alt="ACAPSHOP" 
+            class="h-16 w-16 object-contain"
+            @error="(e) => e.target.style.display = 'none'"
+          />        </div>
         <div>
           <h1 class="text-lg font-black text-gray-900 tracking-tight">ACAPSHOP</h1>
           <p class="text-xs text-gray-400 -mt-0.5">Inventory System</p>
         </div>
       </div>
+      </router-link>
     </div>
 
     <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
@@ -66,7 +74,25 @@
         >
           <MessageSquare class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
           <span class="text-sm font-medium">Messages</span>
-          <span v-if="unreadMessagesCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
+
+          <!-- ✅ NEW — Pending negotiations indicator (real-time) -->
+          <span
+            v-if="pendingNegotiationsCount > 0"
+            class="ml-auto text-[10px] rounded-full px-1.5 py-0.5 font-bold"
+            :class="isActive('/dashboard/messages')
+              ? 'bg-amber-400 text-amber-950'
+              : 'bg-amber-100 text-amber-700'"
+            :title="`${pendingNegotiationsCount} pending negotiation(s)`"
+          >
+            {{ pendingNegotiationsCount }}
+          </span>
+
+          <!-- Unread messages badge (existing) -->
+          <span
+            v-if="unreadMessagesCount > 0"
+            class="text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white"
+            :class="pendingNegotiationsCount > 0 ? '' : 'ml-auto'"
+          >
             {{ unreadMessagesCount }}
           </span>
         </router-link>
@@ -187,7 +213,12 @@ import {
 import { adminAuthApi, inventoryApi, adminChatApi, feedBackApi } from '@/api/api'
 
 import { useAdminChat } from '@/composables/useAdminChat'
-const {initSocket} = useAdminChat()
+const {
+  initSocket,
+  // ✅ NEW
+  pendingNegotiationsCount,
+  loadPendingNegotiations,
+} = useAdminChat()
 
 
 const route = useRoute()
@@ -359,7 +390,8 @@ onMounted(() => {
   fetchPendingFeedbackCount()
   fetchPendingOrdersCount()
   initSocket()
-  
+  loadPendingNegotiations()
+
   document.addEventListener('click', handleClickOutside)
   
   // Listen for chat events

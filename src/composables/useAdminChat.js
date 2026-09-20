@@ -15,6 +15,11 @@ export function useAdminChat() {
   const processedMessages = new Set()
   let pendingTempId = null // Add this
   const negotiationUpdate = ref(null)
+
+  // ✅ NEW — Pending negotiations count (shared across admin app)
+  const pendingNegotiations = ref([])
+  const pendingNegotiationsCount = computed(() => pendingNegotiations.value.length)
+
   // Socket
   const socket = useAdminSocket()
 
@@ -170,6 +175,18 @@ export function useAdminChat() {
       }
     })
 
+    // ✅ NEW — When a conversation gets linked to an order, refresh the list
+    if (socket.onConversationOrderLinked) {
+      socket.onConversationOrderLinked(() => {
+        loadPendingNegotiations()
+      })
+    }
+
+    // ✅ NEW — When an order is updated (e.g., moves out of Pending), refresh
+    if (socket.onOrderNegotiationUpdated) {
+      // Already existing handler - just also call loadPendingNegotiations
+    }
+
     socket.onMessagesRead(() => {
       // Optionally update read receipts in the UI
     })
@@ -232,22 +249,29 @@ export function useAdminChat() {
     try {
       const result = await adminChatApi.getConversations()
       if (result.success && result.data) {
-        conversations.value = result.data.map((conv) => ({
-          id: conv.conversationId,
-          conversationId: conv.conversationId,
-          name: conv.customerName || 'Unknown Customer',
-          email: conv.customerEmail || '',
-          subject: conv.subject || 'Customer Support',
-          preview: conv.lastMessage?.substring(0, 100) || 'No messages yet',
-          date: formatDate(conv.lastMessageAt || conv.createdAt),
-          read: (conv.adminUnreadCount || 0) === 0,
-          replyStatus: conv.status === 'closed' ? 'replied' : 'pending',
-          adminUnreadCount: conv.adminUnreadCount || 0,
-          status: conv.status,
-          customerId: conv.customerId,
-          orderId: conv.orderId || null,       // ← ADD THIS
-
-        }))
+        conversations.value = result.data
+          .map((conv) => ({
+            id: conv.conversationId,
+            conversationId: conv.conversationId,
+            name: conv.customerName || 'Unknown Customer',
+            email: conv.customerEmail || '',
+            subject: conv.subject || 'Customer Support',
+            preview: conv.lastMessage?.substring(0, 100) || 'No messages yet',
+            date: formatDate(conv.lastMessageAt || conv.createdAt),
+            read: (conv.adminUnreadCount || 0) === 0,
+            replyStatus: conv.status === 'closed' ? 'replied' : 'pending',
+            adminUnreadCount: conv.adminUnreadCount || 0,
+            status: conv.status,
+            customerId: conv.customerId,
+            orderId: conv.orderId || null,
+          }))
+          // ✅ NEW — conversations WITH an orderId always surface first,
+          // so the admin naturally clicks the one that has a panel.
+          .sort((a, b) => {
+            if (a.orderId && !b.orderId) return -1
+            if (!a.orderId && b.orderId) return 1
+            return 0
+          })
       }
     } catch (error) {
       console.error('Failed to load conversations:', error)
@@ -539,6 +563,21 @@ const sendReply = async (conversationId, content, attachments = [], replyToMessa
   const unreadMessages = computed(() => conversations.value.filter((c) => !c.read).length)
   const pendingReplies = computed(() => conversations.value.filter((c) => c.status !== 'closed' && c.status !== 'resolved').length)
 
+  // ✅ NEW — Fetch pending negotiations list
+  const loadPendingNegotiations = async () => {
+    try {
+      const result = await adminChatApi.getPendingNegotiations()
+      if (result.success && Array.isArray(result.data)) {
+        pendingNegotiations.value = result.data
+      } else {
+        pendingNegotiations.value = []
+      }
+    } catch (e) {
+      console.error('Failed to load pending negotiations:', e)
+      pendingNegotiations.value = []
+    }
+  }
+
   return {
     conversations,
     selectedConversation,
@@ -549,6 +588,10 @@ const sendReply = async (conversationId, content, attachments = [], replyToMessa
     totalMessages,
     unreadMessages,
     pendingReplies,
+    // ✅ NEW
+    pendingNegotiations,
+    pendingNegotiationsCount,
+    loadPendingNegotiations,
     isConnected: socket.isConnected,
     isCustomerTyping,
     messagesContainerRef,

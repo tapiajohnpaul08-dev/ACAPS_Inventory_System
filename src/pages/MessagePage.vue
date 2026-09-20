@@ -156,12 +156,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import MessageStatCards from '@/components/messages/MessageStatCards.vue'
 import MessageList from '@/components/messages/MessageList.vue'
 import MessageDetail from '@/components/messages/MessageDetail.vue'
 import NegotiationPanel from '@/components/messages/NegotiationPanel.vue'
 import { adminOrderApi, adminChatApi } from '@/api/api'
 import { useAdminChat } from '@/composables/useAdminChat'
+
+const route = useRoute()
 
 const {
   conversations,
@@ -359,6 +362,18 @@ onMounted(async () => {
   initSocket()
   
   await loadConversations()
+
+  // ✅ NEW — Auto-open conversation from ?conv= query param
+  const targetConvId = route.query.conv
+  if (targetConvId) {
+    const match = conversations.value.find(
+      (c) => c.conversationId === targetConvId,
+    )
+    if (match) {
+      await handleSelectConversationWrapped(match)
+    }
+  }
+
   window.addEventListener('open-image-viewer', handleImageViewerEvent)
   
   // Listen for toast events from MessageDetail
