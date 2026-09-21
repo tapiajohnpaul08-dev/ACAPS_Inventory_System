@@ -9,12 +9,6 @@
         <p class="text-xs mt-0.5" style="color: var(--text-muted);">Real-time support inbox</p>
       </div>
       <div class="flex items-center gap-3">
-        <!-- Live badge -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-          :class="isConnected ? 'badge-live' : 'badge-offline'">
-          <span class="w-1.5 h-1.5 rounded-full" :class="isConnected ? 'dot-live' : 'dot-offline'"></span>
-          {{ isConnected ? 'Live' : 'Reconnecting…' }}
-        </div>
 
         <!-- Refresh -->
         <button

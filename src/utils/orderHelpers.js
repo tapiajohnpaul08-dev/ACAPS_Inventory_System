@@ -74,7 +74,7 @@ export function debounce(fn, delay = 300) {
 export function transformOrder(order, getDisplayStatus) {
   const rawStatus = order.status || 'Pending'
   const displayStatus = getDisplayStatus ? getDisplayStatus(order) : rawStatus
-
+  console.log('Design Fee', order.designFee)
   return {
     // Identifiers
     id: order.orderId || order._id,
@@ -97,7 +97,7 @@ export function transformOrder(order, getDisplayStatus) {
     // Status
     status: displayStatus,
     rawStatus,
-    payment: order.paymentStatus || 'Unpaid',
+    paymentStatus: order.paymentStatus,
     hasDesign: order.hasDesign || false,
     // Delivery
     deliveryMethod: order.receivingMode || order.deliveryMethod || order.fulfillment?.method || 'Pick-up',
@@ -108,6 +108,14 @@ export function transformOrder(order, getDisplayStatus) {
     proofOfDelivery: order.proofOfDelivery || null,
     // Driver
     driverDetails: order.driverDetails || null,
+
+     // ── Fees & totals (needed by Receipt + Detail modal) ──
+  designFee: Number(order.designFee) || 0,
+  shippingFee: Number(order.shippingFee) || 0,
+  subtotal: (order.items || []).reduce(
+    (sum, it) => sum + (Number(it.estimatedTotal) || 0),
+    0
+  ),
 
     // Dates
     date: formatDate(order.orderedAt),

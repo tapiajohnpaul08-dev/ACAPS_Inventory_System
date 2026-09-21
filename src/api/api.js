@@ -438,6 +438,13 @@ export const adminOrderApi = {
       adminAxiosInstance.patch(`/order/admin/orders/${orderId}/negotiate`, updates)
     );
   },
+
+  // In adminOrderApi, add:
+async getOrderCounts() {
+  return handleResponse(
+    adminAxiosInstance.get('/order/admin/counts')
+  );
+},
 };
 
 // =============================================================================

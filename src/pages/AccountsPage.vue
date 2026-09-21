@@ -27,6 +27,7 @@
     />
     
     <AccountsTable 
+      v-if="!loading"
       :accounts="filteredAccounts" 
       :type="activeTab"
       @select="handleSelect"

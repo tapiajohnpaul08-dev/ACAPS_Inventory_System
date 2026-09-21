@@ -257,7 +257,8 @@ import { ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  categories: { type: Array, required: true }
+  categories: { type: Array, required: true },
+  isSubmitting: { type: Boolean, default: false }  // ✅ NEW
 })
 
 const emit = defineEmits(['close', 'submit'])

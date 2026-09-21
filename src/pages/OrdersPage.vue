@@ -1,30 +1,89 @@
 <template>
   <div class="p-8">
-    <div class="mb-8 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-black text-gray-900">Orders</h1>
-        <p class="text-sm text-gray-500 mt-1">Manage and track all customer orders</p>
+    <!-- ═══════════════════════════════════════════════════════════════
+         HEADER — same on list & detail; content swaps based on mode
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="mb-8 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <!-- Back button — only on detail view -->
+        <button
+          v-if="detailOrder"
+          @click="goBackToList"
+          class="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
+          title="Back to Orders"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+
+        <div class="min-w-0">
+          <h1 class="text-2xl font-black text-gray-900 truncate">
+            {{ detailOrder ? `Order ${detailOrder.orderId || detailOrder.id}` : 'Orders' }}
+          </h1>
+          <p class="text-sm text-gray-500 mt-1 truncate">
+            <template v-if="detailOrder">
+              {{ detailOrder.customer }} · {{ detailOrder.date }}
+            </template>
+            <template v-else>
+              Manage and track all customer orders
+            </template>
+          </p>
+        </div>
       </div>
-      <button
-        @click="loadOrders"
-        :disabled="isLoading"
-        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{ 'animate-spin': isLoading }">
-          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-          <path d="M21 3v5h-5"/>
-          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-          <path d="M8 16H3v5"/>
-        </svg>
-        Refresh
-      </button>
+
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <!-- Print Receipt — detail view, near status flow -->
+        <button
+          v-if="detailOrder && ['Out for Delivery', 'Ready to Pick-up', 'Completed'].includes(detailOrder.status)"
+          @click="handlePrintReceipt"
+          class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8" rx="1"/>
+          </svg>
+          Print Receipt
+        </button>
+
+        <button
+          @click="loadOrders"
+          :disabled="isLoading"
+          class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{ 'animate-spin': isLoading }">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════════════
+         BODY — Loading → Detail view OR List view
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- Initial loading -->
     <div v-if="isLoading && allOrders.length === 0" class="flex flex-col items-center justify-center py-20 gap-3">
       <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       <p class="text-gray-400 text-sm">Loading orders...</p>
     </div>
 
+    <!-- Detail mode -->
+    <OrderDetailView
+      v-else-if="detailOrder"
+      ref="detailViewRef"
+      :order="detailOrder"
+      :in-production-order-id="inProductionOrder?.id || null"
+      @statusUpdate="handleStatusUpdate"
+      @paymentUpdate="handlePaymentUpdate"
+      @edit="handleEdit"
+    />
+
+    <!-- List mode -->
     <template v-else>
       <OrdersStatCards :orders="allOrders" />
       <OrdersFilters
@@ -34,28 +93,20 @@
         @update:search="search = $event"
         @update:statusFilter="statusFilter = $event"
       />
-<OrdersTable
-  :orders="filteredOrders"
-  :is-loading="isLoading"
-  :pinned-order-id="inProductionOrder?.id || null"
-  :highlighted-order-id="highlightedOrderId"
-  @select="handleSelect"
-  @edit="handleEdit"
-  @delete="handleDelete"
-/>
+      <OrdersTable
+        :orders="filteredOrders"
+        :is-loading="isLoading"
+        :pinned-order-id="inProductionOrder?.id || null"
+        :highlighted-order-id="highlightedOrderId"
+        @select="handleSelect"
+        @edit="handleEdit"
+        @delete="handleDelete"
+      />
     </template>
 
-    <OrderDetailModal
-      v-if="selectedOrder"
-      :show="true"
-      :order="selectedOrder"
-      :in-production-order-id="inProductionOrder?.id || null"
-      @close="selectedOrder = null"
-      @statusUpdate="handleStatusUpdate"
-      @paymentUpdate="handlePaymentUpdate"
-      @edit="handleEdit"
-    />
-
+    <!-- ═══════════════════════════════════════════════════════════════
+         MODALS — Edit + Delete still modal (small focused dialogs)
+         ═══════════════════════════════════════════════════════════════ -->
     <EditOrderModal
       v-if="editOrder"
       :show="true"
@@ -64,7 +115,6 @@
       @saved="handleOrderSaved"
     />
 
-    <!-- Confirm Modal for Delete -->
     <ConfirmModal
       :show="confirmModal.show"
       :type="confirmModal.type"
@@ -76,7 +126,7 @@
       @cancel="closeConfirmModal"
     />
 
-    <!-- Toast Notification -->
+    <!-- Toast -->
     <Transition name="toast">
       <div
         v-if="toast.show"
@@ -97,116 +147,72 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import OrdersStatCards from '@/components/orders/OrdersStatCards.vue'
 import OrdersFilters from '@/components/orders/OrdersFilters.vue'
 import OrdersTable from '@/components/orders/OrdersTable.vue'
-import OrderDetailModal from '@/modals/OrderDetailModal.vue'
+import OrderDetailView from '@/pages/OrderDetailView.vue'
 import EditOrderModal from '@/modals/EditOrderModal.vue'
 import ConfirmModal from '@/modals/ConfirmModal.vue'
 import { adminOrderApi } from '@/api/api'
+import { transformOrder as sharedTransformOrder } from '@/utils/orderHelpers'
+import { getDisplayStatus } from '@/composables/useOrderStatus'
 
 const route = useRoute()
+const router = useRouter()
 
 const search = ref('')
 const statusFilter = ref('all')
 const allOrders = ref([])
-const selectedOrder = ref(null)
 const editOrder = ref(null)
 const isLoading = ref(false)
 const toast = ref({ show: false, type: 'success', message: '' })
 const confirmModal = ref({ show: false, type: 'danger', title: '', message: '', itemToDelete: null })
 const highlightedOrderId = ref(null)
+const detailViewRef = ref(null)
 
-// ✅ When arriving from the dashboard (or anywhere else), if ?order=
-// is present, auto-open the OrderDetailModal for that order.
-async function handleQueryParams() {
-  const orderId = route.query.order
-  if (!orderId) return
-
-  if (allOrders.value.length === 0) return
-
-  const match = allOrders.value.find((o) => o.id === orderId || o.orderId === orderId)
-  if (match) {
-    // Flash the row briefly so the user can see where it landed
-    highlightedOrderId.value = match.id
-    setTimeout(() => {
-      highlightedOrderId.value = null
-    }, 3500)
-
-    // Then open the detail modal
-    selectedOrder.value = match
-  } else {
-    showToast('error', `Order ${orderId} not found`)
-  }
-}
-
-// Also handle ?search= (legacy / from other pages)
-function applySearchQuery() {
-  const q = route.query.search
-  if (q) search.value = String(q)
-}
-
-// ─── Transform backend → frontend shape ───────────────────────────────────
+// Delegate to the shared transform so the receipt, detail view and
+// table all see the exact same order shape.
 function transformOrder(order) {
-  console.log('transformed:', order);
-  
-  // Determine display status based on receivingMode
-  let displayStatus = order.status || 'Pending'
-  if (order.status === 'Out for Delivery' && order.receivingMode === 'Pick-up') {
-    displayStatus = 'Ready to Pick-up'
-  }
-  
-  return {
-    // Identifiers
-    id: order.orderId || order._id,
-    orderId: order.orderId,
-    _mongoId: order._id,
-
-    // Customer
-    customer: order.customerName || order.customer?.name || 'N/A',
-    email: order.customerEmail || order.customer?.email || 'N/A',
-    phone: order.customerPhone || order.customer?.phone || '',
-    address: order.address || order.customer?.address || '',
-
-    // Product
-    product: order.productName || (order.items?.[0]?.name) || 'Custom Order',
-    size: order.size || order.items?.[0]?.size || 'N/A',
-    qty: order.quantity || order.items?.[0]?.quantity || 0,
-    amount: order.amount ? `₱${Number(order.amount).toLocaleString()}` : '₱0',
-    rawAmount: order.amount || 0,
-
-    // Status - USE THE DISPLAY STATUS
-    status: displayStatus,  // ← FIXED: Use displayStatus
-    payment: order.paymentStatus,
-    paymentStatus: order.paymentStatus,
-    hasDesign: order.hasDesign || false,
-    // Delivery
-    deliveryMethod: order.receivingMode || order.deliveryMethod || order.fulfillment?.method || 'Pick-up',
-    deliveryAddress: order.fulfillment?.deliveryAddress || order.address || '',
-    supplyType: order.isProvided ? 'Own Cups' : 'Company Cups',
-    expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
-    receivingMode: order.receivingMode,  // Keep original for logic
-    proofOfDelivery: order.proofOfDelivery || '',  // New field for proof of delivery image
-    // Dates
-    date: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
-    orderedAt: order.orderedAt,
-    updatedAt: order.updatedAt,
-
-    // Extra
-    notes: order.notes || '',
-    designDetails: order.designDetails || [],
-    items: order.items || [],
-    statusHistory: order.statusHistory || [],
-    partialPayments: order.partialPayments || [],
-    type: order.type || '',
-    isProvided: order.isProvided || false,
-  }
+  return sharedTransformOrder(order, getDisplayStatus)
 }
 
+// ── Detail mode derived from URL ────────────────────────────────────
+const detailOrderId = computed(() => {
+  const q = route.query.order
+  return q ? String(q) : null
+})
+
+const detailOrder = computed(() => {
+  if (!detailOrderId.value) return null
+  return allOrders.value.find(
+    (o) => o.id === detailOrderId.value || o.orderId === detailOrderId.value,
+  ) || null
+})
+
+// ── Navigation helpers ──────────────────────────────────────────────
+function goBackToList() {
+  // Preserve search / status filters, drop only the ?order=
+  const { order, ...rest } = route.query
+  router.push({ query: rest })
+}
+
+function handleSelect(order) {
+  const id = order.orderId || order.id
+  if (!id) return
+  // Preserve search / status filters when opening a detail view
+  router.push({ query: { ...route.query, order: id } })
+}
+
+// Highlight the row briefly when arriving from an external link
+function flashRow(orderId) {
+  highlightedOrderId.value = orderId
+  setTimeout(() => { highlightedOrderId.value = null }, 3500)
+}
+
+// ── Data loading ────────────────────────────────────────────────────
 async function loadOrders() {
   isLoading.value = true
-
   try {
     const response = await adminOrderApi.getAllOrders()
     if (response.success && response.data) {
@@ -222,11 +228,9 @@ async function loadOrders() {
   }
 }
 
-// ── In-production pin ────────────────────────────────────────────────────
-// Only one order can be In Production at a time (backend-enforced).
-// Pin it to the top of the table so the admin always sees it.
+// ── Filters / counts ────────────────────────────────────────────────
 const inProductionOrder = computed(() =>
-  allOrders.value.find(o => o.status === 'In Production') || null
+  allOrders.value.find((o) => o.status === 'In Production') || null
 )
 
 const ordersWithPinnedProduction = computed(() => {
@@ -234,103 +238,80 @@ const ordersWithPinnedProduction = computed(() => {
   if (!inProductionOrder.value) return list
   return [
     inProductionOrder.value,
-    ...list.filter(o => o.id !== inProductionOrder.value.id),
+    ...list.filter((o) => o.id !== inProductionOrder.value.id),
   ]
 })
 
-// ─── Counts & filtering ───────────────────────────────────────────────────
 const statusCounts = computed(() => ({
   all: allOrders.value.length,
-  pending: allOrders.value.filter(o => o.status === 'Pending').length,
-  scheduled: allOrders.value.filter(o => o.status === 'Scheduled').length,
-  inProduction: allOrders.value.filter(o => o.status === 'In Production').length,
+  pending: allOrders.value.filter((o) => o.status === 'Pending').length,
+  scheduled: allOrders.value.filter((o) => o.status === 'Scheduled').length,
+  inProduction: allOrders.value.filter((o) => o.status === 'In Production').length,
   outForDelivery: allOrders.value.filter(
-    o => o.status === 'Out for Delivery' || o.status === 'Ready to Pick-up'
+    (o) => o.status === 'Out for Delivery' || o.status === 'Ready to Pick-up',
   ).length,
-  completed: allOrders.value.filter(o => o.status === 'Completed').length,
-  cancelled: allOrders.value.filter(o => o.status === 'Cancelled').length,
+  completed: allOrders.value.filter((o) => o.status === 'Completed').length,
+  cancelled: allOrders.value.filter((o) => o.status === 'Cancelled').length,
 }))
 
 const statusMap = {
-  'pending': 'Pending',
-  'scheduled': 'Scheduled',
+  pending: 'Pending',
+  scheduled: 'Scheduled',
   'in-production': 'In Production',
   'out-for-delivery': 'Out for Delivery',
-  'completed': 'Completed',
-  'cancelled': 'Cancelled',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
 }
 
 const filteredOrders = computed(() => {
-  // Start from the pinned list, so the in-production order always appears
-  // first when it passes the active filters.
   let list = ordersWithPinnedProduction.value
   if (statusFilter.value !== 'all') {
-    list = list.filter(o => o.status === statusMap[statusFilter.value])
+    list = list.filter((o) => o.status === statusMap[statusFilter.value])
   }
   const q = search.value.toLowerCase().trim()
   if (q) {
-    list = list.filter(o =>
-      o.id?.toLowerCase().includes(q) ||
-      o.customer?.toLowerCase().includes(q) ||
-      o.email?.toLowerCase().includes(q) ||
-      o.product?.toLowerCase().includes(q) ||
-      o.phone?.toLowerCase().includes(q)
+    list = list.filter(
+      (o) =>
+        o.id?.toLowerCase().includes(q) ||
+        o.customer?.toLowerCase().includes(q) ||
+        o.email?.toLowerCase().includes(q) ||
+        o.product?.toLowerCase().includes(q) ||
+        o.phone?.toLowerCase().includes(q),
     )
   }
   return list
 })
 
-// ─── Handlers ─────────────────────────────────────────────────────────────
-function handleSelect(order) { selectedOrder.value = order }
+// ── Row actions ─────────────────────────────────────────────────────
 function handleEdit(order) {
-  selectedOrder.value = null
   editOrder.value = order
 }
-function closeEditModal() { editOrder.value = null }
+function closeEditModal() {
+  editOrder.value = null
+}
 
-// In OrdersPage.vue - handleStatusUpdate function
+// ── Status update — same as before ──────────────────────────────────
 async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails, driverId, codCollected }) {
   try {
-    const validStatuses = ['Pending', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed', 'Cancelled'];
-    const normalizedStatus = validStatuses.find(s => s.toLowerCase() === status.toLowerCase()) || status;
-    
-    const payload = { 
-      status: normalizedStatus, 
-      notes: notes || ''
-    }
-    
-    if (productionSchedule) {
-      payload.productionSchedule = productionSchedule
-    }
-    
-    // IMPORTANT: Only send driverId as string, not the whole object
-    if (driverId) {
-      payload.driverId = driverId // This should be a string like "DRV-6837"
-    }
+    const validStatuses = ['Pending', 'Confirmed', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed', 'Cancelled']
+    const normalizedStatus = validStatuses.find((s) => s.toLowerCase() === status.toLowerCase()) || status
 
-    if (codCollected !== undefined) {
-      payload.codCollected = codCollected    // ← NEW
-    }
-    
-    // If you want to include driver details for history, add them separately
+    const payload = { status: normalizedStatus, notes: notes || '' }
+    if (productionSchedule) payload.productionSchedule = productionSchedule
+    if (driverId) payload.driverId = driverId
+    if (codCollected !== undefined) payload.codCollected = codCollected
     if (driverDetails) {
       payload.driverDetails = {
         driverName: driverDetails.driverName,
         driverPhone: driverDetails.driverPhone,
         plateNumber: driverDetails.plateNumber,
-        truckDescription: driverDetails.truckDescription
+        truckDescription: driverDetails.truckDescription,
       }
     }
-    
-    console.log('Updating order status with payload:', payload)
-    
+
     const response = await adminOrderApi.updateOrderStatus(orderId, payload)
-    
     if (response.success) {
       patchLocalOrder(orderId, transformOrder(response.data))
-      if (selectedOrder.value?.id === orderId) {
-        selectedOrder.value = transformOrder(response.data)
-      }
       showToast('success', `Status updated to "${normalizedStatus}"`)
     } else {
       showToast('error', response.message || 'Failed to update status')
@@ -341,33 +322,20 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
   }
 }
 
-// Called from OrderDetailModal when admin clicks a payment button
+// ── Payment update — same as before ─────────────────────────────────
 async function handlePaymentUpdate({ orderId, paymentStatus, amountPaid, partialPayments }) {
   try {
-    const validPayments = ['Paid', 'Partial', 'Unpaid'];
-    const normalizedPayment = validPayments.find(p => p.toLowerCase() === paymentStatus.toLowerCase()) || paymentStatus;
-    
-    console.log('Updating payment:', { orderId, paymentStatus: normalizedPayment, amountPaid, partialPayments });
-    
-    // Build payload with partialPayments if provided
-    const payload = { 
-      paymentStatus: normalizedPayment,
-      amountPaid: amountPaid
-      
-    }
-    
-    // If partialPayments array is provided, include it
+    const validPayments = ['Paid', 'Partial', 'Unpaid']
+    const normalizedPayment = validPayments.find((p) => p.toLowerCase() === paymentStatus.toLowerCase()) || paymentStatus
+
+    const payload = { paymentStatus: normalizedPayment, amountPaid }
     if (partialPayments !== undefined && Array.isArray(partialPayments)) {
       payload.partialPayments = partialPayments
     }
-    
+
     const response = await adminOrderApi.updatePaymentStatus(orderId, payload)
-    
     if (response.success) {
       patchLocalOrder(orderId, transformOrder(response.data))
-      if (selectedOrder.value?.id === orderId) {
-        selectedOrder.value = transformOrder(response.data)
-      }
       showToast('success', `Payment marked as "${normalizedPayment}"`)
     } else {
       showToast('error', response.message || 'Failed to update payment')
@@ -378,35 +346,36 @@ async function handlePaymentUpdate({ orderId, paymentStatus, amountPaid, partial
   }
 }
 
-// Called from EditOrderModal after a successful save
 function handleOrderSaved(updatedOrder) {
   patchLocalOrder(updatedOrder.id, updatedOrder)
   showToast('success', `Order ${updatedOrder.id} saved successfully`)
 }
 
 function patchLocalOrder(orderId, updated) {
-  const idx = allOrders.value.findIndex(o => o.id === orderId)
+  const idx = allOrders.value.findIndex((o) => o.id === orderId)
   if (idx !== -1) allOrders.value[idx] = updated
 }
 
-async function handleDelete(order) {
+// ── Delete flow ─────────────────────────────────────────────────────
+function handleDelete(order) {
   confirmModal.value = {
     show: true,
     type: 'danger',
     title: 'Delete Order',
     message: `Are you sure you want to delete order "${order.orderId || order.id}"? This action cannot be undone.`,
-    itemToDelete: order
+    itemToDelete: order,
   }
 }
 
 async function confirmDelete() {
   const order = confirmModal.value.itemToDelete
   confirmModal.value.show = false
-  
   try {
     const response = await adminOrderApi.deleteOrder(order.id)
     if (response.success) {
       await loadOrders()
+      // If we were viewing the deleted order, kick back to the list
+      if (detailOrderId.value === order.id) goBackToList()
       showToast('success', `Order ${order.orderId || order.id} has been deleted successfully.`)
     } else {
       showToast('error', response.message || 'Failed to delete order')
@@ -416,32 +385,40 @@ async function confirmDelete() {
     showToast('error', 'Failed to delete order')
   }
 }
-
 function closeConfirmModal() {
   confirmModal.value.show = false
 }
 
+// ── Print receipt — delegates to the inner view ─────────────────────
+function handlePrintReceipt() {
+  detailViewRef.value?.openReceiptModal?.()
+}
+
+// ── Toast ───────────────────────────────────────────────────────────
 function showToast(type, message) {
   clearTimeout(toastTimer)
   toast.value = { show: true, type, message }
   toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
 }
-
 let toastTimer = null
+
+// ── Lifecycle ───────────────────────────────────────────────────────
+function applySearchQuery() {
+  const q = route.query.search
+  if (q) search.value = String(q)
+}
 
 onMounted(async () => {
   applySearchQuery()
   await loadOrders()
-  await handleQueryParams()
 })
 
-// ✅ If the user navigates back to this page with a different ?order=
-// query (e.g., clicks another dashboard widget without leaving the
-// page), re-open the new one.
+// When the user opens a detail view via URL, flash the row so they
+// can find it later if they hit Back.
 watch(
   () => route.query.order,
-  async (newOrderId) => {
-    if (newOrderId) await handleQueryParams()
+  (newId) => {
+    if (newId) flashRow(String(newId))
   },
 )
 </script>

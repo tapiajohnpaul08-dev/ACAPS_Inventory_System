@@ -129,6 +129,12 @@ export function useAdminChat() {
       const conv = conversations.value.find((c) => c.conversationId === message.conversationId)
       if (conv) {
         conv.preview = message.content?.substring(0, 100) || '📎 Attachment'
+        // ✅ Re-sort so the most recently updated conversation jumps to top
+conversations.value.sort((a, b) => {
+  const at = new Date(a.lastMessageAt || 0).getTime()
+  const bt = new Date(b.lastMessageAt || 0).getTime()
+  return bt - at
+})
         conv.date = formatDate(new Date())
         conv.lastMessage = message.content
         conv.lastMessageAt = message.createdAt

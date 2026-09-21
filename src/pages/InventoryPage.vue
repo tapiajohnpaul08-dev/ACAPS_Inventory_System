@@ -107,6 +107,7 @@
       v-if="showAddSupplyModal"
       :show="true"
       :categories="supplyCategories"
+      :is-submitting="loadingSupplies"
       @close="closeAddSupplyModal"
       @submit="handleAddSupply"
     />
@@ -867,8 +868,8 @@ async function handleAddSupply(supplyData) {
       console.log('supply:', supplyData)
       
       await Promise.all([loadSupplies(), loadInventory()])
-      showToast('success', `Supply "${supplyData.name}" has been created and added to inventory.`)
       closeAddSupplyModal()
+      showToast('success', `Supply "${supplyData.name}" has been created and added to inventory.`)
     } else {
       showToast('error', inventoryResponse.message || 'Failed to add supply to inventory')
     }

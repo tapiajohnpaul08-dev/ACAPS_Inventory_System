@@ -210,8 +210,7 @@ import {
   ChevronDown, 
   LogOut 
 } from 'lucide-vue-next'
-import { adminAuthApi, inventoryApi, adminChatApi, feedBackApi } from '@/api/api'
-
+import { adminAuthApi, inventoryApi, adminChatApi, feedBackApi, adminOrderApi } from '@/api/api'
 import { useAdminChat } from '@/composables/useAdminChat'
 const {
   initSocket,
@@ -333,15 +332,13 @@ async function fetchPendingFeedbackCount() {
   }
 }
 
-// Fetch pending orders count
 async function fetchPendingOrdersCount() {
   try {
-    // This would need to be implemented in your orders API
-    // For now, we'll use a placeholder
-    const response = await fetch('/api/v1/order/status/Pending/count')
-    if (response.ok) {
-      const data = await response.json()
-      pendingOrdersCount.value = data.count || 0
+    const response = await adminOrderApi.getOrderCounts()
+    if (response.success && response.data) {
+      pendingOrdersCount.value = response.data.pending || 0
+    } else {
+      pendingOrdersCount.value = 0
     }
   } catch (error) {
     console.error('Error fetching pending orders count:', error)

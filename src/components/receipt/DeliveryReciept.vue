@@ -1,13 +1,14 @@
-<!-- components/DeliveryReceipt.vue -->
 <template>
   <div ref="receiptRef" class="receipt-container">
-    <!-- Header with Logo -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         HEADER — Logo + Company (left) | DELIVERY RECEIPT + DR No (right)
+         ═══════════════════════════════════════════════════════════════ -->
     <div class="receipt-header">
       <div class="receipt-header-left">
         <img src="@/assets/logo/ACAPS_LOGO_AND_TEXT.png" alt="ACAPS Logo" class="receipt-logo" />
         <div class="receipt-company-info">
           <p class="receipt-address">5051 QUE Grande Ext. Valenzuela, 1440 Manila, Philippines</p>
-          <p class="receipt-address"> <strong>CONSTANTINO A. ANECITO</strong> - Proprietor VAT Reg. TIN: 102-484-998-00000</p>
+          <p class="receipt-address"><strong>CONSTANTINO A. ANECITO</strong> - Proprietor VAT Reg. TIN: 102-484-998-00000</p>
         </div>
       </div>
       <div class="receipt-header-right">
@@ -16,21 +17,43 @@
       </div>
     </div>
 
-    <!-- Customer Info -->
-    <div class="receipt-customer-info">
-      <div class="receipt-customer-left">
-        <p class="receipt-customer-line"><span class="font-weight-bold">Customer Name:</span> {{ formattedData.customerName }}</p>
-        <p class="receipt-customer-line"><span class="font-weight-bold">Address:</span> {{ formattedData.address }}</p>
-        <p class="receipt-customer-line"><span class="font-weight-bold">Contact No.:</span> {{ formattedData.contactNo }}</p>
+    <!-- ═══════════════════════════════════════════════════════════════
+         TOP INFO — Customer (left) | Order metadata (right)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="receipt-info-grid">
+      <div class="receipt-info-col">
+        <p class="receipt-info-line">
+          <span class="receipt-info-label">Customer Name:</span>
+          <span class="receipt-info-value">{{ formattedData.customerName }}</span>
+        </p>
+        <p class="receipt-info-line">
+          <span class="receipt-info-label">Address:</span>
+          <span class="receipt-info-value">{{ formattedData.address }}</span>
+        </p>
+        <p class="receipt-info-line">
+          <span class="receipt-info-label">Contact No.:</span>
+          <span class="receipt-info-value">{{ formattedData.contactNo }}</span>
+        </p>
       </div>
-      <div class="receipt-customer-right">
-        <p class="receipt-customer-line"><span class="font-weight-bold">Date:</span> {{ formattedData.date }}</p>
-        <p class="receipt-customer-line"><span class="font-weight-bold">Delivery Date:</span> {{ formattedData.deliveryDate }}</p>
-        <p class="receipt-customer-line"><span class="font-weight-bold">Terms:</span> {{ formattedData.terms }}</p>
+      <div class="receipt-info-col">
+        <p class="receipt-info-line">
+          <span class="receipt-info-label">Date:</span>
+          <span class="receipt-info-value">{{ formattedData.date }}</span>
+        </p>
+        <p class="receipt-info-line">
+          <span class="receipt-info-label">Delivery Date:</span>
+          <span class="receipt-info-value">{{ formattedData.deliveryDate }}</span>
+        </p>
+        <p class="receipt-info-line">
+          <span class="receipt-info-label">Terms:</span>
+          <span class="receipt-info-value">{{ formattedData.terms }}</span>
+        </p>
       </div>
     </div>
 
-    <!-- Items Table -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         ITEMS TABLE — full width
+         ═══════════════════════════════════════════════════════════════ -->
     <table class="receipt-table">
       <thead class="receipt-table-header">
         <tr>
@@ -49,7 +72,6 @@
           <td class="receipt-table-td unit-col">₱{{ (item.unitPrice || 0).toFixed(2) }}</td>
           <td class="receipt-table-td remarks-col">{{ item.remarks || '' }}</td>
         </tr>
-        <!-- Empty rows for spacing -->
         <tr v-for="i in Math.max(0, 6 - formattedData.items.length)" :key="`empty-${i}`" class="receipt-table-row receipt-empty-row">
           <td class="receipt-table-td no-col">&nbsp;</td>
           <td class="receipt-table-td desc-col">&nbsp;</td>
@@ -60,32 +82,86 @@
       </tbody>
     </table>
 
-    <!-- Fees -->
-    <div v-if="order.hasDesign" class="receipt-fee-row">
-      <div class="receipt-fee-content">
-        <span class="font-weight-bold">Design Fee:</span>
-        <span>₱500.00</span>
-      </div>
-    </div>
+    <!-- ═══════════════════════════════════════════════════════════════
+         BOTTOM GRID — Order summary (left) | Payment breakdown (right)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="receipt-bottom-grid">
 
-    <div v-if="order.isProvided" class="receipt-fee-row">
-      <div class="receipt-fee-content">
-        <span class="font-weight-bold">Printing Service:</span>
-        <span>₱500.00</span>
-      </div>
-    </div>
+      <!-- ── LEFT: Order Summary ── -->
+      <div class="receipt-bottom-left">
+        <p class="receipt-section-title">Order Summary</p>
 
-    <!-- Total -->
-    <div class="receipt-total">
-      <div class="receipt-total-content">
-        <div class="receipt-total-line">
-          <span class="font-weight-bold">Total:</span>
-          <span class="font-weight-bold">₱{{ calculatedTotal.toLocaleString() }}</span>
+        <div class="receipt-summary-row">
+          <span class="receipt-summary-label">Type</span>
+          <span class="receipt-summary-value">{{ formattedData.orderType }}</span>
+        </div>
+        <div class="receipt-summary-row">
+          <span class="receipt-summary-label">Receiving Mode</span>
+          <span class="receipt-summary-value">{{ formattedData.receivingMode }}</span>
+        </div>
+        <div v-if="formattedData.productionSchedule" class="receipt-summary-row">
+          <span class="receipt-summary-label">Production</span>
+          <span class="receipt-summary-value">{{ formattedData.productionSchedule }}</span>
+        </div>
+        <div v-if="formattedData.driverName" class="receipt-summary-row">
+          <span class="receipt-summary-label">Driver</span>
+          <span class="receipt-summary-value">{{ formattedData.driverName }}</span>
+        </div>
+        <div v-if="formattedData.driverPlate" class="receipt-summary-row">
+          <span class="receipt-summary-label">Vehicle</span>
+          <span class="receipt-summary-value">{{ formattedData.driverPlate }}</span>
+        </div>
+        <div v-if="formattedData.totalQuantity" class="receipt-summary-row">
+          <span class="receipt-summary-label">Total Quantity</span>
+          <span class="receipt-summary-value">{{ formattedData.totalQuantity }}</span>
+        </div>
+
+        <!-- Notes -->
+        <div v-if="formattedData.notes" class="receipt-notes">
+          <p class="receipt-notes-label">Notes</p>
+          <p class="receipt-notes-text">{{ formattedData.notes }}</p>
+        </div>
+      </div>
+
+      <!-- ── RIGHT: Payment Breakdown ── -->
+      <div class="receipt-bottom-right">
+        <p class="receipt-section-title">Payment Breakdown</p>
+
+        <div v-if="itemsSubtotal > 0" class="receipt-breakdown-row">
+          <span>Subtotal</span>
+          <span>{{ formatPeso(itemsSubtotal) }}</span>
+        </div>
+
+        <div v-if="showDesignFee" class="receipt-breakdown-row">
+          <span>Design Fee</span>
+          <span>{{ formatPeso(designFee) }}</span>
+        </div>
+
+        <div v-if="showShippingFee" class="receipt-breakdown-row">
+          <span>Shipping Fee</span>
+          <span>{{ formatPeso(shippingFee) }}</span>
+        </div>
+
+        <div class="receipt-breakdown-total">
+          <span class="font-weight-bold">Total</span>
+          <span class="font-weight-bold">{{ formatPeso(calculatedTotal) }}</span>
+        </div>
+
+        <div v-if="showPaidRow" class="receipt-breakdown-row receipt-breakdown-row--paid">
+          <span>Amount Paid</span>
+          <span>{{ formatPeso(totalPaid) }}</span>
+        </div>
+
+        <div v-if="showBalanceDue" class="receipt-breakdown-balance">
+          <span class="font-weight-bold">Balance Due</span>
+          <span class="font-weight-bold">{{ formatPeso(remainingBalance) }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Signature Section -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         SIGNATURES — two columns
+         ═══════════════════════════════════════════════════════════════ -->
     <div class="receipt-signature-section">
       <div class="receipt-signature-box">
         <p class="receipt-signature-title">Received by:</p>
@@ -101,24 +177,17 @@
       </div>
     </div>
 
-    <!-- Footer -->
+    <!-- FOOTER -->
     <div class="receipt-footer">
       <p class="receipt-footer-text">Thank you for doing business with ACAPS TRADING!</p>
-      <p class="receipt-footer-line">________________</p>
     </div>
 
-    <!-- Action Buttons (hidden in print) -->
+    <!-- ACTION BUTTONS -->
     <div class="receipt-actions no-print">
-      <button 
-        @click="downloadPDF" 
-        class="receipt-btn receipt-btn-primary"
-      >
+      <button @click="downloadPDF" class="receipt-btn receipt-btn-primary">
         <Printer style="width: 16px; height: 16px;" /> Download PDF
       </button>
-      <button 
-        @click="$emit('close')"
-        class="receipt-btn receipt-btn-secondary"
-      >
+      <button @click="$emit('close')" class="receipt-btn receipt-btn-secondary">
         Close
       </button>
     </div>
@@ -132,22 +201,17 @@ import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 
 const props = defineProps({
-  order: {
-    type: Object,
-    required: true
-  }
+  order: { type: Object, required: true }
 })
 
 const emit = defineEmits(['close', 'print'])
 
 const receiptRef = ref(null)
 
-// ─── Formatted Data (Read-only) ──────────────────────────────────────
-
+// ─── Formatted Data ─────────────────────────────────────────────────
 const formattedData = computed(() => {
   const order = props.order
-  
-  // Format items
+
   let items = []
   if (order.items && order.items.length > 0) {
     items = order.items.map(item => ({
@@ -165,83 +229,116 @@ const formattedData = computed(() => {
     }]
   }
 
-  // Format dates
   const formatDate = (dateValue) => {
     if (!dateValue) return ''
     try {
       const date = new Date(dateValue)
       if (isNaN(date.getTime())) return ''
-      return date.toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    } catch {
-      return ''
-    }
+      return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+    } catch { return '' }
   }
 
-  // Get driver name
-  const getDriverName = (order) => {
-    if (order.statusHistory && Array.isArray(order.statusHistory)) {
-      const outForDelivery = [...order.statusHistory]
-        .reverse()
-        .find(h => h.status === 'Out for Delivery' && h.driverDetails?.driverName)
-      
-      if (outForDelivery?.driverDetails?.driverName) {
-        return outForDelivery.driverDetails.driverName
-      }
+  const formatDateTime = (dateValue) => {
+    if (!dateValue) return ''
+    try {
+      const d = new Date(dateValue)
+      if (isNaN(d.getTime())) return ''
+      return d.toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    } catch { return '' }
+  }
+
+  const getDriverName = (o) => {
+    if (o.statusHistory && Array.isArray(o.statusHistory)) {
+      const outForDelivery = [...o.statusHistory].reverse().find(h => h.status === 'Out for Delivery' && h.driverDetails?.driverName)
+      if (outForDelivery?.driverDetails?.driverName) return outForDelivery.driverDetails.driverName
     }
-    if (order.driverDetails?.driverName) {
-      return order.driverDetails.driverName
+    if (o.driverDetails?.driverName) return o.driverDetails.driverName
+    return ''
+  }
+
+  const getDriverPlate = (o) => {
+    if (o.driverDetails?.plateNumber) return o.driverDetails.plateNumber
+    if (o.statusHistory && Array.isArray(o.statusHistory)) {
+      const h = [...o.statusHistory].reverse().find(x => x.driverDetails?.plateNumber)
+      if (h?.driverDetails?.plateNumber) return h.driverDetails.plateNumber
     }
     return ''
   }
 
   const driverName = getDriverName(order)
+  const driverPlate = getDriverPlate(order)
   const today = new Date()
   const todayStr = formatDate(today)
 
+  // Total quantity across all items
+  const totalQty = items.reduce((sum, i) => sum + (i.quantity || 0), 0)
+
+  // Order type label
+  const orderType = order.isProvided ? 'Customer Provided Items' : 'Company Product'
+
   return {
     drNumber: order.orderId || order.id || '',
-    customerName: order.customer || '',
+    customerName: order.customer || order.customerName || '',
     address: order.address || order.deliveryAddress || '',
-    contactNo: order.phone || '',
+    contactNo: order.phone || order.customerPhone || '',
     date: formatDate(order.orderedAt || order.date) || todayStr,
     deliveryDate: formatDate(order.expectedDelivery || order.date) || todayStr,
-    terms: order.payment || 'COD',
-    items: items,
-    receivedBy: '',
+    terms: order.paymentStatus || order.payment || 'COD',
+    items,
     receivedByName: '',
     receivedDate: todayStr,
-    deliveredBy: driverName || '',
     deliveredByName: driverName || '',
     deliveredDate: todayStr,
+    // New summary fields
+    orderType,
+    receivingMode: order.receivingMode || order.deliveryMethod || 'Pick-up',
+    productionSchedule: order.productionSchedule ? formatDateTime(order.productionSchedule) : '',
+    driverName,
+    driverPlate,
+    totalQuantity: totalQty > 0 ? `${totalQty.toLocaleString()} pcs` : '',
+    notes: order.notes || '',
   }
 })
 
-// ─── Calculated Total ──────────────────────────────────────────────
+// ─── Fees & totals ──────────────────────────────────────────────────
+const designFee = computed(() => Number(props.order?.designFee) || 0)
+const shippingFee = computed(() => Number(props.order?.shippingFee) || 0)
+
+const showDesignFee = computed(() =>
+  designFee.value > 0 && (props.order?.hasDesign || props.order?.isProvided)
+)
+
+const showShippingFee = computed(() =>
+  shippingFee.value > 0 &&
+  (props.order?.receivingMode === 'Delivery' || props.order?.deliveryMethod === 'Delivery')
+)
+
+function formatPeso(value) {
+  const n = Number(value) || 0
+  return `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+const itemsSubtotal = computed(() =>
+  formattedData.value.items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0)
+)
 
 const calculatedTotal = computed(() => {
-  let total = formattedData.value.items.reduce((sum, item) => {
-    return sum + ((item.quantity || 0) * (item.unitPrice || 0))
-  }, 0)
-
-  // Add design fee if order has design
-  if (props.order.hasDesign) {
-    total += 500
-  }
-
-  // Add printing service fee if own cups
-  if (props.order.isProvided) {
-    total += 500
-  }
-
-  return total
+  const storedTotal = Number(props.order?.amount ?? props.order?.totalAmount)
+  if (Number.isFinite(storedTotal) && storedTotal > 0) return storedTotal
+  return itemsSubtotal.value + designFee.value + shippingFee.value
 })
 
-// ─── Download PDF Function ──────────────────────────────────────────
+const totalPaid = computed(() => {
+  if (!Array.isArray(props.order?.partialPayments)) return 0
+  return props.order.partialPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+})
 
+const remainingBalance = computed(() => Math.max(0, calculatedTotal.value - totalPaid.value))
+
+const showBalanceDue = computed(() => remainingBalance.value > 0)
+const showPaidRow = computed(() => totalPaid.value > 0)
+
+// ─── Download PDF (unchanged) ───────────────────────────────────────
 async function downloadPDF() {
   try {
     const downloadBtn = document.querySelector('.receipt-btn-primary')
@@ -254,43 +351,20 @@ async function downloadPDF() {
     await new Promise(resolve => setTimeout(resolve, 500))
 
     const element = receiptRef.value
-    
-    if (!element) {
-      alert('Receipt element not found')
-      return
-    }
+    if (!element) { alert('Receipt element not found'); return }
 
-    // ✅ FIX: Use a clone with all styles applied and override oklch colors
     const clone = element.cloneNode(true)
-    
-    // Remove action buttons from clone
     const buttons = clone.querySelector('.receipt-actions')
-    if (buttons) {
-      buttons.remove()
-    }
+    if (buttons) buttons.remove()
 
-    // ✅ Force all colors to safe values in the clone
     const allElements = clone.querySelectorAll('*')
     allElements.forEach(el => {
-      // Override any oklch colors with safe values
       el.style.color = '#000000'
       el.style.background = '#ffffff'
       el.style.backgroundColor = '#ffffff'
       el.style.borderColor = '#000000'
-      
-      // Remove any oklch references
-      if (el.style.background && el.style.background.includes('oklch')) {
-        el.style.background = '#ffffff'
-      }
-      if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
-        el.style.backgroundColor = '#ffffff'
-      }
-      if (el.style.color && el.style.color.includes('oklch')) {
-        el.style.color = '#000000'
-      }
     })
 
-    // Also fix any style tags
     const styleTags = clone.querySelectorAll('style')
     styleTags.forEach(tag => {
       if (tag.innerHTML && tag.innerHTML.includes('oklch')) {
@@ -298,7 +372,6 @@ async function downloadPDF() {
       }
     })
 
-    // Create temporary container
     const container = document.createElement('div')
     container.style.position = 'fixed'
     container.style.left = '-9999px'
@@ -312,7 +385,6 @@ async function downloadPDF() {
 
     await new Promise(resolve => setTimeout(resolve, 300))
 
-    // ✅ Use html2canvas with safe settings
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
@@ -323,7 +395,6 @@ async function downloadPDF() {
       windowWidth: 800,
       windowHeight: container.scrollHeight,
       onclone: (doc) => {
-        // Force all elements to use safe colors in the cloned document
         const elements = doc.querySelectorAll('*')
         elements.forEach(el => {
           try {
@@ -331,22 +402,8 @@ async function downloadPDF() {
             el.style.background = '#ffffff'
             el.style.backgroundColor = '#ffffff'
             el.style.borderColor = '#000000'
-            // Remove any oklch references
-            if (el.style.background && el.style.background.includes('oklch')) {
-              el.style.background = '#ffffff'
-            }
-            if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
-              el.style.backgroundColor = '#ffffff'
-            }
-            if (el.style.color && el.style.color.includes('oklch')) {
-              el.style.color = '#000000'
-            }
-          } catch (e) {
-            // Skip
-          }
+          } catch (e) {}
         })
-        
-        // Also fix style tags
         const styleTags = doc.querySelectorAll('style')
         styleTags.forEach(tag => {
           if (tag.innerHTML && tag.innerHTML.includes('oklch')) {
@@ -362,13 +419,12 @@ async function downloadPDF() {
     const pdf = new jsPDF('p', 'mm', 'a4')
     const pdfWidth = 210
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-    
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-    
+
     const filename = `receipt-${formattedData.value.drNumber || 'order'}.pdf`
     pdf.save(filename)
 
-    emit('print', { data: formattedData.value, pdf: pdf })
+    emit('print', { data: formattedData.value, pdf })
 
     if (downloadBtn) {
       downloadBtn.disabled = false
@@ -387,7 +443,7 @@ async function downloadPDF() {
 </script>
 
 <style scoped>
-/* ─── Base Receipt Container ─── */
+/* ─── Base ─── */
 .receipt-container {
   font-family: 'Courier New', monospace;
   background: white;
@@ -395,11 +451,10 @@ async function downloadPDF() {
   padding: 40px;
   max-width: 800px;
   margin: 0 auto;
-  min-height: auto;
   box-sizing: border-box;
 }
 
-/* ─── Header Styles ─── */
+/* ─── Header ─── */
 .receipt-header {
   display: flex;
   align-items: flex-start;
@@ -426,7 +481,7 @@ async function downloadPDF() {
 .receipt-company-info {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
 }
 
 .receipt-address {
@@ -456,42 +511,44 @@ async function downloadPDF() {
   margin: 0;
 }
 
-/* ─── Customer Info Styles ─── */
-.receipt-customer-info {
+/* ─── Info Grid (customer + metadata) ─── */
+.receipt-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 24px;
   margin-bottom: 16px;
-  font-size: 14px;
 }
 
-.receipt-customer-left,
-.receipt-customer-right {
+.receipt-info-col {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.receipt-customer-line {
+.receipt-info-line {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
   margin: 0;
-  font-size: 14px;
   line-height: 1.4;
 }
 
-.font-weight-bold {
+.receipt-info-label {
   font-weight: 700;
+  flex-shrink: 0;
 }
 
-.font-weight-600 {
-  font-weight: 600;
+.receipt-info-value {
+  flex: 1;
+  word-break: break-word;
 }
 
-/* ─── Table Styles ─── */
+/* ─── Items Table ─── */
 .receipt-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
-  margin-bottom: 16px;
+  font-size: 13px;
+  margin-bottom: 20px;
   table-layout: fixed;
 }
 
@@ -504,98 +561,142 @@ async function downloadPDF() {
   padding: 8px 4px;
   text-align: left;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   word-wrap: break-word;
 }
 
-.no-col {
-  width: 48px;
-}
-
-.desc-col {
-  flex: 1;
-}
-
-.qty-col {
-  width: 80px;
-  text-align: right;
-}
-
-.unit-col {
-  width: 96px;
-  text-align: right;
-}
-
-.remarks-col {
-  width: 112px;
-  text-align: right;
-}
+.no-col { width: 48px; }
+.desc-col { flex: 1; }
+.qty-col { width: 80px; text-align: right; }
+.unit-col { width: 96px; text-align: right; }
+.remarks-col { width: 112px; text-align: right; }
 
 .receipt-table-row {
   border-bottom: 1px solid #d1d5db;
 }
-
-.receipt-table-row:last-child {
-  border-bottom: none;
-}
-
-.receipt-empty-row {
-  height: 24px;
-}
+.receipt-table-row:last-child { border-bottom: none; }
+.receipt-empty-row { height: 24px; }
 
 .receipt-table-td {
   padding: 8px 4px;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
-
 .receipt-table-td.qty-col,
 .receipt-table-td.unit-col,
 .receipt-table-td.remarks-col {
   text-align: right;
 }
 
-/* ─── Fee Styles ─── */
-.receipt-fee-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-  font-size: 14px;
+/* ─── Bottom Grid ─── */
+.receipt-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #d1d5db;
 }
 
-.receipt-fee-content {
-  width: 192px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.receipt-bottom-left,
+.receipt-bottom-right {
+  min-width: 0;
 }
 
-/* ─── Total Styles ─── */
-.receipt-total {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-}
-
-.receipt-total-content {
-  width: 192px;
-}
-
-.receipt-total-line {
-  display: flex;
-  justify-content: space-between;
-  border-top: 2px solid #000;
-  padding-top: 8px;
+.receipt-section-title {
+  font-size: 11px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #111827;
+  margin: 0 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #d1d5db;
+}
+
+/* Order summary rows (left column) */
+.receipt-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 3px 0;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.receipt-summary-label {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.receipt-summary-value {
+  text-align: right;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.receipt-notes {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-left: 3px solid #d1d5db;
+  font-size: 11px;
+}
+
+.receipt-notes-label {
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: #374151;
+}
+
+.receipt-notes-text {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+/* Payment breakdown (right column) */
+.receipt-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 3px 0;
+  font-size: 13px;
+  color: #111827;
+}
+
+.receipt-breakdown-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0 4px;
+  margin-top: 4px;
+  border-top: 2px solid #000;
   font-size: 14px;
 }
 
-/* ─── Signature Section ─── */
+.receipt-breakdown-row--paid {
+  color: #15803d;
+  padding-top: 4px;
+}
+
+.receipt-breakdown-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0 0;
+  margin-top: 4px;
+  border-top: 1px dashed #9ca3af;
+  color: #b45309;
+  font-size: 14px;
+}
+
+/* ─── Signatures ─── */
 .receipt-signature-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
-  margin-top: 24px;
+  margin-top: 20px;
   padding-top: 16px;
   border-top: 2px solid #000;
 }
@@ -607,44 +708,38 @@ async function downloadPDF() {
 }
 
 .receipt-signature-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   margin: 0;
 }
 
 .receipt-signature-line {
-  height: 32px;
+  height: 28px;
   border-bottom: 1px solid #000;
   width: 100%;
 }
 
 .receipt-signature-name,
 .receipt-signature-date {
-  font-size: 12px;
-  margin: 4px 0;
+  font-size: 11px;
+  margin: 2px 0;
 }
 
 /* ─── Footer ─── */
 .receipt-footer {
   text-align: center;
-  margin-top: 24px;
-  padding-top: 16px;
+  margin-top: 20px;
+  padding-top: 12px;
   border-top: 2px solid #000;
 }
 
 .receipt-footer-text {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  margin: 0 0 8px 0;
-}
-
-.receipt-footer-line {
-  color: #6b7280;
-  font-size: 12px;
   margin: 0;
 }
 
-/* ─── Action Buttons ─── */
+/* ─── Buttons ─── */
 .receipt-actions {
   display: flex;
   justify-content: center;
@@ -665,41 +760,22 @@ async function downloadPDF() {
   transition: all 0.2s ease;
 }
 
-.receipt-btn-primary {
-  background-color: #2563eb;
-  color: white;
-}
-
-.receipt-btn-primary:hover {
-  background-color: #1d4ed8;
-}
-
-.receipt-btn-primary:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
+.receipt-btn-primary { background-color: #2563eb; color: white; }
+.receipt-btn-primary:hover { background-color: #1d4ed8; }
+.receipt-btn-primary:disabled { background-color: #9ca3af; cursor: not-allowed; }
 
 .receipt-btn-secondary {
   border: 1px solid #d1d5db;
   color: #374151;
   background: transparent;
 }
+.receipt-btn-secondary:hover { background-color: #f3f4f6; }
 
-.receipt-btn-secondary:hover {
-  background-color: #f3f4f6;
-}
-
-/* ─── Print Media Styles ─── */
+/* ─── Print ─── */
 @media print {
-  .no-print {
-    display: none !important;
-  }
+  .no-print { display: none !important; }
 
-  @page {
-    size: A4;
-    margin: 0;
-    padding: 0;
-  }
+  @page { size: A4; margin: 0; padding: 0; }
 
   .receipt-container {
     max-width: 100%;
@@ -709,7 +785,6 @@ async function downloadPDF() {
     background: white;
     color: black;
     border: none;
-    page-break-after: avoid;
     page-break-inside: avoid;
   }
 
@@ -721,68 +796,41 @@ async function downloadPDF() {
     print-color-adjust: exact;
   }
 
-  .receipt-header {
-    page-break-inside: avoid;
-  }
-
-  .receipt-logo {
-    max-width: 100%;
-    height: auto;
-  }
-
-  .receipt-table {
-    page-break-inside: avoid;
-    width: 100%;
-  }
-
-  .receipt-table-row {
-    page-break-inside: avoid;
-  }
-
-  .receipt-customer-info,
-  .receipt-fee-row,
-  .receipt-total,
-  .receipt-signature-section,
-  .receipt-footer {
-    page-break-inside: avoid;
-  }
-
   .receipt-header,
-  .receipt-table-header tr,
-  .receipt-total-line,
+  .receipt-table,
+  .receipt-table-row,
+  .receipt-info-grid,
+  .receipt-bottom-grid,
+  .receipt-breakdown-total,
+  .receipt-breakdown-balance,
   .receipt-signature-section,
   .receipt-footer {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    page-break-inside: avoid;
   }
 
-  * {
-    box-shadow: none !important;
+  .receipt-notes {
+    border-left-color: #000 !important;
   }
+
+  * { box-shadow: none !important; }
 }
 
-/* ─── Responsive Styles ─── */
+/* ─── Responsive ─── */
 @media (max-width: 768px) {
-  .receipt-container {
-    padding: 20px;
-  }
+  .receipt-container { padding: 20px; }
 
   .receipt-header {
     flex-direction: column;
     gap: 16px;
   }
 
-  .receipt-header-right {
-    align-items: flex-start;
-  }
+  .receipt-header-right { align-items: flex-start; }
 
-  .receipt-customer-info {
-    grid-template-columns: 1fr;
-  }
-
+  .receipt-info-grid,
+  .receipt-bottom-grid,
   .receipt-signature-section {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 16px;
   }
 
   .receipt-logo {

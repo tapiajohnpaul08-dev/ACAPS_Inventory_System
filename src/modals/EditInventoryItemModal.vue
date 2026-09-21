@@ -207,7 +207,7 @@ import { ref, watch } from 'vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
-  item: { type: Object, required: true }
+  item: { type: Object, required: true },
 })
 
 const emit = defineEmits(['close', 'update'])

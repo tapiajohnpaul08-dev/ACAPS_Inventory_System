@@ -163,7 +163,7 @@
                       v-if="msg.paymentProofData?.proofImageUrl"
                       :src="msg.paymentProofData.proofImageUrl"
                       alt="Proof"
-                      class="w-full max-h-56 object-contain rounded-lg border border-blue-200 cursor-pointer hover:opacity-90 transition-opacity"
+                      class="w-full rounded-lg border border-blue-200 cursor-pointer hover:opacity-90 transition-opacity"
                       @click="openImageViewer(msg.paymentProofData.proofImageUrl)"
                     />
                     <p

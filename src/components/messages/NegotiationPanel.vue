@@ -406,12 +406,17 @@ async function handleSave() {
       updates.unitPrice = Number(form.value.unitPrice)
     }
     const result = await adminOrderApi.negotiateOrder(props.order.orderId, updates)
-    if (result.success) {
-      emit('updated', result.data)
-      form.value.notes = ''
-    } else {
-      alert(result.message || 'Failed to update order')
-    }
+if (result.success) {
+  emit('updated', result.data)
+  form.value.notes = ''
+  window.dispatchEvent(new CustomEvent('show-toast', {
+    detail: { type: 'success', message: 'Order updated' }
+  }))
+} else {
+  window.dispatchEvent(new CustomEvent('show-toast', {
+    detail: { type: 'error', message: result.message || 'Failed to update order' }
+  }))
+}
   } catch (e) {
     console.error('Negotiate error:', e)
     alert('Failed to update order')

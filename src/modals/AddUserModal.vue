@@ -58,16 +58,6 @@
             <!-- Username & Email -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
-                <input
-                  v-model="form.username"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="johndoe"
-                />
-              </div>
-              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
                 <input
                   v-model="form.email"
@@ -218,7 +208,6 @@ const form = ref({
   firstName: '',
   middleName: '',
   lastName: '',
-  username: '',
   email: '',
   phone: '',
   companyName: '',
@@ -245,7 +234,6 @@ watch(() => props.show, (newVal) => {
       firstName: '',
       middleName: '',
       lastName: '',
-      username: '',
       email: '',
       phone: '',
       companyName: '',
@@ -257,21 +245,21 @@ watch(() => props.show, (newVal) => {
   }
 })
 
+function validatePhone(phone) {
+  const clean = phone.replace(/[\s\-()]/g, '')
+  // Accept: +639XXXXXXXXX, 09XXXXXXXXX, 9XXXXXXXXX
+  return /^(\+?63|0)?9\d{9}$/.test(clean)
+}
+
 function validateForm() {
+
+  
   if (!form.value.firstName.trim()) {
     errorMessage.value = 'First name is required'
     return false
   }
   if (!form.value.lastName.trim()) {
     errorMessage.value = 'Last name is required'
-    return false
-  }
-  if (!form.value.username.trim()) {
-    errorMessage.value = 'Username is required'
-    return false
-  }
-  if (form.value.username.length < 3) {
-    errorMessage.value = 'Username must be at least 3 characters'
     return false
   }
   if (!form.value.email.trim()) {
@@ -283,6 +271,11 @@ function validateForm() {
     errorMessage.value = 'Enter a valid email address'
     return false
   }
+
+  if (form.value.phone && !validatePhone(form.value.phone)) {
+  errorMessage.value = 'Enter a valid PH phone number (e.g., 09171234567)'
+  return false
+}
   if (!form.value.password) {
     errorMessage.value = 'Password is required'
     return false
@@ -317,7 +310,6 @@ async function submit() {
     firstName: form.value.firstName,
     middleName: form.value.middleName,
     lastName: form.value.lastName,
-    username: form.value.username,
     email: form.value.email,
     phone: form.value.phone,
     password: form.value.password
