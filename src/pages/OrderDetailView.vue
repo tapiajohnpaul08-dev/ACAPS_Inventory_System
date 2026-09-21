@@ -74,8 +74,7 @@
     <!-- ═══════════════════════════════════════════════════════════════
          STATUS FLOW BAR — full-width, primary control, always visible
          ═══════════════════════════════════════════════════════════════ -->
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+<div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden sticky top-[88px] z-20">      <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" :class="statusBadge(localStatus)">
             <component :is="statusIcon(localStatus)" class="w-4.5 h-4.5" style="width: 18px; height: 18px;" />
@@ -144,7 +143,7 @@
             >
               <span class="flex items-center justify-center w-7 h-7 flex-shrink-0">
                 <template v-if="isStatusCompleted(status)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-green-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-gray-500">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </template>
@@ -163,11 +162,12 @@
             </button>
 
             <!-- Connector -->
-            <div v-if="index < statusFlow.length - 1" class="flex items-center px-0.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :class="getArrowClass(statusFlow[index + 1])">
+            <div v-if="index < statusFlow.length - 1" class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :class="getArrowClass(statusFlow[index + 1])">
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </div>
+
           </template>
         </div>
 
@@ -299,13 +299,13 @@
 <!-- Design Preview -->
 <div
   v-if="designImageUrl"
-  class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 relative cursor-pointer group"
+  class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 overflow-hidden relative cursor-pointer group"
   @click="previewDesignImage"
 >
   <img
     :src="designImageUrl"
     alt="Design preview"
-    class="w-full h-auto max-h-96 object-contain transition-opacity group-hover:opacity-95"
+    class="w-full h-auto max-h-96 object-contain transition-opacity group-hover:opacity-95 z-0"
     @error="handleImageError"
   />
   <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none">
@@ -386,9 +386,7 @@
       <!-- ══════════════ RIGHT: Payment + Actions (1/3 width) ═════════ -->
       <div class="lg:col-span-1 space-y-4">
 
-        <!-- Payment summary card — bold and prominent -->
-        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden sticky top-4">
-                    <!-- Items + Fee breakdown in ONE card -->
+                            <!-- Items + Fee breakdown in ONE card -->
         <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
           <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -443,6 +441,8 @@
             </div>
           </div>
         </div>
+        <!-- Payment summary card — bold and prominent -->
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden ">
          
             <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
             <p class="text-sm font-bold text-gray-900">Payment</p>
@@ -1034,14 +1034,14 @@ function getStatusDisplayName(status) {
 function getStatusButtonClass(status) {
   const ci = statusFlow.indexOf(currentNormalized())
   const si = statusFlow.indexOf(normalizeStatus(status))
-  if (isCurrentStatus(status)) return 'bg-green-50 ring-1 ring-green-300 cursor-default'
-  if (isStatusCompleted(status)) return 'bg-transparent cursor-not-allowed opacity-60'
+  if (isCurrentStatus(status)) return 'bg-green-50 ring-3 ring-green-300 cursor-default'
+  if (isStatusCompleted(status)) return 'bg-gray-100 ring-2 ring-gray-300 cursor-not-allowed opacity-70'
   if (si === ci + 1) return 'bg-blue-50/50 hover:bg-blue-100 cursor-pointer ring-1 ring-blue-200'
   return 'bg-transparent cursor-not-allowed'
 }
 function getStatusTextClass(status) {
   if (isCurrentStatus(status)) return 'text-green-700'
-  if (isStatusCompleted(status)) return 'text-green-500'
+  if (isStatusCompleted(status)) return 'text-gray-500'
   if (!isStatusDisabled(status)) return 'text-blue-600'
   return 'text-gray-400'
 }
@@ -1052,7 +1052,7 @@ function getStepCircleClass(status) {
   return 'border-gray-200 text-gray-400'
 }
 function getArrowClass(status) {
-  if (isStatusCompleted(status)) return 'text-green-400'
+  if (isStatusCompleted(status)) return 'text-gray-600'
   if (isCurrentStatus(status)) return 'text-green-400'
   if (!isStatusDisabled(status)) return 'text-blue-300'
   return 'text-gray-200'

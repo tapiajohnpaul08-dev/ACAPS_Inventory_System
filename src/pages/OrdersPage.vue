@@ -3,8 +3,7 @@
     <!-- ═══════════════════════════════════════════════════════════════
          HEADER — same on list & detail; content swaps based on mode
          ═══════════════════════════════════════════════════════════════ -->
-    <div class="mb-8 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3 min-w-0">
+<div class="mb-6 flex h-auto items-center justify-between gap-4 sticky top-0 z-30 bg-gray-50 py-4 -mt-4 -mx-8 px-8">      <div class="flex items-center gap-3 min-w-0">
         <!-- Back button — only on detail view -->
         <button
           v-if="detailOrder"
