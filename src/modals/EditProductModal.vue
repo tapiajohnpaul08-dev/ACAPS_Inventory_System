@@ -62,7 +62,12 @@
                           class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 bg-white text-sm"
                         >
                           <option value="Plastic Cups">Plastic Cups</option>
-                          <option value="Paper Cups">Paper Cups</option>
+                        <option value="Paper Cups">Paper Cups</option>
+                        <option value="Containers">Containers</option>
+                        <option value="Bags">Bags</option>
+                        <option value="Utensils">Utensils</option>
+                        <option value="Straws">Straws</option>
+                        <option value="Lids">Lids</option>
                         </select>
                       </div>
                       <div>

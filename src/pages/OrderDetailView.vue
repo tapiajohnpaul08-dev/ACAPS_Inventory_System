@@ -45,6 +45,19 @@
     </div>
 
     <div
+      v-if="order.status ==='Scheduled'"
+      class="flex items-center gap-3 p-3.5 bg-blue-50 border border-blue-200 rounded-2xl"
+    >
+      <Toolbox class="w-8 h-8 text-blue-500" />
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-blue-800 text-sm">This order is scheduled for Production</p>
+          <p class="text-xs font-semibold text-blue-700 mt-0.5">
+          Production will be <strong>{{ formatDateTime(order.productionSchedule) }}</strong>
+        </p>
+      </div>
+    </div>
+
+    <div
       v-if="productionLockedByOtherOrder && localStatus === 'Scheduled'"
       class="flex items-start gap-3 p-3.5 bg-blue-50 border border-blue-200 rounded-2xl"
     >
@@ -120,7 +133,7 @@
           </button>
 
           <button
-            v-if="needsDropOff && order.dropOffStatus === 'Received'"
+            v-if="needsDropOff && order.dropOffStatus === 'Received' && order.status === 'Confirmed' "
             @click="handleItemDroppedUndo"
             :disabled="isSaving"
             class="flex items-center gap-1.5 px-3 cursor-pointer py-1.5 text-xs font-semibold bg-white text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -292,10 +305,10 @@
                   <span class="text-gray-500 w-16 flex-shrink-0">Expected</span>
                   <span class="font-semibold text-gray-900">{{ order.expectedDelivery || 'N/A' }}</span>
                 </div>
-                <div v-if="order.productionSchedule" class="flex items-center gap-2">
+                <!-- <div v-if="order.productionSchedule" class="flex items-center gap-2">
                   <span class="text-gray-500 w-16 flex-shrink-0">Production</span>
                   <span class="font-semibold text-blue-600">{{ formatDateTime(order.productionSchedule) }}</span>
-                </div>
+                </div> -->
               </div>
               <div v-if="order.address && (order.receivingMode === 'Delivery' || order.deliveryMethod === 'Delivery')" class="mt-3 pt-3 border-t border-gray-100">
                 <p class="text-xs text-gray-500 mb-1">Delivery Address</p>
@@ -613,8 +626,8 @@
           <div class="p-6">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Set Production Schedule</h3>
             <div class="mb-4">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Production Date &amp; Time</label>
-              <input v-model="scheduleDate" type="datetime-local" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :min="minDateTime" />
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Production Date</label>
+              <input v-model="scheduleDate" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :min="minDate" />
             </div>
             <div class="mb-4">
               <label class="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
@@ -753,7 +766,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { h } from 'vue'
-import { Truck, User, Phone, Car, Loader2, Check } from 'lucide-vue-next'
+import { Truck, User, Phone, Car, Loader2, Check, Calendar, Toolbox } from 'lucide-vue-next'
 import { adminDriverApi } from '@/api/api'
 import ReceiptModal from '@/components/receipt/ReceiptModal.vue'
 import ConfirmModal from '@/modals/ConfirmModal.vue'
@@ -1065,7 +1078,7 @@ function formatDate(date) {
 }
 function formatDateTime(ts) {
   if (!ts) return ''
-  return new Date(ts).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(ts).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 // ── Partial payments ───────────────────────────────────────────────
@@ -1410,10 +1423,13 @@ function statusIcon(status) {
 }
 
 // ── Schedule min date ──────────────────────────────────────────────
-const minDateTime = computed(() => {
+const minDate = computed(() => {
   const now = new Date()
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-  return now.toISOString().slice(0, 16)
+  // Build the local YYYY-MM-DD directly — no UTC conversion needed.
+  const yyyy = now.getFullYear()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
 })
 
 defineExpose({ openReceiptModal })
