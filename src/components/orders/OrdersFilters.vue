@@ -66,6 +66,7 @@ const emit = defineEmits(['update:search', 'update:statusFilter'])
 const statusOptions = [
   { value: 'all', label: 'All Orders' },
   { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'in-production', label: 'In Production' },
   { value: 'out-for-delivery', label: 'Out for Delivery / Pick-up' },
@@ -77,6 +78,7 @@ const statusOptions = [
 // classes, so button colors always match the badges shown in the table.
 const FILTER_TO_DISPLAY_STATUS = {
   pending: 'Pending',
+  confirmed: 'Confirmed',
   scheduled: 'Scheduled',
   'in-production': 'In Production',
   'out-for-delivery': 'Out for Delivery',
@@ -87,6 +89,7 @@ const FILTER_TO_DISPLAY_STATUS = {
 function getStatusCount(status) {
   const countMap = {
     pending: props.counts.pending || 0,
+    confirmed: props.counts.confirmed || 0,
     scheduled: props.counts.scheduled || 0,
     'in-production': props.counts.inProduction || 0,
     'out-for-delivery': props.counts.outForDelivery || 0,

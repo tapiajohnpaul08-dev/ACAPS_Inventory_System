@@ -380,6 +380,19 @@ const props = defineProps({
   show: { type: Boolean, default: false }
 })
 
+// Parent-driven completion
+defineExpose({
+  handleSuccess: () => {
+    isSubmitting.value = false
+    uploadProgress.value = 0
+    close()
+  },
+  handleError: (msg) => {
+    isSubmitting.value = false
+    errorMessage.value = msg
+  },
+})
+
 const emit = defineEmits(['close', 'submit', 'success'])
 
 const fileInput = ref(null)

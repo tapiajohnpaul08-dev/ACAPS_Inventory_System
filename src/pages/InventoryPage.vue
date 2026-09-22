@@ -112,13 +112,13 @@
       @submit="handleAddSupply"
     />
     
-    <AddProductModal
-      v-if="showAddProductModal"
-      :show="true"
-      @close="closeAddProductModal"
-      @submit="handleAddProduct"
-      @success="handleProductSuccess"
-    />
+<AddProductModal
+  ref="addProductModalRef"
+  v-if="showAddProductModal"
+  :show="true"
+  @close="closeAddProductModal"
+  @submit="handleAddProduct"
+/>
     
     <FeedbackModal
       :show="feedback.show"
@@ -549,10 +549,7 @@ onMounted(async () => {
 // categories don't hide supply items (and vice versa).
 watch(activeTab, (newTab, oldTab) => {
   if (newTab !== oldTab) {
-    resetFilters()
-    // Also strip stale filter params from the URL
     const query = { ...route.query }
-    delete query.status
     delete query.category
     delete query.search
     query.tab = newTab
@@ -880,25 +877,21 @@ async function handleAddSupply(supplyData) {
     loadingSupplies.value = false
   }
 }
+const addProductModalRef = ref(null)
 
 async function handleAddProduct(formData) {
   loadingProducts.value = true
-  
   try {
     const response = await productApi.createProduct(formData)
-    
     if (response.success) {
-      console.log('✅ Product created:', response.data)
       await loadProducts()
-      
-      showFeedback('success', 'Success', `Product "${response.data.name || 'New Product'}" has been created successfully!`)
-      closeAddProductModal()
+      showFeedback('success', 'Success', `Product "${response.data.name}" created!`)
+      addProductModalRef.value?.handleSuccess()
     } else {
-      showFeedback('error', 'Error', response.message || 'Failed to create product')
+      addProductModalRef.value?.handleError(response.message || 'Failed to create product')
     }
   } catch (error) {
-    console.error('Error creating product:', error)
-    showFeedback('error', 'Error', error.response?.data?.message || 'Failed to create product')
+    addProductModalRef.value?.handleError(error.response?.data?.message || 'Failed to create product')
   } finally {
     loadingProducts.value = false
   }

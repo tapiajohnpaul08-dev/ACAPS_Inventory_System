@@ -58,7 +58,7 @@
       >
         <ShoppingCart class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
         <span class="text-sm font-medium">Orders</span>
-        <span v-if="pendingOrdersCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-orange-500 text-white">
+        <span v-if="pendingOrdersCount > 0" class="ml-auto text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center font-semibold bg-red-500 text-white">
           {{ pendingOrdersCount }}
         </span>
       </router-link>
@@ -291,7 +291,6 @@ async function fetchSidebarCounts({ force = false } = {}) {
       const d = response.data
       pendingOrdersCount.value   = d.pendingOrders       || 0
       lowStockCount.value        = d.lowStockItems       || 0
-      pendingNegotiationsCount.value = d.pendingNegotiations || 0
       unreadMessagesCount.value  = d.unreadMessages      || 0
       pendingFeedbackCount.value = d.pendingFeedback     || 0
     }

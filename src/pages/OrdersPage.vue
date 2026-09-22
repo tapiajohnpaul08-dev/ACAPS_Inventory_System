@@ -191,7 +191,6 @@ const detailOrder = computed(() => {
 
 // ── Navigation helpers ──────────────────────────────────────────────
 function goBackToList() {
-  // Preserve search / status filters, drop only the ?order=
   const { order, ...rest } = route.query
   router.push({ query: rest })
 }
@@ -227,6 +226,23 @@ async function loadOrders() {
   }
 }
 
+watch(
+  () => [route.query.order, allOrders.value.length],
+  ([orderId, count]) => {
+    if (orderId && count > 0) {
+      const exists = allOrders.value.some(
+        (o) => o.id === orderId || o.orderId === orderId,
+      );
+      if (!exists) {
+        // Order was deleted or ID is bad → clean the URL
+        const { order, ...rest } = route.query;
+        router.replace({ query: rest });
+        showToast('error', 'Order not found');
+      }
+    }
+  },
+);
+
 // ── Filters / counts ────────────────────────────────────────────────
 const inProductionOrder = computed(() =>
   allOrders.value.find((o) => o.status === 'In Production') || null
@@ -255,6 +271,7 @@ const statusCounts = computed(() => ({
 
 const statusMap = {
   pending: 'Pending',
+  confirmed: 'Confirmed',
   scheduled: 'Scheduled',
   'in-production': 'In Production',
   'out-for-delivery': 'Out for Delivery',

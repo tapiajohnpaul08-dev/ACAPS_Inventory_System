@@ -126,7 +126,7 @@
                     style="width:13px;height:13px">
                     <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
                   </svg>
-                  Edit
+                  
                 </button>
                 <button
                   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600
@@ -139,7 +139,7 @@
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                   </svg>
-                  Delete
+              
                 </button>
               </div>
             </td>

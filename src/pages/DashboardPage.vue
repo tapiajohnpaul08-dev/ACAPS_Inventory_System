@@ -122,7 +122,6 @@
 
     <!-- Global Loading Modal -->
     <AdminLoadingModal
-      v-if="!isLoading"
       :visible="loadingState.visible"
       :title="loadingState.title"
       :message="loadingState.message"

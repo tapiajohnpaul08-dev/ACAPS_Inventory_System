@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
     <div
       v-for="stat in computedStats"
       :key="stat.label"
@@ -28,6 +28,7 @@ const computedStats = computed(() => {
   const orders = props.orders
   const total = orders.length
   const pending = orders.filter(o => o.status === 'Pending').length
+  const confirmed = orders.filter(o => o.status === 'Confirmed').length
   const inProd = orders.filter(o => o.status === 'In Production').length
   const completed = orders.filter(o => o.status === 'Completed').length
   const cancelled = orders.filter(o => o.status === 'Cancelled').length
@@ -53,6 +54,15 @@ const computedStats = computed(() => {
       iconColor: 'text-yellow-500',
       icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
       sub: pending > 0 ? 'Needs attention' : 'All clear',
+    },
+     {
+       label: 'Confirmed',
+      value: confirmed.toLocaleString(),
+       color: 'text-emerald-600',
+     iconBg: 'bg-emerald-50',
+       iconColor: 'text-emerald-500',
+       icon: '<path d="M20 6L9 17l-5-5"/>',
+       sub: confirmed > 0 ? 'Ready for production' : '',
     },
     {
       label: 'In Production',

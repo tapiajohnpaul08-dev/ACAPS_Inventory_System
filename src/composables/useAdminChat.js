@@ -2,27 +2,28 @@
 import { ref, computed, nextTick } from 'vue'
 import { adminChatApi, adminOrderApi } from '@/api/api'
 import { useAdminSocket } from './useAdminSocket'
+// ── Module-level state (shared across all consumers) ──
+const conversations = ref([])
+const selectedConversation = ref(null)
+const messages = ref([])
+const isLoading = ref(false)
+const isLoadingMessages = ref(false)
+const unreadCount = ref(0)
+const isCustomerTyping = ref(false)
+const messagesContainerRef = ref(null)
+const negotiationUpdate = ref(null)
+const pendingNegotiations = ref([])
+const pendingNegotiationsCount = computed(() => pendingNegotiations.value.length)
+
+// shared, but per-tab transient — reset in cleanup
+let processedMessages = new Set()
+let pendingTempId = null
+let listenersAttached = false
+
+// Single socket instance for the whole app
+const socket = useAdminSocket()
 
 export function useAdminChat() {
-  const conversations = ref([])
-  const selectedConversation = ref(null)
-  const messages = ref([])
-  const isLoading = ref(false)
-  const isLoadingMessages = ref(false)
-  const unreadCount = ref(0)
-  const isCustomerTyping = ref(false)
-  const messagesContainerRef = ref(null)
-  const processedMessages = new Set()
-  let pendingTempId = null // Add this
-  const negotiationUpdate = ref(null)
-
-  // ✅ NEW — Pending negotiations count (shared across admin app)
-  const pendingNegotiations = ref([])
-  const pendingNegotiationsCount = computed(() => pendingNegotiations.value.length)
-
-  // Socket
-  const socket = useAdminSocket()
-
   // ─────────────────────────────────────────
   // Auth helpers
   // ─────────────────────────────────────────
@@ -75,7 +76,10 @@ export function useAdminChat() {
     const adminId = getAdminId()
     if (token) {
       socket.connect(token, adminId, 'admin')
-      setupSocketListeners()
+     if (!listenersAttached) {
+       setupSocketListeners()
+      listenersAttached = true
+     }
     }
   }
 
