@@ -26,6 +26,10 @@ button:focus-visible {
   border-radius: 0.375rem;
 }
 
+button {
+  cursor: pointer;
+}
+
 /* Tailwind's disabled:cursor-not-allowed requires the `disabled` variant to be enabled
    in tailwind.config.js. This rule ensures it works without any config change. */
 button:disabled {

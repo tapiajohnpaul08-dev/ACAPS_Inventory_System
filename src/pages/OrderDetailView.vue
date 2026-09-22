@@ -25,7 +25,7 @@
     <!-- ✅ Only show for own-cups orders waiting on the customer's drop-off -->
     <div
       v-if="needsDropOff && order.dropOffStatus === 'Pending' && order.status !== 'Cancelled'"
-      class="flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl"
+      class="flex items-center gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl"
     >
       <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
@@ -37,6 +37,9 @@
         <p class="font-bold text-amber-800 text-sm">Waiting for customer to drop off their items</p>
         <p class="text-xs text-amber-700 mt-0.5">
           This order <strong>cannot</strong> be proceed to <strong>Scheduled</strong> without the item.
+        </p>
+          <p class="text-xs font-semibold text-amber-700 mt-0.5">
+          Expecting to drop off: <strong>{{ formatDateTime(order.dropOffStatusDate) }}</strong>
         </p>
       </div>
     </div>
@@ -110,7 +113,7 @@
             v-if="needsDropOff && order.dropOffStatus === 'Pending'"
             @click="handleItemDropped"
             :disabled="isSaving"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-700 text-white hover:bg-white border hover:text-blue-700 hover:border-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex items-center gap-1.5 px-3 cursor-pointer py-1.5 text-xs font-semibold bg-blue-700 text-white hover:bg-white border hover:text-blue-700 hover:border-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <CheckIcon class="w-4 h-4" />
             Item Dropped
@@ -120,7 +123,7 @@
             v-if="needsDropOff && order.dropOffStatus === 'Received'"
             @click="handleItemDroppedUndo"
             :disabled="isSaving"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex items-center gap-1.5 px-3 cursor-pointer py-1.5 text-xs font-semibold bg-white text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Undo — mark as not yet dropped off"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -134,7 +137,7 @@
             v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'"
             @click="handleCancelClick"
             :disabled="isSaving"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors disabled:opacity-50"
+            class="flex items-center gap-1.5 px-3 cursor-pointer py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors disabled:opacity-50"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <circle cx="12" cy="12" r="10" />
@@ -184,7 +187,7 @@
                   ? 'Verify a downpayment in the Messages page first'
                   : status === 'In Production' && productionLockedByOtherOrder
                     ? 'Another order is currently in production'
-                    : status === 'Confirmed' && needsDropOff && order.dropOffStatus === 'Pending'
+                    : status === 'Scheduled' && needsDropOff && order.dropOffStatus === 'Pending'
                       ? 'Waiting for customer to drop off their items'
                       : getStatusButtonTitle(status)
               "
@@ -1428,6 +1431,8 @@ defineExpose({ openReceiptModal })
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .modal-enter-from .relative { transform: scale(0.95) translateY(8px); opacity: 0; }
 .modal-leave-to .relative { transform: scale(0.95) translateY(8px); opacity: 0; }
+
+
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .animate-spin { animation: spin 0.7s linear infinite; }
