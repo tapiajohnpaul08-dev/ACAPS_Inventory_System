@@ -109,6 +109,9 @@ export function transformOrder(order, getDisplayStatus) {
     // Driver
     driverDetails: order.driverDetails || null,
 
+    // OwnCups fields
+    dropOffStatus: order.dropOffStatus,
+    dropOffStatusDate: order.fromCustomerToCompanyDeliveryDate,
      // ── Fees & totals (needed by Receipt + Detail modal) ──
   designFee: Number(order.designFee) || 0,
   shippingFee: Number(order.shippingFee) || 0,

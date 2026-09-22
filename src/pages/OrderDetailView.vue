@@ -22,6 +22,25 @@
       </div>
     </div>
 
+    <!-- ✅ Only show for own-cups orders waiting on the customer's drop-off -->
+    <div
+      v-if="needsDropOff && order.dropOffStatus === 'Pending' && order.status !== 'Cancelled'"
+      class="flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl"
+    >
+      <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+          <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+          <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-amber-800 text-sm">Waiting for customer to drop off their items</p>
+        <p class="text-xs text-amber-700 mt-0.5">
+          This order <strong>cannot</strong> be proceed to <strong>Scheduled</strong> without the item.
+        </p>
+      </div>
+    </div>
+
     <div
       v-if="productionLockedByOtherOrder && localStatus === 'Scheduled'"
       class="flex items-start gap-3 p-3.5 bg-blue-50 border border-blue-200 rounded-2xl"
@@ -86,6 +105,31 @@
         </div>
 
         <div class="flex items-center gap-2">
+
+          <button
+            v-if="needsDropOff && order.dropOffStatus === 'Pending'"
+            @click="handleItemDropped"
+            :disabled="isSaving"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-700 text-white hover:bg-white border hover:text-blue-700 hover:border-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CheckIcon class="w-4 h-4" />
+            Item Dropped
+          </button>
+
+          <button
+            v-if="needsDropOff && order.dropOffStatus === 'Received'"
+            @click="handleItemDroppedUndo"
+            :disabled="isSaving"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-gray-600 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Undo — mark as not yet dropped off"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M3 7v6h6" />
+              <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
+            </svg>
+            Undo
+          </button>
+
           <button
             v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'"
             @click="handleCancelClick"
@@ -129,7 +173,9 @@
                 isStatusDisabled(status) ||
                 isStatusCompleted(status) ||
                 (status === 'Confirmed' && localPayment === 'Unpaid') ||
-                (status === 'In Production' && productionLockedByOtherOrder)
+                (status === 'In Production' && productionLockedByOtherOrder) ||
+                (status === 'Scheduled' && needsDropOff && order.dropOffStatus === 'Pending')
+
               "
               class="group relative flex flex-col items-center gap-1.5 px-1 py-2 rounded-xl transition-all disabled:cursor-not-allowed flex-1 min-w-0"
               :class="getStatusButtonClass(status)"
@@ -138,7 +184,9 @@
                   ? 'Verify a downpayment in the Messages page first'
                   : status === 'In Production' && productionLockedByOtherOrder
                     ? 'Another order is currently in production'
-                    : getStatusButtonTitle(status)
+                    : status === 'Confirmed' && needsDropOff && order.dropOffStatus === 'Pending'
+                      ? 'Waiting for customer to drop off their items'
+                      : getStatusButtonTitle(status)
               "
             >
               <span class="flex items-center justify-center w-7 h-7 flex-shrink-0">
@@ -691,13 +739,18 @@
   />
 
   <!-- Receipt Modal -->
-  <ReceiptModal :show="showReceiptModal" :order="order" @close="closeReceiptModal" @handlePrint="handleReceiptPrint" />
+  <ReceiptModal
+    :show="showReceiptModal"
+    :order="order"
+    @close="closeReceiptModal"
+    @print="handleReceiptPrint"
+  />
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { h } from 'vue'
-import { Truck, User, Phone, Car, Loader2 } from 'lucide-vue-next'
+import { Truck, User, Phone, Car, Loader2, Check } from 'lucide-vue-next'
 import { adminDriverApi } from '@/api/api'
 import ReceiptModal from '@/components/receipt/ReceiptModal.vue'
 import ConfirmModal from '@/modals/ConfirmModal.vue'
@@ -707,7 +760,7 @@ const props = defineProps({
   inProductionOrderId: { type: String, default: null },
 })
 
-const emit = defineEmits(['statusUpdate', 'paymentUpdate', 'edit'])
+const emit = defineEmits(['statusUpdate', 'paymentUpdate', 'edit', 'dropOffUpdate'])
 
 const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
@@ -735,6 +788,9 @@ const selectedDriverId = ref('')
 const isLoadingDrivers = ref(false)
 const driverError = ref('')
 const driverDetails = ref({ driverName: '', driverPhone: '', plateNumber: '', truckDescription: '' })
+
+  console.log('Order loaded:', props.order)
+
 
 // ── Current admin ──────────────────────────────────────────────────
 const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}')
@@ -885,6 +941,55 @@ const productionLockedByOtherOrder = computed(() => {
   if (!props.inProductionOrderId) return false
   return props.inProductionOrderId !== props.order?.id
 })
+
+// ═══════════════════════════════════════════════════════════════
+// ✅ Drop-off tracking — only for own-cups orders.
+//
+// `dropOffStatus` defaults to 'Pending' on EVERY order (from the
+// schema), so we must guard by `isProvided`. Company-product orders
+// never involve a customer drop-off and shouldn't see these controls.
+// ═══════════════════════════════════════════════════════════════
+const needsDropOff = computed(() => {
+  return props.order?.isProvided === true
+})
+
+// Handle "Item Dropped" — mark the drop-off as received WITHOUT
+// advancing the order status. Uses a dedicated endpoint.
+function handleItemDropped() {
+  if (isSaving.value) return
+  if (!needsDropOff.value) return
+
+  isSaving.value = true
+
+  // Emit a distinct event so OrdersPage can call the right API.
+  emit('dropOffUpdate', {
+    orderId: props.order.id,
+    dropOffStatus: 'Received',
+  })
+
+  // Optimistic local update so the UI flips immediately.
+  // If the API fails, OrdersPage will re-patch this from the server.
+  if (props.order) props.order.dropOffStatus = 'Received'
+
+  setTimeout(() => { isSaving.value = false }, 1500)
+}
+
+// Allow reversing a mistaken click (optional but useful)
+function handleItemDroppedUndo() {
+  if (isSaving.value) return
+  if (!needsDropOff.value) return
+
+  isSaving.value = true
+
+  emit('dropOffUpdate', {
+    orderId: props.order.id,
+    dropOffStatus: 'Pending',
+  })
+
+  if (props.order) props.order.dropOffStatus = 'Pending'
+
+  setTimeout(() => { isSaving.value = false }, 1500)
+}
 
 // ── File preview ───────────────────────────────────────────────────
 function isImageFile(file) {

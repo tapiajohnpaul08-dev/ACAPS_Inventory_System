@@ -1,178 +1,109 @@
 {
-    "paymentDetails": null,
-    "acceptedQuote": {
-        "messageId": null,
-        "acceptedAt": null,
-        "acceptedBy": ""
-    },
-    "customer": {
-        "name": "Jear Hachero",
-        "company": "JCups",
-        "email": "jearlangito@gmail.com",
-        "phone": "+639709406573",
-        "saveAsDefault": false
-    },
-    "fulfillment": {
-        "deliveryAddress": "",
-        "sameAsCustomer": false
-    },
-    "_id": "6aace88f7389af1dcf4aa551",
-    "orderId": "ORD-2026-567-COMP",
-    "customerName": "Jear Hachero",
-    "customerEmail": "jearlangito@gmail.com",
-    "customerPhone": "+639709406573",
-    "address": "",
-    "postalCode": "",
-    "quantity": 500,
+    "id": "ORD-2026-062-PROV",
+    "orderId": "ORD-2026-062-PROV",
+    "_mongoId": "6ab25b5b06c4888425a93dfe",
+    "customer": "Jear Hachero",
+    "email": "jearlangito@gmail.com",
+    "phone": "+639709406573",
+    "address": "Purok 3, Riverside, Poblacion, Bustos, Bulacan, 3007, Luzon, Philippines",
+    "product": "Tumbler",
+    "size": "1L",
+    "qty": 500,
+    "amount": "₱1,000",
+    "rawAmount": 1000,
+    "status": "Confirmed",
+    "rawStatus": "Confirmed",
+    "paymentStatus": "Partial",
+    "hasDesign": true,
+    "deliveryMethod": "Delivery",
+    "deliveryAddress": "Purok 3, Riverside, Poblacion, Bustos, Bulacan, 3007, Luzon, Philippines",
+    "supplyType": "Own Cups",
+    "expectedDelivery": "Sep 29, 2026",
+    "receivingMode": "Delivery",
+    "proofOfDelivery": null,
+    "driverDetails": null,
+    "dropOffStatus": "Pending",
+    "dropOffStatusDate": "2026-09-24T00:00:00.000Z",
+    "designFee": 500,
+    "shippingFee": 500,
+    "subtotal": 0,
+    "date": "Sep 22, 2026",
+    "orderedAt": "2026-09-22T10:41:31.948Z",
+    "updatedAt": "2026-09-22T10:43:32.816Z",
+    "notes": "Individual Designs | Items: Tumbler",
     "designDetails": [
         {
-            "designSource": "no-design",
-            "printSize": "",
-            "printPlacement": "",
-            "designNotes": "No design - plain product, as is.",
-            "files": [],
+            "designSource": "upload",
+            "printSize": "3x3",
+            "printPlacement": "Full-Wrap",
+            "designNotes": "",
+            "files": [
+                {
+                    "name": "GEC-DC Q1.jpg",
+                    "size": 133899,
+                    "type": "image/jpeg",
+                    "path": "https://res.cloudinary.com/vwrxijez/image/upload/v1790073635/beverage/designs/design-1790073632528-918559390.jpg",
+                    "_id": "6ab25b5b06c4888425a93e00"
+                }
+            ],
             "imagePaths": [],
-            "_id": "6aace88f7389af1dcf4aa552"
+            "_id": "6ab25b5b06c4888425a93dff"
         }
     ],
-    "hasDesign": false,
     "items": [
         {
             "selectedTemplate": null,
-            "productId": "PRD-2026-184",
-            "name": "HARD PLASTIC SHOT",
-            "category": "Plastic Cups",
-            "size": "1oz",
+            "productId": null,
+            "name": "Tumbler",
+            "category": "Customer Provided",
+            "size": "1L",
             "quantity": 500,
-            "designSource": "no-design",
-            "designImage": "",
-            "printSize": "",
-            "printPlacement": "",
-            "designNotes": "No design - plain product, as is.",
-            "files": [],
+            "designSource": "upload",
+            "designImage": "https://res.cloudinary.com/vwrxijez/image/upload/v1790073635/beverage/designs/design-1790073632528-918559390.jpg",
+            "printSize": "3x3",
+            "printPlacement": "Full-Wrap",
+            "designNotes": "",
+            "files": [
+                {
+                    "name": "GEC-DC Q1.jpg",
+                    "size": 133899,
+                    "type": "image/jpeg",
+                    "path": "https://res.cloudinary.com/vwrxijez/image/upload/v1790073635/beverage/designs/design-1790073632528-918559390.jpg",
+                    "_id": "6ab25b5b06c4888425a93e02"
+                }
+            ],
             "selectedTemplateId": null,
-            "estimatedTotal": 175,
-            "image": "https://res.cloudinary.com/vwrxijez/image/upload/v1785916468/beverage/products/product-1785916465295-41350293.jpg",
-            "_id": "6aace88f7389af1dcf4aa553"
+            "estimatedTotal": 0,
+            "rimDiameter": null,
+            "itemType": "cup",
+            "_id": "6ab25b5b06c4888425a93e01"
         }
     ],
-    "amount": 175,
-    "downpayment": 0,
-    "totalAmount": 175,
-    "status": "Out for Delivery",
-    "paymentStatus": "Partial",
-    "paymentMethod": "cod",
-    "shippingFee": 0,
-    "designFee": 0,
-    "negotiationStatus": "finalized",
-    "activePaymentRequestMessageId": null,
-    "isReceived": false,
-    "receivingMode": "Pick-up",
-    "useCourier": false,
-    "courierName": "",
-    "productionSchedule": "2026-09-18T07:40:00.000Z",
-    "isProvided": false,
-    "isCartOrder": false,
-    "orderedBy": "6aace87c7389af1dcf4aa4ff",
-    "expectedDelivery": "2026-09-18T00:00:00.000Z",
-    "preferredDate": "2026-09-22T00:00:00.000Z",
-    "fromCustomerToCompanyDeliveryDate": null,
-    "dropOffStatus": "Pending",
-    "notes": "No Design - Plain product as is | Items: HARD PLASTIC SHOT",
     "statusHistory": [
         {
             "status": "Pending",
-            "timestamp": "2026-09-18T07:30:23.984Z",
-            "notes": "Order created",
+            "timestamp": "2026-09-22T10:41:31.939Z",
+            "notes": "Order created (customer provided items)",
             "productionSchedule": "",
             "updatedBy": "Customer"
         },
         {
             "status": "Confirmed",
-            "timestamp": "2026-09-18T07:40:34.215Z",
-            "notes": "Downpayment verified — ₱88 via gcash (ref: 12321232121)",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "Scheduled",
-            "timestamp": "2026-09-18T07:40:45.129Z",
-            "notes": "Order scheduled for production on Sep 18, 2026, 03:40 PM",
-            "productionSchedule": "2026-09-18T15:40",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "In Production",
-            "timestamp": "2026-09-18T07:40:47.114Z",
-            "notes": "Order is now in production",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "Out for Delivery",
-            "timestamp": "2026-09-18T07:42:30.572Z",
-            "notes": "Order is ready for pickup at the store",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "In Production",
-            "timestamp": "2026-09-18T07:45:08.893Z",
-            "notes": "Order is now in production",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "Out for Delivery",
-            "timestamp": "2026-09-18T07:58:20.137Z",
-            "notes": "Order is ready for pickup at the store",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "Out for Delivery",
-            "timestamp": "2026-09-18T08:01:58.463Z",
-            "notes": "Order is ready for pickup at the store",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "Completed",
-            "timestamp": "2026-09-18T08:02:15.385Z",
-            "notes": "Order has been picked up by customer",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "Out for Delivery",
-            "timestamp": "2026-09-18T08:04:45.315Z",
-            "notes": "Order is ready for pickup at the store",
-            "productionSchedule": "",
-            "updatedBy": "John Paul Tapia"
-        },
-        {
-            "status": "Out for Delivery",
-            "timestamp": "2026-09-18T08:06:25.895Z",
-            "notes": "Order is ready for pickup at the store",
+            "timestamp": "2026-09-22T10:43:32.816Z",
+            "notes": "Downpayment verified — ₱500 via gcash (ref: 1231231313132)",
             "productionSchedule": "",
             "updatedBy": "John Paul Tapia"
         }
     ],
     "partialPayments": [
         {
-            "amount": 88,
-            "referenceNumber": "12321232121",
-            "date": "2026-09-18T07:40:34.212Z",
+            "amount": 500,
+            "referenceNumber": "1231231313132",
+            "date": "2026-09-22T10:43:32.815Z",
             "updatedBy": "John Paul Tapia"
         }
     ],
-    "proofOfDelivery": null,
-    "pricingHistory": [],
-    "orderedAt": "2026-09-18T07:30:23.990Z",
-    "createdAt": "2026-09-18T07:30:23.990Z",
-    "updatedAt": "2026-09-18T08:06:25.895Z",
-    "__v": 10,
-    "updatedBy": "John Paul Tapia",
-    "productName": "HARD PLASTIC SHOT",
-    "size": "1oz"
+    "type": "",
+    "isProvided": true,
+    "productionSchedule": null
 }

@@ -109,9 +109,9 @@
             <td class="px-5 py-4">
               <span
                 class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-bold capitalize"
-                :class="getPaymentBadgeClass(order.payment)"
+                :class="getPaymentBadgeClass(order.paymentStatus)"
               >
-                {{ order.payment || 'Unpaid' }}
+                {{ order.paymentStatus || 'Unpaid' }}
               </span>
             </td>
             <td class="px-5 py-4">

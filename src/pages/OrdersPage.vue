@@ -80,6 +80,7 @@
       @statusUpdate="handleStatusUpdate"
       @paymentUpdate="handlePaymentUpdate"
       @edit="handleEdit"
+      @dropOffUpdate="handleDropOffUpdate"
     />
 
     <!-- List mode -->
@@ -307,12 +308,12 @@ function closeEditModal() {
 }
 
 // ── Status update — same as before ──────────────────────────────────
-async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails, driverId, codCollected }) {
-  try {
+async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails, driverId, codCollected, dropOffStatus }) {  try {
     const validStatuses = ['Pending', 'Confirmed', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed', 'Cancelled']
     const normalizedStatus = validStatuses.find((s) => s.toLowerCase() === status.toLowerCase()) || status
 
     const payload = { status: normalizedStatus, notes: notes || '' }
+    if (dropOffStatus) payload.dropOffStatus = dropOffStatus
     if (productionSchedule) payload.productionSchedule = productionSchedule
     if (driverId) payload.driverId = driverId
     if (codCollected !== undefined) payload.codCollected = codCollected
@@ -335,6 +336,30 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
   } catch (e) {
     console.error('Status update error:', e)
     showToast('error', 'Failed to update status')
+  }
+}
+
+// ── Drop-off update — dedicated endpoint, does NOT touch order status ──
+async function handleDropOffUpdate({ orderId, dropOffStatus }) {
+  try {
+    const response = await adminOrderApi.updateDropOffStatus(orderId, dropOffStatus)
+    if (response.success) {
+      // Re-transform so the local order mirrors the server's new state
+      patchLocalOrder(orderId, transformOrder(response.data))
+      showToast(
+        'success',
+        `Drop-off marked as ${dropOffStatus === 'Received' ? 'received' : 'pending'}`,
+      )
+    } else {
+      console.error('[updateDropOffStatus] rejected:', response.message)
+      showToast('error', response.message || 'Failed to update drop-off status')
+      // Revert the optimistic flip by refetching the list
+      await loadOrders()
+    }
+  } catch (e) {
+    console.error('Drop-off update error:', e)
+    showToast('error', 'Failed to update drop-off status')
+    await loadOrders()
   }
 }
 

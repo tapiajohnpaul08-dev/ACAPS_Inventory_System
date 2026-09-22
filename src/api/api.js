@@ -372,6 +372,16 @@ export const adminOrderApi = {
     );
   },
 
+    // ✅ NEW — update ONLY the drop-off status (own-cups orders).
+  // Does not change the order status.
+  async updateDropOffStatus(orderId, dropOffStatus) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/dropoff`, {
+        dropOffStatus,
+      })
+    )
+  },
+
  // ✅ FIX: Accept full payload with partialPayments
   async updatePaymentStatus(orderId, paymentData) {
     // If paymentData is a string, convert to object

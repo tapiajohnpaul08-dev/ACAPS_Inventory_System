@@ -268,6 +268,14 @@ conversations.value.sort((a, b) => {
             subject: conv.subject || 'Customer Support',
             preview: conv.lastMessage?.substring(0, 100) || 'No messages yet',
             date: formatDate(conv.lastMessageAt || conv.createdAt),
+
+            // ✅ NEW — raw timestamps so the list can sort unread-first,
+            //    newest-first. `date` alone is a display string and is
+            //    not sortable.
+            lastMessageAt: conv.lastMessageAt || conv.createdAt || null,
+            createdAt: conv.createdAt || null,
+            updatedAt: conv.updatedAt || null,
+
             read: (conv.adminUnreadCount || 0) === 0,
             replyStatus: conv.status === 'closed' ? 'replied' : 'pending',
             adminUnreadCount: conv.adminUnreadCount || 0,
