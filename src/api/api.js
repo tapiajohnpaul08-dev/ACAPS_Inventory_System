@@ -488,6 +488,13 @@ export const adminDashboardApi = {
       adminAxiosInstance.get('/admin/weekly-sales')
     );
   },
+
+    // ✅ NEW — one-shot endpoint for all sidebar badge counts
+  async getSidebarCounts() {
+    return handleResponse(
+      adminAxiosInstance.get('/admin/sidebar-counts')
+    );
+  },
 };
 
 // =============================================================================

@@ -210,7 +210,7 @@ import {
   ChevronDown, 
   LogOut 
 } from 'lucide-vue-next'
-import { adminAuthApi, inventoryApi, adminChatApi, feedBackApi, adminOrderApi } from '@/api/api'
+import { adminAuthApi, adminDashboardApi } from '@/api/api'
 import { useAdminChat } from '@/composables/useAdminChat'
 const {
   initSocket,
@@ -263,88 +263,50 @@ function navigateToInventory() {
   router.push('/dashboard/inventory?tab=supplies&status=low-stock')
 }
 
-// Fetch low stock count — debounced so rapid remounts don't
-// fire duplicate requests.
-let lastLowStockFetchAt = 0
-const LOW_STOCK_DEBOUNCE_MS = 5000
+// ─────────────────────────────────────────────────────────────────
+// Sidebar counts — one request, same source of truth as the dashboard
+//
+// Uses /admin/sidebar-counts which mirrors the exact queries used by
+// /admin/summary. This guarantees the sidebar badges and dashboard cards
+// always agree.
+//
+// Refresh triggers:
+//   • mount
+//   • route change (cheap, keeps the badge current while navigating)
+//   • socket / window events for real-time updates
+//   • 30s poll as a safety net
+// ─────────────────────────────────────────────────────────────────
 
-async function fetchLowStockCount() {
+let lastCountsFetchAt = 0
+const COUNTS_DEBOUNCE_MS = 2000
+
+async function fetchSidebarCounts({ force = false } = {}) {
   const now = Date.now()
-  if (now - lastLowStockFetchAt < LOW_STOCK_DEBOUNCE_MS) {
-    // Skip — we already fetched recently
-    return
-  }
-  lastLowStockFetchAt = now
+  if (!force && now - lastCountsFetchAt < COUNTS_DEBOUNCE_MS) return
+  lastCountsFetchAt = now
 
   try {
-    const response = await inventoryApi.getLowStockItems()
+    const response = await adminDashboardApi.getSidebarCounts()
     if (response.success && response.data) {
-      lowStockCount.value = response.data.length
+      const d = response.data
+      pendingOrdersCount.value   = d.pendingOrders       || 0
+      lowStockCount.value        = d.lowStockItems       || 0
+      pendingNegotiationsCount.value = d.pendingNegotiations || 0
+      unreadMessagesCount.value  = d.unreadMessages      || 0
+      pendingFeedbackCount.value = d.pendingFeedback     || 0
     }
   } catch (error) {
-    console.error('Error fetching low stock count:', error)
-    lowStockCount.value = 0
+    console.error('Error fetching sidebar counts:', error)
   } finally {
     isLoading.value = false
   }
 }
 
-// Fetch unread messages count
-async function fetchUnreadMessagesCount() {
-  if (adminRole !== 'Sales' && adminRole !== 'Super Admin') {
-    return
-  }
-
-  try {
-    const response = await adminChatApi.getUnreadCount()
-    console.log('Unread messages response:', response)
-    
-    if (response.success && response.data) {
-      const count = response.data.total || response.data.count || 0
-      unreadMessagesCount.value = count
-      console.log('Unread messages count set to:', count)
-    } else {
-      unreadMessagesCount.value = 0
-    }
-  } catch (error) {
-    console.error('Error fetching unread messages count:', error)
-    unreadMessagesCount.value = 0
-  }
-}
-
-// ✅ Fetch pending feedback count
-async function fetchPendingFeedbackCount() {
-  if (adminRole !== 'Sales' && adminRole !== 'Super Admin') {
-    return
-  }
-
-  try {
-    const response = await feedBackApi.getAllFeedback({ status: 'pending' }, 1, 1)
-    
-    if (response.success && response.pagination) {
-      pendingFeedbackCount.value = response.pagination.total || 0
-    } else {
-      pendingFeedbackCount.value = 0
-    }
-  } catch (error) {
-    console.error('Error fetching pending feedback count:', error)
-    pendingFeedbackCount.value = 0
-  }
-}
-
-async function fetchPendingOrdersCount() {
-  try {
-    const response = await adminOrderApi.getOrderCounts()
-    if (response.success && response.data) {
-      pendingOrdersCount.value = response.data.pending || 0
-    } else {
-      pendingOrdersCount.value = 0
-    }
-  } catch (error) {
-    console.error('Error fetching pending orders count:', error)
-    pendingOrdersCount.value = 0
-  }
-}
+// Alias so existing callers still work
+const fetchLowStockCount          = () => fetchSidebarCounts({ force: true })
+const fetchUnreadMessagesCount    = () => fetchSidebarCounts({ force: true })
+const fetchPendingFeedbackCount   = () => fetchSidebarCounts({ force: true })
+const fetchPendingOrdersCount     = () => fetchSidebarCounts({ force: true })
 
 // Close dropdown when clicking outside
 function handleClickOutside(event) {
@@ -354,81 +316,56 @@ function handleClickOutside(event) {
   }
 }
 
-// Watch for route changes to refresh counts
-watch(() => route.path, (newPath) => {
-  if (newPath === '/dashboard/messages' || newPath.startsWith('/dashboard/messages/')) {
-    setTimeout(fetchUnreadMessagesCount, 500)
-  }
-  if (newPath === '/dashboard/feedback') {
-    setTimeout(fetchPendingFeedbackCount, 500)
-  }
+// Watch for route changes — a quick refresh keeps the badge current
+watch(() => route.path, () => {
+  fetchSidebarCounts()
 })
 
-// Listen for unread count updates from the chat system
+// Real-time event handlers (from socket / window events)
 function handleUnreadCountUpdate(event) {
+  // Optimistic: apply the pushed count, then re-sync from server
   if (event.detail && event.detail.count !== undefined) {
     unreadMessagesCount.value = event.detail.count
-    console.log('Unread count updated via event:', event.detail.count)
   }
+  fetchSidebarCounts({ force: true })
 }
 
-function handleMessageRead() {
-  fetchUnreadMessagesCount()
-}
-
-function handleNewMessage() {
-  fetchUnreadMessagesCount()
-}
-
-// ✅ Listen for feedback events
-function handleFeedbackSubmitted() {
-  fetchPendingFeedbackCount()
-}
-
-function handleFeedbackReviewed() {
-  fetchPendingFeedbackCount()
-}
+const handleMessageRead           = () => fetchSidebarCounts({ force: true })
+const handleNewMessage            = () => fetchSidebarCounts({ force: true })
+const handleFeedbackSubmitted     = () => fetchSidebarCounts({ force: true })
+const handleFeedbackReviewed      = () => fetchSidebarCounts({ force: true })
+const handleOrderStatusChanged    = () => fetchSidebarCounts({ force: true })
 
 let intervalId = null
 
 onMounted(() => {
-  fetchLowStockCount()
-  fetchUnreadMessagesCount()
-  fetchPendingFeedbackCount()
-  fetchPendingOrdersCount()
+  fetchSidebarCounts({ force: true })
+
   initSocket()
   loadPendingNegotiations()
 
   document.addEventListener('click', handleClickOutside)
-  
-  // Listen for chat events
-  window.addEventListener('unreadCountUpdated', handleUnreadCountUpdate)
-  window.addEventListener('messageRead', handleMessageRead)
-  window.addEventListener('newMessageReceived', handleNewMessage)
-  
-  // Listen for feedback events
-  window.addEventListener('feedbackSubmitted', handleFeedbackSubmitted)
-  window.addEventListener('feedbackReviewed', handleFeedbackReviewed)
-  
-  // Refresh counts periodically
-  intervalId = setInterval(() => {
-    if (route.path === '/dashboard/messages' || route.path.startsWith('/dashboard/messages/')) {
-      fetchUnreadMessagesCount()
-    }
-    if (route.path === '/dashboard/feedback') {
-      fetchPendingFeedbackCount()
-    }
-  }, 30000)
+
+  window.addEventListener('unreadCountUpdated',    handleUnreadCountUpdate)
+  window.addEventListener('messageRead',           handleMessageRead)
+  window.addEventListener('newMessageReceived',    handleNewMessage)
+  window.addEventListener('feedbackSubmitted',     handleFeedbackSubmitted)
+  window.addEventListener('feedbackReviewed',      handleFeedbackReviewed)
+  window.addEventListener('orderStatusChanged',    handleOrderStatusChanged)
+
+  // 30s poll as a safety net for anything the socket layer misses
+  intervalId = setInterval(() => fetchSidebarCounts({ force: true }), 30000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
   window.removeEventListener('unreadCountUpdated', handleUnreadCountUpdate)
-  window.removeEventListener('messageRead', handleMessageRead)
+  window.removeEventListener('messageRead',        handleMessageRead)
   window.removeEventListener('newMessageReceived', handleNewMessage)
-  window.removeEventListener('feedbackSubmitted', handleFeedbackSubmitted)
-  window.removeEventListener('feedbackReviewed', handleFeedbackReviewed)
-  
+  window.removeEventListener('feedbackSubmitted',  handleFeedbackSubmitted)
+  window.removeEventListener('feedbackReviewed',   handleFeedbackReviewed)
+  window.removeEventListener('orderStatusChanged', handleOrderStatusChanged)
+
   if (intervalId) {
     clearInterval(intervalId)
     intervalId = null
