@@ -26,7 +26,7 @@
               {{ displayName }}
             </h2>
             <p class="text-sm text-gray-500 mt-0.5 capitalize">
-              {{ type === 'products' ? (item?.subcategory || item?.category || 'Product') : getCategoryLabel(item?.category) + ' Supply' }}
+              {{ type === 'products' ? (item?.category || 'Product') : getCategoryLabel(item?.category) + ' Supply' }}
             </p>
           </div>
           <button 
@@ -100,11 +100,17 @@
                 </div>
                 <div class="divide-y divide-gray-100 max-h-48 overflow-y-auto">
                   <div v-for="size in item.sizes" :key="size.name" class="px-4 py-2 flex items-center justify-between hover:bg-gray-50">
-                    <div class="flex items-center gap-4">
-                      <span class="font-semibold text-gray-900 w-16">{{ size.name }}</span>
-                      <span class="text-xs text-gray-500">Stock: {{ formatNumber(size.stock || 0) }}</span>
-                      <span class="text-green-600 font-bold">₱{{ formatPrice(size.price) }}</span>
-                    </div>
+<div class="flex items-center gap-4">
+  <span class="font-semibold text-gray-900 w-16">{{ size.name }}</span>
+  <span
+    v-if="size.rimDiameter"
+    class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full"
+  >
+    {{ size.rimDiameter }}mm
+  </span>
+  <span class="text-xs text-gray-500">Stock: {{ formatNumber(size.stock || 0) }}</span>
+  <span class="text-green-600 font-bold">₱{{ formatPrice(size.price) }}</span>
+</div>
                     <div class="flex items-center gap-2">
                       <!-- Stock Status Badge -->
                       <span v-if="isSizeOutOfStock(size.stock)" class="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">

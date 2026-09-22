@@ -1,5 +1,5 @@
 // Admin Side
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, getCurrentInstance } from 'vue'
 import io from 'socket.io-client'
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -175,9 +175,12 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
     }
   }
   
-  onUnmounted(() => {
-    disconnect()
-  })
+
+  if (getCurrentInstance()) {
+    onUnmounted(() => {
+      disconnect()
+    })
+  }
   
   return {
     isConnected,

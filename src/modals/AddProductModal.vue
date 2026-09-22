@@ -71,8 +71,30 @@
                         <option value="Bags">Bags</option>
                         <option value="Utensils">Utensils</option>
                         <option value="Straws">Straws</option>
+                        <option value="Lids">Lids</option>
+
                       </select>
                     </div>
+
+                                <!-- ✅ NEW — Lid Type (only when category = Lids) -->
+            <div v-if="form.category === 'Lids'">
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Lid Type <span class="text-red-500">*</span>
+              </label>
+              <select
+                v-model="form.subcategory"
+                :required="form.category === 'Lids'"
+                class="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="">Select lid type…</option>
+                <option value="flat-straw-slot">Flat Lid with Straw Slot</option>
+                <option value="dome-hole">Dome Lid with Hole</option>
+                <option value="sip-raised">Sip Lid (Raised Sip-Through)</option>
+                <option value="conjoined-hard">Conjoined Hard Lid</option>
+                <option value="pp-injection">PP Injection Lid</option>
+                <option value="traveler">Traveler Sip-Through Lid</option>
+              </select>
+            </div>
                   </div>
                 </div>
 
@@ -231,41 +253,65 @@
                         </button>
                       </div>
                       
-                      <div class="grid grid-cols-3 gap-1.5">
-                        <div>
-                          <label class="block text-[9px] font-medium text-gray-700 mb-0.5">Name *</label>
-                          <input
-                            v-model="size.name"
-                            type="text"
-                            required
-                            class="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            placeholder="e.g., 12oz"
-                          />
-                        </div>
-                        <div>
-                          <label class="block text-[9px] font-medium text-gray-700 mb-0.5">Price *</label>
-                          <input
-                            v-model.number="size.price"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            required
-                            class="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            placeholder="1.80"
-                            @input="updateBulkPrices(size)"
-                          />
-                        </div>
-                        <div>
-                          <label class="block text-[9px] font-medium text-gray-700 mb-0.5">Stock</label>
-                          <input
-                            v-model.number="size.stock"
-                            type="number"
-                            min="0"
-                            class="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
+<div class="grid grid-cols-4 gap-1.5">
+  <div>
+    <label class="block text-[9px] font-medium text-gray-700 mb-0.5">Name *</label>
+    <input
+      v-model="size.name"
+      type="text"
+      required
+      class="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      placeholder="e.g., 12oz"
+    />
+  </div>
+  <div>
+    <label class="block text-[9px] font-medium text-gray-700 mb-0.5">Price *</label>
+    <input
+      v-model.number="size.price"
+      type="number"
+      min="0"
+      step="0.01"
+      required
+      class="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      placeholder="1.80"
+      @input="updateBulkPrices(size)"
+    />
+  </div>
+  <div>
+    <label class="block text-[9px] font-medium text-gray-700 mb-0.5">Stock</label>
+    <input
+      v-model.number="size.stock"
+      type="number"
+      min="0"
+      class="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      placeholder="0"
+    />
+  </div>
+  <div>
+    <label class="block text-[9px] font-medium text-gray-700 mb-0.5">
+      Rim ⌀ <span v-if="isCupCategory" class="text-red-500">*</span>
+    </label>
+    <select
+      v-if="isCupCategory"
+      v-model.number="size.rimDiameter"
+      required
+      @change="onRimChange(size)"
+      class="w-full px-2 py-1 text-[10px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+    >
+      <option :value="null" disabled>Select…</option>
+      <option :value="98">98mm (PET)</option>
+      <option :value="95">95mm (PP / Hard)</option>
+      <option :value="90">90mm (PP Slim / Paper)</option>
+      <option :value="80">80mm (Small Paper)</option>
+    </select>
+    <input
+      v-else
+      disabled
+      value="N/A"
+      class="w-full px-2 py-1 text-[10px] border border-gray-200 rounded bg-gray-50 text-gray-400"
+    />
+  </div>
+</div>
                       
                       <div class="mt-1.5">
                         <button
@@ -380,19 +426,6 @@ const props = defineProps({
   show: { type: Boolean, default: false }
 })
 
-// Parent-driven completion
-defineExpose({
-  handleSuccess: () => {
-    isSubmitting.value = false
-    uploadProgress.value = 0
-    close()
-  },
-  handleError: (msg) => {
-    isSubmitting.value = false
-    errorMessage.value = msg
-  },
-})
-
 const emit = defineEmits(['close', 'submit', 'success'])
 
 const fileInput = ref(null)
@@ -415,6 +448,39 @@ const form = ref({
 
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+
+// ✅ Renamed + extended: any product category whose sizes have a rim.
+// Lids now belong here — for a lid, the rim IS the size.
+const RIM_CATEGORIES = ['Plastic Cups', 'Paper Cups', 'Lids']
+const needsRimDiameter = computed(() => RIM_CATEGORIES.includes(form.value.category))
+
+// Keep the old name as an alias so any existing template bindings still work
+const isCupCategory = needsRimDiameter
+
+// Scrub rimDiameter when switching away from rim-bearing categories
+watch(
+  () => form.value.category,
+  (cat) => {
+    if (!RIM_CATEGORIES.includes(cat)) {
+      form.value.sizes.forEach((s) => { s.rimDiameter = null })
+    }
+    // ✅ When switching TO Lids, clear any pre-filled subcategory
+    if (cat !== 'Lids' && form.value.subcategory?.match(/flat-straw-slot|dome-hole|sip-raised|conjoined-hard|pp-injection|traveler/)) {
+      form.value.subcategory = ''
+    }
+  },
+)
+
+// ✅ Auto-fill the size name for Lids when the rim is picked.
+// Only fires when the name is empty OR already looks auto-generated,
+// so the admin can still type a custom name if they want.
+function onRimChange(size) {
+  if (!size.rimDiameter) return
+  if (form.value.category !== 'Lids') return
+  if (!size.name || /^\d+\s*mm$/i.test(size.name.trim())) {
+    size.name = `${size.rimDiameter}mm`
+  }
+}
 
 const optimizedPreview = computed(() => {
   if (!imagePreview.value) return null
@@ -459,6 +525,7 @@ function addSize() {
     name: '',
     price: 0,
     stock: 0,
+    rimDiameter: null,                          // ✅ NEW
     bulkPrices: { 500: null, 1000: null, 2000: null, 5000: null },
     showBulk: false
   }
@@ -554,6 +621,11 @@ function validateForm() {
     errorMessage.value = 'Product name is required'
     return false
   }
+  // ✅ NEW — Lids must have a lid type
+  if (form.value.category === 'Lids' && !form.value.subcategory?.trim()) {
+    errorMessage.value = 'Please select a lid type'
+    return false
+  }
   if (!imageFile.value) {
     errorMessage.value = 'Product image is required'
     return false
@@ -571,17 +643,22 @@ function validateForm() {
       errorMessage.value = `Size "${size.name}" must have a valid price`
       return false
     }
+    // ✅ Rim diameter required for cups AND lids
+    if (needsRimDiameter.value && !size.rimDiameter) {
+      errorMessage.value = `Size "${size.name}" must have a rim diameter`
+      return false
+    }
   }
   return true
 }
 
-async function submit() {
+function submit() {
   if (!validateForm()) return
-  
+
   isSubmitting.value = true
   errorMessage.value = ''
   uploadProgress.value = 0
-  
+
   const formData = new FormData()
   formData.append('image', imageFile.value)
   formData.append('name', form.value.name)
@@ -595,34 +672,31 @@ async function submit() {
     name: size.name,
     price: size.price,
     stock: size.stock || 0,
+    rimDiameter: size.rimDiameter ?? null,
     bulkPrices: size.bulkPrices
   }))))
 
-  try {
-    // ✅ Emit the submit event and wait for the parent to handle it
-    // The parent's handleAddProduct will call the API and update the UI
-    await emit('submit', formData)
-    
-    // ✅ Only close after parent successfully processes the submission
-    // The parent will emit 'success' or handle errors
-    uploadProgress.value = 100
-    
-    // Small delay to show completion
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-  } catch (error) {
-    console.error('Error submitting form:', error)
-    errorMessage.value = error.message || 'Failed to create product. Please try again.'
-  }
+  // Hand the FormData to the parent. The parent will call
+  // handleSuccess() or handleError() when the API finishes.
+  emit('submit', formData)
 }
 
-// ✅ Add a method to close from parent when success is emitted
+// ✅ Called by parent on success
 function handleSuccess() {
-  // The parent will call this when the product is successfully created
   isSubmitting.value = false
-  uploadProgress.value = 0
+  uploadProgress.value = 100
   close()
 }
+
+// ✅ Called by parent on failure — resets the modal so the admin can retry
+function handleError(message) {
+  isSubmitting.value = false
+  uploadProgress.value = 0
+  errorMessage.value = message || 'Failed to create product. Please try again.'
+}
+
+// ✅ Expose both so `ref.value.handleSuccess()` / `.handleError()` work
+defineExpose({ handleSuccess, handleError })
 
 function close() {
   if (!isSubmitting.value) {
