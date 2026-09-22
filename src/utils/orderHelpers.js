@@ -134,5 +134,18 @@ export function transformOrder(order, getDisplayStatus) {
     type: order.type || '',
     isProvided: order.isProvided || false,
     productionSchedule: order.productionSchedule || null,
+
+    // ✅ NEW — Delay tracking
+    delayHistory: Array.isArray(order.delayHistory) ? order.delayHistory : [],
+    isCurrentlyDelayed: (() => {
+      const h = order.delayHistory || []
+      const last = h[h.length - 1]
+      return !!(last && last.isDelayed)
+    })(),
+    currentDelay: (() => {
+      const h = order.delayHistory || []
+      const last = h[h.length - 1]
+      return last && last.isDelayed ? last : null
+    })(),
   }
 }

@@ -72,6 +72,7 @@ const statusOptions = [
   { value: 'out-for-delivery', label: 'Out for Delivery / Pick-up' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
+  { value: 'delayed', label: 'Delayed' },
 ]
 
 // Maps a filter value to the display-status key used by the shared badge
@@ -95,15 +96,18 @@ function getStatusCount(status) {
     'out-for-delivery': props.counts.outForDelivery || 0,
     completed: props.counts.completed || 0,
     cancelled: props.counts.cancelled || 0,
+    delayed: props.counts.delayed || 0,
   }
   return countMap[status] || 0
 }
 
 function getStatusButtonClass(status) {
+  // ✅ Special case for Delayed — it isn't a real status
+  if (status === 'delayed') {
+    return 'bg-red-100 text-red-700 hover:bg-red-200'
+  }
   const displayStatus = FILTER_TO_DISPLAY_STATUS[status]
   if (!displayStatus) return 'bg-gray-100 text-gray-600'
-  // Reuse the exact same badge classes as the table so filter buttons and
-  // status badges are always visually consistent, then add a hover state.
   return `${getStatusBadgeClass(displayStatus)} hover:opacity-80`
 }
 

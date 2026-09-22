@@ -1,6 +1,6 @@
 <template>
-  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
-    <div
+  <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-6">
+        <div
       v-for="stat in computedStats"
       :key="stat.label"
       class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1"
@@ -32,6 +32,7 @@ const computedStats = computed(() => {
   const inProd = orders.filter(o => o.status === 'In Production').length
   const completed = orders.filter(o => o.status === 'Completed').length
   const cancelled = orders.filter(o => o.status === 'Cancelled').length
+    const delayed = orders.filter(o => o.isCurrentlyDelayed).length
   const unpaid = orders.filter(o => o.payment === 'Unpaid').length
   const revenue = orders
     .filter(o => o.status === 'Completed')
@@ -88,6 +89,15 @@ const computedStats = computed(() => {
       iconBg: 'bg-red-50',
       iconColor: 'text-red-400',
       icon: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+    },
+    {
+      label: 'Delayed',
+      value: delayed.toLocaleString(),
+      color: delayed > 0 ? 'text-amber-600' : 'text-gray-400',
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-500',
+      icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+      sub: delayed > 0 ? 'Needs attention' : 'On schedule',
     },
     {
       label: 'Unpaid Orders',

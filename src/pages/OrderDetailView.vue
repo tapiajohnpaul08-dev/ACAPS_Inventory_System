@@ -86,7 +86,7 @@
           <line x1="2" x2="22" y1="10" y2="10" />
         </svg>
       </div>
-      <div class="flex-1 min-w-0">
+      <div class="flex-1 items-center min-w-0">
         <label class="flex items-start gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -105,6 +105,76 @@
         </label>
       </div>
     </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+         DELAY BANNER — only shown when the order is currently delayed
+         ═══════════════════════════════════════════════════════════════ -->
+    <div
+      v-if="order.isCurrentlyDelayed && currentDelay"
+      class="flex items-start gap-3 p-3.5 bg-amber-50 border-2 border-amber-300 rounded-2xl"
+    >
+      <div class="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <p class="font-bold text-amber-800 text-sm">
+            Order Delayed — {{ delayCategoryLabel(currentDelay.category) }}
+          </p>
+          <span class="text-xs text-amber-500">
+            reported {{ formatDateTime(currentDelay.reportedAt) }}
+          </span>
+        </div>
+        <p class="text-xs text-amber-700 mt-1">{{ currentDelay.reason }}</p>
+        <div
+          v-if="currentDelay.originalExpectedDelivery || currentDelay.newExpectedDelivery"
+          class="flex items-center gap-3 mt-2 text-xs text-amber-800"
+        >
+          <span v-if="currentDelay.originalExpectedDelivery">
+            Original ETA: <s class="text-amber-600">{{ formatDate(currentDelay.originalExpectedDelivery) }}</s>
+          </span>
+          <span v-if="currentDelay.newExpectedDelivery" class="font-bold">
+            → New ETA: {{ formatDate(currentDelay.newExpectedDelivery) }}
+          </span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-1.5 flex-shrink-0">
+        <button
+          @click="openDelayModal"
+          class="text-xs font-semibold px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+        >
+          Update
+        </button>
+        <button
+          @click="handleResolveDelay"
+          :disabled="isSaving"
+          class="text-xs font-semibold px-3 py-1.5 bg-white border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+        >
+          Resolve
+        </button>
+      </div>
+    </div>
+
+    <!-- "Report Delay" button shown only when not currently delayed -->
+    <div
+      v-else-if="order.status !== 'Completed' && order.status !== 'Cancelled'"
+      class="flex justify-end"
+    >
+      <button
+        @click="openDelayModal"
+        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        Report Delay
+      </button>
+    </div>
+
 
     <!-- ═══════════════════════════════════════════════════════════════
          STATUS FLOW BAR — full-width, primary control, always visible
@@ -617,6 +687,107 @@
        MODALS (unchanged behavior)
        ────────────────────────────────────────────────────────────── -->
 
+         <!-- Report Delay Modal -->
+  <Teleport to="body">
+    <Transition name="modal">
+      <div
+        v-if="showDelayModal"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        @click.self="closeDelayModal"
+      >
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDelayModal" />
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div class="p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Report Order Delay
+            </h3>
+            <p class="text-xs text-gray-500 mb-4">
+              The customer will be notified automatically in their Messages.
+            </p>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  Reason Category <span class="text-red-500">*</span>
+                </label>
+                <select
+                  v-model="delayForm.category"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white"
+                >
+                  <option value="material_shortage">Material Shortage</option>
+                  <option value="production_issue">Production Issue</option>
+                  <option value="logistics">Logistics / Delivery</option>
+                  <option value="weather">Weather</option>
+                  <option value="customer_request">Customer Request</option>
+                  <option value="payment">Payment Issue</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  Reason (shown to customer) <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="delayForm.reason"
+                  type="text"
+                  maxlength="120"
+                  placeholder="e.g., Supplier delivery delayed"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  Internal Notes (optional)
+                </label>
+                <textarea
+                  v-model="delayForm.notes"
+                  rows="2"
+                  placeholder="Only visible to admins"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm resize-none"
+                ></textarea>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  New Expected Delivery (optional)
+                </label>
+                <input
+                  v-model="delayForm.newExpectedDelivery"
+                  type="date"
+                  :min="minDate"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm"
+                />
+              </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+              <button
+                @click="confirmDelay"
+                :disabled="!delayForm.reason.trim() || isSaving"
+                class="flex-1 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ isSaving ? 'Reporting…' : 'Report Delay' }}
+              </button>
+              <button
+                @click="closeDelayModal"
+                class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+
   <!-- Production Schedule Modal -->
   <Teleport to="body">
     <Transition name="modal">
@@ -776,8 +947,7 @@ const props = defineProps({
   inProductionOrderId: { type: String, default: null },
 })
 
-const emit = defineEmits(['statusUpdate', 'paymentUpdate', 'edit', 'dropOffUpdate'])
-
+const emit = defineEmits(['statusUpdate', 'paymentUpdate', 'edit', 'dropOffUpdate', 'delayUpdate'])
 const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
 const localPayment = ref(props.order?.paymentStatus)
@@ -787,6 +957,13 @@ const codCollectedAdmin = ref(false)
 // ── Inner modals state ──────────────────────────────────────────────
 const showReceiptModal = ref(false)
 const showScheduleModal = ref(false)
+const showDelayModal = ref(false)
+const delayForm = ref({
+  category: 'other',
+  reason: '',
+  notes: '',
+  newExpectedDelivery: '',
+})
 const showDriverModal = ref(false)
 const showCompleteConfirmModal = ref(false)
 const showPreviewModal = ref(false)
@@ -941,8 +1118,24 @@ const hasDesignWithoutImage = computed(() => !designImageUrl.value && (
   printSize.value || printPlacement.value
 ))
 
-const podImageUrl = computed(() => getFullImageUrl(props.order?.proofOfDelivery))
+// ✅ NEW — Delay helpers
+const currentDelay = computed(() => {
+  const h = props.order?.delayHistory || []
+  const last = h[h.length - 1]
+  return last && last.isDelayed ? last : null
+})
 
+function delayCategoryLabel(cat) {
+  return ({
+    material_shortage: 'Material Shortage',
+    production_issue: 'Production Issue',
+    logistics: 'Logistics',
+    weather: 'Weather',
+    customer_request: 'Customer Request',
+    payment: 'Payment Issue',
+    other: 'Other',
+  })[cat] || 'Delayed'
+}
 const podDriverDetails = computed(() => {
   if (props.order?.driverDetails?.driverName) return props.order.driverDetails
   const history = props.order?.statusHistory
@@ -1361,6 +1554,45 @@ function confirmCancelOrder() {
 
 // ── Modal control ──────────────────────────────────────────────────
 function closeScheduleModal() { showScheduleModal.value = false; pendingStatus.value = null }
+// ── Delay modal ────────────────────────────────────────────────────
+function openDelayModal() {
+  delayForm.value = {
+    category: 'other',
+    reason: '',
+    notes: '',
+    newExpectedDelivery: '',
+  }
+  showDelayModal.value = true
+}
+function closeDelayModal() {
+  showDelayModal.value = false
+}
+
+function confirmDelay() {
+  if (!delayForm.value.reason.trim()) return
+  isSaving.value = true
+
+  emit('delayUpdate', {
+    orderId: props.order.id,
+    category: delayForm.value.category,
+    reason: delayForm.value.reason.trim(),
+    notes: delayForm.value.notes.trim(),
+    newExpectedDelivery: delayForm.value.newExpectedDelivery || null,
+  })
+
+  showDelayModal.value = false
+  setTimeout(() => { isSaving.value = false }, 1500)
+}
+
+function handleResolveDelay() {
+  if (isSaving.value) return
+  isSaving.value = true
+  emit('delayUpdate', {
+    orderId: props.order.id,
+    resolve: true,
+  })
+  setTimeout(() => { isSaving.value = false }, 1500)
+}
 function closeDriverModal() { showDriverModal.value = false; pendingStatus.value = null }
 function closeCompleteConfirmModal() { showCompleteConfirmModal.value = false; pendingStatus.value = null }
 

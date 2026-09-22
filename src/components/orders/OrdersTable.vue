@@ -55,6 +55,13 @@
                 >
                   📌 In Production
                 </span>
+                <span
+                  v-if="order.isCurrentlyDelayed"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-700"
+                  :title="order.currentDelay?.reason || 'Order delayed'"
+                >
+                  ⚠ Delayed
+                </span>
               </div>
             </td>
             <td class="px-5 py-4">

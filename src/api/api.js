@@ -382,6 +382,24 @@ export const adminOrderApi = {
     )
   },
 
+    // ✅ NEW — Delay tracking
+  async reportDelay(orderId, payload) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/delay`, {
+        category: payload.category || 'other',
+        reason: payload.reason,
+        notes: payload.notes || '',
+        newExpectedDelivery: payload.newExpectedDelivery || null,
+      })
+    )
+  },
+
+  async resolveDelay(orderId) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/order/admin/orders/${orderId}/delay/resolve`)
+    )
+  },
+
  // ✅ FIX: Accept full payload with partialPayments
   async updatePaymentStatus(orderId, paymentData) {
     // If paymentData is a string, convert to object

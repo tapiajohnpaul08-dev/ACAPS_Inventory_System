@@ -66,6 +66,58 @@
 
             <template v-for="msg in group.messages" :key="msg.messageId || msg._id">
 
+                            <!-- ─── DELAY NOTICE CARD ────────────────────────────── -->
+              <div
+                v-if="msg.contentType === 'delay-notice'"
+                class="w-full flex justify-start my-2"
+              >
+                <div class="max-w-md w-full bg-white border-2 border-amber-300 rounded-2xl shadow-sm overflow-hidden">
+                  <div class="bg-gradient-to-r from-amber-50 to-amber-100 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span class="font-bold text-amber-800 text-sm">Order Delay Notice</span>
+                  </div>
+                  <div class="p-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Order</span>
+                      <span class="font-mono font-semibold text-xs">{{ msg.delayNoticeData?.orderId }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Category</span>
+                      <span class="font-semibold capitalize">
+                        {{ (msg.delayNoticeData?.category || 'other').replace('_', ' ') }}
+                      </span>
+                    </div>
+                    <div class="pt-2 border-t border-gray-100">
+                      <p class="text-xs text-gray-500 mb-0.5">Reason</p>
+                      <p class="text-sm text-gray-800">{{ msg.delayNoticeData?.reason }}</p>
+                    </div>
+                    <div
+                      v-if="msg.delayNoticeData?.originalExpectedDelivery || msg.delayNoticeData?.newExpectedDelivery"
+                      class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 text-xs"
+                    >
+                      <div v-if="msg.delayNoticeData?.originalExpectedDelivery">
+                        <p class="text-gray-400">Original ETA</p>
+                        <p class="text-gray-600 line-through">
+                          {{ formatDayLabel(new Date(msg.delayNoticeData.originalExpectedDelivery)) }}
+                        </p>
+                      </div>
+                      <div v-if="msg.delayNoticeData?.newExpectedDelivery">
+                        <p class="text-gray-400">New ETA</p>
+                        <p class="font-bold text-amber-700">
+                          {{ formatDayLabel(new Date(msg.delayNoticeData.newExpectedDelivery)) }}
+                        </p>
+                      </div>
+                    </div>
+                    <p class="text-[11px] text-gray-400 italic pt-2 border-t border-gray-100">
+                      We're sorry for the inconvenience. Reply here if you have questions.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <!-- ─── PAYMENT REQUEST CARD ─────────────────────────── -->
               <div
                 v-if="msg.contentType === 'payment-request'"

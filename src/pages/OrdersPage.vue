@@ -81,6 +81,7 @@
       @paymentUpdate="handlePaymentUpdate"
       @edit="handleEdit"
       @dropOffUpdate="handleDropOffUpdate"
+      @delayUpdate="handleDelayUpdate"
     />
 
     <!-- List mode -->
@@ -261,6 +262,7 @@ const ordersWithPinnedProduction = computed(() => {
 const statusCounts = computed(() => ({
   all: allOrders.value.length,
   pending: allOrders.value.filter((o) => o.status === 'Pending').length,
+  confirmed: allOrders.value.filter((o) => o.status === 'Confirmed').length,
   scheduled: allOrders.value.filter((o) => o.status === 'Scheduled').length,
   inProduction: allOrders.value.filter((o) => o.status === 'In Production').length,
   outForDelivery: allOrders.value.filter(
@@ -268,6 +270,7 @@ const statusCounts = computed(() => ({
   ).length,
   completed: allOrders.value.filter((o) => o.status === 'Completed').length,
   cancelled: allOrders.value.filter((o) => o.status === 'Cancelled').length,
+  delayed: allOrders.value.filter((o) => o.isCurrentlyDelayed).length,
 }))
 
 const statusMap = {
@@ -282,7 +285,9 @@ const statusMap = {
 
 const filteredOrders = computed(() => {
   let list = ordersWithPinnedProduction.value
-  if (statusFilter.value !== 'all') {
+  if (statusFilter.value === 'delayed') {
+    list = list.filter((o) => o.isCurrentlyDelayed)
+  } else if (statusFilter.value !== 'all') {
     list = list.filter((o) => o.status === statusMap[statusFilter.value])
   }
   const q = search.value.toLowerCase().trim()
@@ -338,6 +343,38 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
     showToast('error', 'Failed to update status')
   }
 }
+
+// ── Delay update ────────────────────────────────────────────────────
+async function handleDelayUpdate(payload) {
+  try {
+    const { orderId, resolve, category, reason, notes, newExpectedDelivery } = payload
+
+    const response = resolve
+      ? await adminOrderApi.resolveDelay(orderId)
+      : await adminOrderApi.reportDelay(orderId, {
+          category,
+          reason,
+          notes,
+          newExpectedDelivery,
+        })
+
+    if (response.success) {
+      patchLocalOrder(orderId, transformOrder(response.data))
+      showToast(
+        'success',
+        resolve ? 'Delay resolved' : 'Delay reported — customer notified',
+      )
+    } else {
+      showToast('error', response.message || 'Failed to update delay')
+      await loadOrders()
+    }
+  } catch (e) {
+    console.error('Delay update error:', e)
+    showToast('error', 'Failed to update delay')
+    await loadOrders()
+  }
+}
+
 
 // ── Drop-off update — dedicated endpoint, does NOT touch order status ──
 async function handleDropOffUpdate({ orderId, dropOffStatus }) {
