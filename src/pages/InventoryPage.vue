@@ -107,7 +107,7 @@
       v-if="showAddSupplyModal"
       :show="true"
       :categories="supplyCategories"
-      :is-submitting="loadingSupplies"
+      :loading="loadingSupplies"
       @close="closeAddSupplyModal"
       @submit="handleAddSupply"
     />

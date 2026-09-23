@@ -730,7 +730,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue'
 import { adminChatApi, adminOrderApi } from '@/api/api'
 const props = defineProps({
   message:               { type: Object,   default: null },
@@ -779,6 +779,41 @@ watch(messagesContainer, (el) => {
   if (props.messagesContainerRefSetter && el) {
     props.messagesContainerRefSetter(el)
   }
+})
+
+import { useGlobalDropZone } from '@/composables/useGlobalDropZone'
+const { registerDropTarget } = useGlobalDropZone()
+
+let unregisterDrop = null
+
+onMounted(() => {
+  // Stable ID — only one MessageDetail is mounted at a time, and the
+  // conversation can change while mounted, so binding the ID to the
+  // conversationId would leave a stale handler behind on switch.
+  unregisterDrop = registerDropTarget({
+    id: 'chat-message-detail',
+    accept: ['image/*', '.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.csv'],
+    handler: (files) => {
+      const MAX = 10 * 1024 * 1024
+      Array.from(files).forEach((file) => {
+        if (file.size > MAX) {
+          showToast('error', `${file.name} exceeds 10MB`)
+          return
+        }
+        pendingAttachments.value.push(
+          Object.assign(file, { preview: URL.createObjectURL(file) }),
+        )
+      })
+    },
+  })
+})
+
+onUnmounted(() => {
+  unregisterDrop?.()
+  unregisterDrop = null
+  // Release blob previews so we don't leak memory.
+  pendingAttachments.value.forEach((f) => f.preview && URL.revokeObjectURL(f.preview))
+  pendingAttachments.value = []
 })
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'

@@ -418,12 +418,47 @@
   </Teleport>
 </template>
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onUnmounted } from 'vue'
 import { getOptimizedImage, isCloudinaryUrl } from '@/utils/imageUtils'
 import { adminProductApi } from '@/api/api'
 
 const props = defineProps({
   show: { type: Boolean, default: false }
+})
+
+// AddProductModal.vue — inside setup
+import { useGlobalDropZone } from '@/composables/useGlobalDropZone'
+const { registerDropTarget } = useGlobalDropZone()
+
+// Persisted across watcher runs so we can actually detach.
+let unregisterDrop = null
+
+// Only active while the modal is open.
+watch(
+  () => props.show,
+  (open) => {
+    // Detach any previous registration first.
+    unregisterDrop?.()
+    unregisterDrop = null
+
+    if (open) {
+      unregisterDrop = registerDropTarget({
+        id: 'add-product-modal',
+        accept: ['image/*'],
+        handler: (files) => {
+          const file = Array.from(files)[0]
+          if (file) validateAndSetImage(file)
+        },
+      })
+    }
+  },
+  { immediate: true },
+)
+
+// Safety net if the modal unmounts while still open.
+onUnmounted(() => {
+  unregisterDrop?.()
+  unregisterDrop = null
 })
 
 const emit = defineEmits(['close', 'submit', 'success'])

@@ -76,7 +76,7 @@
 
             <!-- Dynamic Column 2 -->
             <td v-if="type === 'customers'" class="px-5 py-4">
-              <p class="text-sm font-bold text-blue-600">{{ account.totalSpent || '₱0' }}</p>
+              <p class="text-sm font-bold text-blue-600">₱{{ account.totalSpent || '0' }}</p>
             </td>
             <td v-else-if="type === 'drivers'" class="px-5 py-4">
               <p class="text-sm text-gray-600">{{ account.assignedOrders || 0 }}</p>

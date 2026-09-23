@@ -12,8 +12,7 @@
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh]  transform transition-all duration-300 modal-slide-in">
           
           <!-- Loading Overlay -->
-          <div v-if="isSubmitting" class="absolute inset-0 bg-white/90 rounded-2xl flex items-center justify-center z-10">
-            <div class="text-center">
+          <div v-if="loading" class="absolute inset-0 bg-white/90 rounded-2xl flex items-center justify-center z-10">            <div class="text-center">
               <div class="inline-block w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
               <p class="mt-2 text-sm text-gray-600">Creating supply...</p>
             </div>
@@ -238,11 +237,11 @@
               </button>
               <button
                 type="submit"
-                :disabled="isSubmitting"
+                :disabled="loading"
                 class="flex-1 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
-                <span v-if="isSubmitting" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isSubmitting ? 'Creating...' : 'Create Supply' }}
+                <span v-if="loading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                {{ loading ? 'Creating...' : 'Create Supply' }}
               </button>
             </div>
           </form>
@@ -258,7 +257,8 @@ import { ref, watch } from 'vue'
 const props = defineProps({
   show: { type: Boolean, default: false },
   categories: { type: Array, required: true },
-  isSubmitting: { type: Boolean, default: false }  // ✅ NEW
+  // Parent controls the loading flag (it knows when the API resolves)
+  loading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['close', 'submit'])
@@ -277,9 +277,11 @@ const form = ref({
   description: '',
   notes: ''
 })
+const localError = ref('')
 
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
@@ -321,14 +323,12 @@ function validateForm() {
   return true
 }
 
-async function submit() {
+function submit() {
   if (!validateForm()) return
-  
-  isSubmitting.value = true
-  errorMessage.value = ''
-  
+  // Just emit; the parent will flip `loading` while the API is in flight
+  // and will unmount us on success (or leave us mounted with loading=false
+  // on failure, so the admin can retry).
   emit('submit', { ...form.value })
-  isSubmitting.value = false
 }
 
 function close() {

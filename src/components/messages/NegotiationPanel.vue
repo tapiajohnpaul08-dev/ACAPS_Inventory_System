@@ -36,29 +36,64 @@
 
       <div class="px-4 py-4 space-y-3">
 
-        <div class="flex gap-4">
-                  <!-- Quantity -->
-        <div>
-          <label class="block text-xs font-semibold text-gray-600 mb-1">Quantity (pcs)</label>
-          <input
-            v-model.number="form.quantity"
-            type="number" min="1" :disabled="saving"
-            class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style="border-color: #e5e7eb;"
-          />
+        <!-- ── Cart orders: one row per item ─────────────────────── -->
+        <div v-if="isMultiItem" class="space-y-2">
+          <div
+            v-for="(row, idx) in perItemForm"
+            :key="idx"
+            class="border rounded-lg p-2.5 space-y-2"
+            style="border-color:#e5e7eb;"
+          >
+            <p class="text-[11px] font-semibold text-gray-700 truncate">
+              {{ row.name }} <span class="text-gray-400">· {{ row.size }}</span>
+            </p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Quantity (pcs)</label>
+                <input
+                  v-model.number="row.quantity"
+                  type="number" min="1" :disabled="saving"
+                  class="w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style="border-color:#e5e7eb;"
+                />
+              </div>
+              <div>
+                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Unit Price (₱/pc)</label>
+                <input
+                  v-model.number="row.unitPrice"
+                  type="number" min="0" step="0.01" :disabled="saving"
+                  class="w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style="border-color:#e5e7eb;"
+                />
+              </div>
+            </div>
+            <p class="text-[10px] text-gray-400 text-right">
+              Subtotal: ₱{{ formatNumber((row.unitPrice || 0) * (row.quantity || 0)) }}
+            </p>
+          </div>
         </div>
 
-        <!-- Unit Price (company products only) -->
-        <div v-if="!order.isProvided">
-          <label class="block text-xs font-semibold text-gray-600 mb-1">Unit Price (₱/pc)</label>
-          <input
-            v-model.number="form.unitPrice"
-            type="number" min="0" step="0.01" :disabled="saving"
-            placeholder="Leave blank to use bulk tier"
-            class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style="border-color: #e5e7eb;"
-          />
-        </div>
+        <!-- ── Single-item orders: existing UX ──────────────────── -->
+        <div v-else class="flex gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Quantity (pcs)</label>
+            <input
+              v-model.number="form.quantity"
+              type="number" min="1" :disabled="saving"
+              class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style="border-color: #e5e7eb;"
+            />
+          </div>
+          <div v-if="!order.isProvided">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Unit Price (₱/pc)</label>
+            <input
+              v-model.number="form.unitPrice"
+              type="number" min="0" step="0.01" :disabled="saving"
+              placeholder="Leave blank to use bulk tier"
+              class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style="border-color: #e5e7eb;"
+            />
+          </div>
         </div>
 
         <div class="flex gap-4">
@@ -316,23 +351,55 @@ const confirming = ref(false)
 
 const form = ref({
   quantity: 0,
-  unitPrice: null,
+  unitPrice: null,   // used ONLY when the order has a single item
   designFee: 500,
   deliveryMethod: 'Pick-up',
   shippingFee: 0,
   notes: '',
 })
 
+// Multi-item orders expose a per-item editor. Single-item orders keep the
+// existing "one unit price + one quantity" UX.
+const isMultiItem = computed(() => {
+  const items = props.order?.items
+  return Array.isArray(items) && items.length > 1
+})
+
+// Per-item form state for cart orders. Each row is
+//   { productId, size, quantity, unitPrice, estimatedTotal }
+const perItemForm = ref([])
+
+function seedPerItemFromOrder(o) {
+  if (!Array.isArray(o?.items) || o.items.length === 0) return []
+  return o.items.map((it) => {
+    const qty = Number(it.quantity) || 0
+    const total = Number(it.estimatedTotal) || 0
+    const unit = qty > 0 ? Number((total / qty).toFixed(2)) : 0
+    return {
+      productId: it.productId,
+      name: it.name,
+      size: it.size,
+      quantity: qty,
+      unitPrice: unit,
+      estimatedTotal: total,
+    }
+  })
+}
+
 // Load initial values whenever the order changes
 watch(
   () => props.order,
   (o) => {
     if (!o) return
+
+    // Single-item derivation (kept for backwards compatibility)
     let derivedUnitPrice = null
     if (!o.isProvided && o.items?.[0]?.estimatedTotal && o.items?.[0]?.quantity) {
-      derivedUnitPrice = o.items[0].estimatedTotal / o.items[0].quantity
-      derivedUnitPrice = Number(derivedUnitPrice.toFixed(2))
+      derivedUnitPrice = Number(
+        (o.items[0].estimatedTotal / o.items[0].quantity).toFixed(2),
+      )
     }
+
     form.value = {
       quantity: o.quantity || 0,
       unitPrice: derivedUnitPrice,
@@ -341,8 +408,9 @@ watch(
       shippingFee: o.shippingFee || 0,
       notes: '',
     }
+    perItemForm.value = seedPerItemFromOrder(o)
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 )
 
 // Auto-zero shipping when Pick-up
@@ -359,6 +427,16 @@ const productSubtotal = computed(() => {
   const o = props.order
   if (!o) return 0
   if (o.isProvided) return 0
+
+  // Cart / multi-item: sum the per-item editors
+  if (isMultiItem.value) {
+    return perItemForm.value.reduce(
+      (sum, row) => sum + Number(row.unitPrice || 0) * Number(row.quantity || 0),
+      0,
+    )
+  }
+
+  // Single-item: legacy path
   if (!form.value.unitPrice || !form.value.quantity) return 0
   return Number(form.value.unitPrice) * Number(form.value.quantity)
 })
@@ -374,15 +452,36 @@ const newTotal = computed(() => {
 const hasChanges = computed(() => {
   const o = props.order
   if (!o) return false
+
+  const feeChanged = Number(form.value.designFee) !== Number(o.designFee ?? 500)
+  const modeChanged = form.value.deliveryMethod !== (o.receivingMode || 'Pick-up')
+  const shipChanged = Number(currentShippingFee.value) !== Number(o.shippingFee || 0)
+
+  if (isMultiItem.value) {
+    // Any per-row qty / unit-price drift
+    const rowsChanged = perItemForm.value.some((row, i) => {
+      const orig = o.items?.[i]
+      if (!orig) return true
+      const origQty = Number(orig.quantity) || 0
+      const origUnit = origQty > 0
+        ? Number((Number(orig.estimatedTotal || 0) / origQty).toFixed(2))
+        : 0
+      return (
+        Number(row.quantity) !== origQty ||
+        Number(row.unitPrice) !== origUnit
+      )
+    })
+    return rowsChanged || feeChanged || modeChanged || shipChanged
+  }
+
+  // Single-item
   const initialUnitPrice = (!o.isProvided && o.items?.[0]?.estimatedTotal && o.items?.[0]?.quantity)
     ? Number((o.items[0].estimatedTotal / o.items[0].quantity).toFixed(2))
     : null
   return (
     Number(form.value.quantity) !== Number(o.quantity) ||
     Number(form.value.unitPrice ?? 0) !== Number(initialUnitPrice ?? 0) ||
-    Number(form.value.designFee) !== Number(o.designFee ?? 500) ||
-    form.value.deliveryMethod !== (o.receivingMode || 'Pick-up') ||
-    Number(currentShippingFee.value) !== Number(o.shippingFee || 0)
+    feeChanged || modeChanged || shipChanged
   )
 })
 
@@ -396,15 +495,28 @@ async function handleSave() {
   saving.value = true
   try {
     const updates = {
-      quantity: Number(form.value.quantity),
       designFee: Number(form.value.designFee),
       deliveryMethod: form.value.deliveryMethod,
       shippingFee: Number(currentShippingFee.value),
       notes: form.value.notes || '',
     }
-    if (!props.order.isProvided && form.value.unitPrice) {
-      updates.unitPrice = Number(form.value.unitPrice)
+
+    if (isMultiItem.value) {
+      // Hand the backend a full items[] diff. The backend will match by
+      // index (productId + size) and rewrite each item's estimatedTotal.
+      updates.items = perItemForm.value.map((row) => ({
+        productId: row.productId,
+        size: row.size,
+        quantity: Number(row.quantity),
+        unitPrice: Number(row.unitPrice),
+      }))
+    } else {
+      updates.quantity = Number(form.value.quantity)
+      if (!props.order.isProvided && form.value.unitPrice) {
+        updates.unitPrice = Number(form.value.unitPrice)
+      }
     }
+
     const result = await adminOrderApi.negotiateOrder(props.order.orderId, updates)
 if (result.success) {
   emit('updated', result.data)

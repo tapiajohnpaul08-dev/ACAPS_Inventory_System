@@ -9,9 +9,11 @@
       >
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
         
-        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 modal-slide-in overflow-hidden">
-          <!-- Animated Icon -->
-          <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div class="relative pt-6 bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 modal-slide-in overflow-hidden">
+
+          <div class="mt-6">
+                      <!-- Animated Icon -->
+          <div class="absolute top-11 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <div 
               class="rounded-full p-3 shadow-lg transition-all duration-300 animate-bounce-in"
               :class="iconBgClass"
@@ -28,6 +30,7 @@
           <div class="pt-12 pb-6 px-6 text-center">
             <h3 class="text-lg font-bold text-gray-900 mb-2">{{ title }}</h3>
             <p class="text-sm text-gray-500 leading-relaxed">{{ message }}</p>
+          </div>
           </div>
 
           <!-- Actions -->

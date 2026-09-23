@@ -83,6 +83,7 @@
       @edit="handleEdit"
       @dropOffUpdate="handleDropOffUpdate"
       @delayUpdate="handleDelayUpdate"
+      @notify="handleNotify"
     />
 
     <!-- List mode -->
@@ -480,6 +481,12 @@ function showToast(type, message) {
   toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
 }
 let toastTimer = null
+
+// Forward `notify` events from OrderDetailView into the shared toast.
+function handleNotify({ type = 'info', message } = {}) {
+  if (!message) return
+  showToast(type, message)
+}
 
 // ── Lifecycle ───────────────────────────────────────────────────────
 function applySearchQuery() {
