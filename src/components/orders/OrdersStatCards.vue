@@ -1,6 +1,6 @@
 <template>
-  <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-6">
-        <div
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+    <div
       v-for="stat in computedStats"
       :key="stat.label"
       class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1"
@@ -12,7 +12,7 @@
         </div>
       </div>
       <p class="text-2xl font-black" :class="stat.color">{{ stat.value }}</p>
-      <p v-if="stat.sub" class="text-xs text-gray-400">{{ stat.sub }}</p>
+      <p v-if="stat.sub" class="text-xs" :class="stat.subColor || 'text-gray-400'">{{ stat.sub }}</p>
     </div>
   </div>
 </template>
@@ -27,26 +27,33 @@ const props = defineProps({
 const computedStats = computed(() => {
   const orders = props.orders
   const total = orders.length
-  const pending = orders.filter(o => o.status === 'Pending').length
-  const confirmed = orders.filter(o => o.status === 'Confirmed').length
-  const inProd = orders.filter(o => o.status === 'In Production').length
-  const completed = orders.filter(o => o.status === 'Completed').length
-  const cancelled = orders.filter(o => o.status === 'Cancelled').length
-    const delayed = orders.filter(o => o.isCurrentlyDelayed).length
-  const unpaid = orders.filter(o => o.payment === 'Unpaid').length
-  const revenue = orders
-    .filter(o => o.status === 'Completed')
-    .reduce((sum, o) => sum + (o.rawAmount || 0), 0)
+
+  const pending    = orders.filter(o => o.status === 'Pending').length
+  const confirmed  = orders.filter(o => o.status === 'Confirmed').length
+  const scheduled  = orders.filter(o => o.status === 'Scheduled').length
+  const inProd     = orders.filter(o => o.status === 'In Production').length
+  const outForDel  = orders.filter(o => o.status === 'Out for Delivery' || o.status === 'Ready to Pick-up').length
+  const completed  = orders.filter(o => o.status === 'Completed').length
+  const delayed    = orders.filter(o => o.isCurrentlyDelayed).length
+
+  // Unpaid + Partial — actual money still owed
+  const unpaidOrders = orders.filter(
+    o => (o.paymentStatus === 'Unpaid' || o.paymentStatus === 'Partial')
+      && o.status !== 'Cancelled',
+  )
+  const unpaidCount = unpaidOrders.length
+  const owedAmount = unpaidOrders.reduce((sum, o) => {
+    const total = Number(o.rawAmount) || 0
+    const paid = Array.isArray(o.partialPayments)
+      ? o.partialPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0)
+      : 0
+    return sum + Math.max(0, total - paid)
+  }, 0)
+
+  // In Progress = Confirmed + Scheduled + In Production
+  const inProgress = confirmed + scheduled + inProd
 
   return [
-    {
-      label: 'Total Orders',
-      value: total.toLocaleString(),
-      color: 'text-gray-900',
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-500',
-      icon: '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
-    },
     {
       label: 'Pending',
       value: pending.toLocaleString(),
@@ -54,24 +61,28 @@ const computedStats = computed(() => {
       iconBg: 'bg-yellow-50',
       iconColor: 'text-yellow-500',
       icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-      sub: pending > 0 ? 'Needs attention' : 'All clear',
-    },
-     {
-       label: 'Confirmed',
-      value: confirmed.toLocaleString(),
-       color: 'text-emerald-600',
-     iconBg: 'bg-emerald-50',
-       iconColor: 'text-emerald-500',
-       icon: '<path d="M20 6L9 17l-5-5"/>',
-       sub: confirmed > 0 ? 'Ready for production' : '',
+      sub: delayed > 0
+        ? `⚠️ ${delayed} delayed`
+        : (pending > 0 ? 'Needs action' : 'All clear'),
+      subColor: delayed > 0 ? 'text-amber-600 font-semibold' : 'text-gray-400',
     },
     {
-      label: 'In Production',
-      value: inProd.toLocaleString(),
+      label: 'In Progress',
+      value: inProgress.toLocaleString(),
       color: 'text-blue-600',
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-500',
       icon: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/>',
+      sub: `${confirmed} confirmed · ${scheduled} scheduled`,
+    },
+    {
+      label: 'Out for Delivery',
+      value: outForDel.toLocaleString(),
+      color: 'text-cyan-600',
+      iconBg: 'bg-cyan-50',
+      iconColor: 'text-cyan-500',
+      icon: '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+      sub: outForDel > 0 ? 'In motion right now' : 'None active',
     },
     {
       label: 'Completed',
@@ -80,33 +91,18 @@ const computedStats = computed(() => {
       iconBg: 'bg-green-50',
       iconColor: 'text-green-500',
       icon: '<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>',
-      sub: total > 0 ? `${Math.round(completed / total * 100)}% completion` : '',
+      sub: total > 0 ? `${Math.round((completed / total) * 100)}% of total` : '—',
     },
     {
-      label: 'Cancelled',
-      value: cancelled.toLocaleString(),
-      color: cancelled > 0 ? 'text-red-500' : 'text-gray-400',
-      iconBg: 'bg-red-50',
-      iconColor: 'text-red-400',
-      icon: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
-    },
-    {
-      label: 'Delayed',
-      value: delayed.toLocaleString(),
-      color: delayed > 0 ? 'text-amber-600' : 'text-gray-400',
-      iconBg: 'bg-amber-50',
-      iconColor: 'text-amber-500',
-      icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-      sub: delayed > 0 ? 'Needs attention' : 'On schedule',
-    },
-    {
-      label: 'Unpaid Orders',
-      value: unpaid.toLocaleString(),
-      color: unpaid > 0 ? 'text-orange-600' : 'text-gray-400',
+      label: 'Unpaid',
+      value: unpaidCount.toLocaleString(),
+      color: unpaidCount > 0 ? 'text-orange-600' : 'text-gray-400',
       iconBg: 'bg-orange-50',
       iconColor: 'text-orange-400',
       icon: '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
-      sub: unpaid > 0 ? 'Awaiting payment' : 'All paid',
+      sub: unpaidCount > 0
+        ? `₱${owedAmount.toLocaleString()} owed`
+        : 'All paid',
     },
   ]
 })
