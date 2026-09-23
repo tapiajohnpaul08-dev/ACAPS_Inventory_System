@@ -76,6 +76,7 @@
       v-else-if="detailOrder"
       ref="detailViewRef"
       :order="detailOrder"
+      :all-orders="allOrders"
       :in-production-order-id="inProductionOrder?.id || null"
       @statusUpdate="handleStatusUpdate"
       @paymentUpdate="handlePaymentUpdate"
@@ -147,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import OrdersStatCards from '@/components/orders/OrdersStatCards.vue'
 import OrdersFilters from '@/components/orders/OrdersFilters.vue'
@@ -486,9 +487,29 @@ function applySearchQuery() {
   if (q) search.value = String(q)
 }
 
+// ── Realtime: refetch the list when any order changes anywhere ─────
+// The server emits `order:changed` on create / status / payment /
+// delay / dropoff. NavigationSidebar's bridge converts that to a
+// window event, which we listen for here.
+let realtimeRefreshTimer = null
+function handleRealtimeOrderChanged(e) {
+  console.log('📡 [OrdersPage] realtime order:changed', e.detail)
+  // Debounce: a single action (e.g. driver completes) can fire twice
+  // (payment + status). Coalesce so we don't double-fetch.
+  clearTimeout(realtimeRefreshTimer)
+  realtimeRefreshTimer = setTimeout(() => loadOrders(), 300)
+}
+
 onMounted(async () => {
   applySearchQuery()
   await loadOrders()
+
+  window.addEventListener('realtime:order-changed', handleRealtimeOrderChanged)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('realtime:order-changed', handleRealtimeOrderChanged)
+  clearTimeout(realtimeRefreshTimer)
 })
 
 // When the user opens a detail view via URL, flash the row so they

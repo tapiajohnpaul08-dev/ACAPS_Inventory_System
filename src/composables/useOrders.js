@@ -5,7 +5,7 @@
 // dashboard widget) doesn't have to re-implement fetch/patch/delete +
 // error handling + optimistic local updates every time.
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { adminOrderApi } from '@/api/api'
 import { transformOrder } from '@/utils/orderHelpers'
 import { getDisplayStatus, toDbStatus } from '@/composables/useOrderStatus'
@@ -175,6 +175,14 @@ async function updatePayment(orderId, { paymentStatus, amountPaid, partialPaymen
       cancelled: list.filter(o => o.status === 'Cancelled').length,
     }
   })
+
+  // ── Realtime: refetch when another tab / driver touches an order ───
+  const handleOrderChanged = (e) => {
+    console.log('📡 [useOrders] realtime order:changed', e.detail);
+    loadOrders();
+  };
+  onMounted(() => window.addEventListener('realtime:order-changed', handleOrderChanged));
+  onUnmounted(() => window.removeEventListener('realtime:order-changed', handleOrderChanged));
 
   return {
     allOrders,

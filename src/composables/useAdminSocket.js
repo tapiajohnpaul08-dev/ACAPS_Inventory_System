@@ -181,12 +181,24 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
       disconnect()
     })
   }
+
+    // ── Realtime: order / inventory events ─────────────────────────────
+  const onOrderChanged = (cb) => {
+    console.log('🔌 [useAdminSocket] registering order:changed listener. socketInstance:', !!socketInstance);
+    if (socketInstance) socketInstance.on('order:changed', cb);
+  };
+  const onInventoryChanged = (cb) => {
+    console.log('🔌 [useAdminSocket] registering inventory:changed listener. socketInstance:', !!socketInstance);
+    if (socketInstance) socketInstance.on('inventory:changed', cb);
+  };
   
   return {
     isConnected,
     isConnecting,
     socketId,
     onOrderNegotiationUpdated,
+    onOrderChanged,          // ← ADD
+    onInventoryChanged, 
     connect,
     disconnect,
     joinConversation,

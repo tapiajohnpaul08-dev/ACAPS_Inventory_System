@@ -171,7 +171,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import InventorySearch from '@/components/inventory/InventorySearch.vue'
 import InventoryTable from '@/components/inventory/InventoryTable.vue'
@@ -521,6 +521,18 @@ const loadAllData = async () => {
   return loadAllDataInFlight
 }
 
+// Realtime: refresh products + inventory when any stock-affecting mutation
+// lands. Debounced because a single order create can trigger 2 events
+// (order:changed + inventory:changed).
+let realtimeRefreshTimer = null
+function handleRealtimeInventoryChange(e) {
+  console.log('📡 [InventoryPage] realtime inventory:changed', e.detail)
+  clearTimeout(realtimeRefreshTimer)
+  realtimeRefreshTimer = setTimeout(() => {
+    Promise.all([loadProducts(), loadSupplies(), loadInventory()])
+  }, 400)
+}
+
 // Initialize on mount
 onMounted(async () => {
   getUserRole()
@@ -541,8 +553,14 @@ onMounted(async () => {
   }
   if (route.query.highlight) {
     highlightedItemIdFromQuery.value = String(route.query.highlight)
-    // The watcher below will handle the actual scroll once items load.
   }
+
+  // ── Realtime: refresh inventory when another tab changes stock ─────
+  window.addEventListener('realtime:inventory-changed', handleRealtimeInventoryChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('realtime:inventory-changed', handleRealtimeInventoryChange)
 })
 
 // ✅ Whenever the active tab flips, wipe filters so stale product

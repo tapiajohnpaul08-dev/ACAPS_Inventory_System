@@ -96,43 +96,88 @@ function getIcon(label) {
     'Completed Orders': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
       h('path', { d: 'M21.801 10A10 10 0 1 1 17 3.335' }),
       h('path', { d: 'm9 11 3 3L22 4' })
-    ])
+    ]),
+    'Completed': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
+      h('path', { d: 'M21.801 10A10 10 0 1 1 17 3.335' }),
+      h('path', { d: 'm9 11 3 3L22 4' })
+    ]),
+    // ✅ NEW — Pending Orders card
+    'Pending Orders': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
+      h('circle', { cx: '12', cy: '12', r: '10' }),
+      h('polyline', { points: '12 6 12 12 16 14' })
+    ]),
+    // ✅ NEW — Scheduled Today card
+    'Scheduled Today': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
+      h('rect', { x: '3', y: '4', width: '18', height: '18', rx: '2' }),
+      h('line', { x1: '16', y1: '2', x2: '16', y2: '6' }),
+      h('line', { x1: '8', y1: '2', x2: '8', y2: '6' }),
+      h('line', { x1: '3', y1: '10', x2: '21', y2: '10' })
+    ]),
+    // ✅ NEW — Completed Today card
+    'Completed Today': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
+      h('path', { d: 'M21.801 10A10 10 0 1 1 17 3.335' }),
+      h('path', { d: 'm9 11 3 3L22 4' })
+    ]),
   }
   return icons[label] || icons['Total Orders']
 }
 
 function getIconBgColor(label) {
   const colors = {
-    'Total Revenue': 'bg-green-100',
-    'Total Orders': 'bg-blue-100',
-    'Pending Orders': 'bg-yellow-100',
-    'Low Stock Items': 'bg-red-100',
-    'Out of Stock': 'bg-orange-100',
-    'Completed Orders': 'bg-purple-100'
+    // New "today" cards
+    'Pending Orders':       'bg-yellow-100',
+    'Scheduled Today':      'bg-purple-100',
+    'Out for Delivery':     'bg-blue-100',
+    'Completed Today':      'bg-green-100',
+
+    // Legacy / fallback labels (still referenced elsewhere)
+    'Total Revenue':        'bg-green-100',
+    'Total Orders':         'bg-blue-100',
+    'Low Stock Items':      'bg-red-100',
+    'Out of Stock':         'bg-orange-100',
+    'Completed Orders':     'bg-green-100',
+    'Completed':            'bg-green-100',
+    'In Production':        'bg-purple-100',
   }
   return colors[label] || 'bg-gray-100'
 }
 
 function getIconColor(label) {
   const colors = {
-    'Total Revenue': 'text-green-600',
-    'Total Orders': 'text-blue-600',
-    'Pending Orders': 'text-yellow-600',
-    'Low Stock Items': 'text-red-600',
-    'Out of Stock': 'text-orange-600',
-    'Completed Orders': 'text-purple-600'
+    // New "today" cards
+    'Pending Orders':       'text-yellow-600',
+    'Scheduled Today':      'text-purple-600',
+    'Out for Delivery':     'text-blue-600',
+    'Completed Today':      'text-green-600',
+
+    // Legacy / fallback labels
+    'Total Revenue':        'text-green-600',
+    'Total Orders':         'text-blue-600',
+    'Low Stock Items':      'text-red-600',
+    'Out of Stock':         'text-orange-600',
+    'Completed Orders':     'text-green-600',
+    'Completed':            'text-green-600',
+    'In Production':        'text-purple-600',
   }
   return colors[label] || 'text-gray-600'
 }
 
 function getGradientColor(label) {
   const colors = {
-    'Total Revenue': 'from-green-500 to-green-600',
-    'Total Orders': 'from-blue-500 to-blue-600',
-    'Pending Orders': 'from-yellow-500 to-yellow-600',
-    'Low Stock Items': 'from-red-500 to-red-600',
-    'Out of Stock': 'from-orange-500 to-orange-600',
-    'Completed Orders': 'from-purple-500 to-purple-600'
+    // New "today" cards
+    'Pending Orders':       'from-yellow-500 to-yellow-600',
+    'Scheduled Today':      'from-purple-500 to-purple-600',
+    'Out for Delivery':     'from-blue-500 to-blue-600',
+    'Completed Today':      'from-green-500 to-green-600',
+
+    // Legacy / fallback labels
+    'Total Revenue':        'from-green-500 to-green-600',
+    'Total Orders':         'from-blue-500 to-blue-600',
+    'Low Stock Items':      'from-red-500 to-red-600',
+    'Out of Stock':         'from-orange-500 to-orange-600',
+    'Completed Orders':     'from-green-500 to-green-600',
+    'Completed':            'from-green-500 to-green-600',
+    'In Production':        'from-purple-500 to-purple-600',
   }
   return colors[label] || 'from-gray-500 to-gray-600'
 }

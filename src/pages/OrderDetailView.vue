@@ -58,25 +58,6 @@
     </div>
 
     <div
-      v-if="productionLockedByOtherOrder && localStatus === 'Scheduled'"
-      class="flex items-start gap-3 p-3.5 bg-blue-50 border border-blue-200 rounded-2xl"
-    >
-      <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 8v4" />
-          <path d="M12 16h.01" />
-        </svg>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-blue-800 text-sm">Production line busy</p>
-        <p class="text-xs text-blue-700 mt-0.5">
-          Another order is currently <strong>In Production</strong>. This order can't move forward until that one is completed or cancelled.
-        </p>
-      </div>
-    </div>
-
-    <div
       v-if="order.status === 'Ready to Pick-up' && order?.receivingMode === 'Pick-up' && localPayment === 'Partial'"
       class="flex items-start gap-3 p-3.5 bg-orange-50 border border-orange-200 rounded-2xl"
     >
@@ -158,24 +139,6 @@
       </div>
     </div>
 
-    <!-- "Report Delay" button shown only when not currently delayed -->
-    <div
-      v-else-if="order.status !== 'Completed' && order.status !== 'Cancelled'"
-      class="flex justify-end"
-    >
-      <button
-        @click="openDelayModal"
-        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-        Report Delay
-      </button>
-    </div>
-
-
     <!-- ═══════════════════════════════════════════════════════════════
          STATUS FLOW BAR — full-width, primary control, always visible
          ═══════════════════════════════════════════════════════════════ -->
@@ -187,8 +150,15 @@
           <div class="min-w-0">
             <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Current Status</p>
             <p class="text-sm font-black text-gray-900 truncate">{{ getStatusDisplayName(localStatus) }}</p>
+                    <div v-if="productionLockedByOtherOrder && localStatus === 'Scheduled'">
+        <p class="font-bold text-blue-800 text-xs">Production line busy: Another order is currently <strong>In Production</strong>.</p>
+        <p class="text-xs text-blue-700 mt-0.5">
+        </p>
+        </div>
           </div>
         </div>
+
+
 
         <div class="flex items-center gap-2">
 
@@ -215,6 +185,23 @@
             </svg>
             Undo
           </button>
+
+              <!-- "Report Delay" button shown only when not currently delayed -->
+    <div
+      v-else-if="order.status !== 'Completed' && order.status !== 'Cancelled'"
+      class="flex justify-end"
+    >
+      <button
+        @click="openDelayModal"
+        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        Report Delay
+      </button>
+    </div>
 
           <button
             v-if="localStatus !== 'Cancelled' && localStatus !== 'Completed'"
@@ -793,17 +780,125 @@
     <Transition name="modal">
       <div v-if="showScheduleModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4" @click.self="closeScheduleModal">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeScheduleModal" />
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
-          <div class="p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Set Production Schedule</h3>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="p-6 overflow-y-auto">
+            <h3 class="text-lg font-bold text-gray-900 mb-1">Set Production Schedule</h3>
+            <p class="text-xs text-gray-500 mb-4">
+              Pick a slot. Green days are wide open; darker dots mean more jobs are already queued.
+            </p>
+
+            <!-- ── Production load strip ─────────────────────────── -->
+            <div class="mb-4 border border-gray-200 rounded-xl overflow-hidden">
+              <div class="px-3 py-1.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                  Production Load — Next 14 Days
+                </span>
+                <span class="text-[10px] text-gray-400">
+                  {{ Object.keys(productionLoad).length }} busy day(s)
+                </span>
+              </div>
+              <div class="max-h-48 overflow-y-auto divide-y divide-gray-50">
+                <button
+                  v-for="day in upcomingDays"
+                  :key="day.key"
+                  type="button"
+                  @click="scheduleDate = day.key"
+                  class="w-full px-3 py-1.5 flex items-center justify-between text-left transition-colors"
+                  :class="[
+                    scheduleDate === day.key
+                      ? 'bg-blue-50 ring-1 ring-inset ring-blue-200'
+                      : 'hover:bg-gray-50',
+                    day.isWeekend ? 'opacity-70' : '',
+                  ]"
+                >
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-[10px] font-bold uppercase text-gray-400 w-8 flex-shrink-0">
+                      {{ day.dayLabel }}
+                    </span>
+                    <span
+                      class="text-xs font-semibold"
+                      :class="scheduleDate === day.key ? 'text-blue-700' : 'text-gray-700'"
+                    >
+                      {{ day.dateLabel }}
+                    </span>
+                    <span
+                      v-if="day.isToday"
+                      class="text-[9px] font-bold uppercase text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full"
+                    >
+                      Today
+                    </span>
+                  </div>
+
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <!-- dot indicator -->
+                    <div class="flex items-center gap-0.5">
+                      <span
+                        v-for="i in 5"
+                        :key="i"
+                        class="w-1.5 h-1.5 rounded-full transition-colors"
+                        :class="
+                          i <= Math.min(day.count, 5)
+                            ? (day.count >= 4
+                                ? 'bg-red-500'
+                                : day.count >= 2
+                                  ? 'bg-amber-500'
+                                  : 'bg-green-500')
+                            : 'bg-gray-200'
+                        "
+                      ></span>
+                    </div>
+                    <span
+                      class="text-[10px] font-semibold w-16 text-right"
+                      :class="
+                        day.count === 0
+                          ? 'text-green-600'
+                          : day.count >= 4
+                            ? 'text-red-600'
+                            : 'text-amber-600'
+                      "
+                    >
+                      {{ day.count === 0 ? 'available' : `${day.count} order${day.count > 1 ? 's' : ''}` }}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div class="mb-4">
               <label class="block text-sm font-semibold text-gray-700 mb-2">Production Date</label>
-              <input v-model="scheduleDate" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :min="minDate" />
+              <input
+                v-model="scheduleDate"
+                type="date"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                :min="minDate"
+              />
+              <!-- Inline warning when the picked day already has jobs -->
+              <div
+                v-if="selectedDateLoad > 0"
+                class="mt-2 flex items-start gap-1.5 text-[11px] rounded-lg px-2.5 py-1.5"
+                :class="
+                  selectedDateLoad >= 4
+                    ? 'bg-red-50 text-red-700 border border-red-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                "
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mt-0.5 flex-shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4" />
+                  <path d="M12 16h.01" />
+                </svg>
+                <span>
+                  {{ selectedDateLoad }} order{{ selectedDateLoad > 1 ? 's' : '' }} already scheduled this day.
+                  {{ selectedDateLoad >= 4 ? 'Consider picking another slot.' : 'Adding another is fine.' }}
+                </span>
+              </div>
             </div>
+
             <div class="mb-4">
               <label class="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
-              <textarea v-model="scheduleNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Add any production notes..."></textarea>
+              <textarea v-model="scheduleNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm" placeholder="Add any production notes..."></textarea>
             </div>
+
             <div class="flex gap-3">
               <button @click="confirmSchedule" :disabled="!scheduleDate" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50">Confirm Schedule</button>
               <button @click="closeScheduleModal" class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">Cancel</button>
@@ -944,6 +1039,7 @@ import ConfirmModal from '@/modals/ConfirmModal.vue'
 
 const props = defineProps({
   order: { type: Object, required: true },
+  allOrders: { type: Array, default: () => [] },   // ← ADD
   inProductionOrderId: { type: String, default: null },
 })
 
@@ -1664,6 +1760,66 @@ const minDate = computed(() => {
   return `${yyyy}-${mm}-${dd}`
 })
 
+// ── ✅ Production load preview ─────────────────────────────────────
+// For the schedule modal: build a 14-day lookup of how many orders
+// are already scheduled for each date. Uses the `allOrders` prop that
+// OrdersPage passes down — no extra API call required.
+//
+// Excludes the current order itself from the counts, so the admin
+// doesn't see "1 order already on Sep 24" when that 1 order is the
+// one they're scheduling.
+const productionLoad = computed(() => {
+  const map = {}
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+
+  // Only Scheduled + In Production orders consume a slot
+  const scheduled = (props.allOrders || []).filter(
+    (o) =>
+      (o.status === 'Scheduled' || o.status === 'In Production') &&
+      o.productionSchedule &&
+      o.id !== props.order?.id,   // ← exclude this order
+  )
+
+  scheduled.forEach((o) => {
+    const d = new Date(o.productionSchedule)
+    if (Number.isNaN(d.getTime())) return
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    map[key] = (map[key] || 0) + 1
+  })
+
+  return map
+})
+
+// Next 14 days as an ordered array for the modal strip
+const upcomingDays = computed(() => {
+  const days = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const count = productionLoad.value[key] || 0
+
+    days.push({
+      key,
+      count,
+      dateLabel: d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }),
+      dayLabel: d.toLocaleDateString('en-PH', { weekday: 'short' }),
+      isToday: i === 0,
+      isWeekend: d.getDay() === 0 || d.getDay() === 6,
+    })
+  }
+  return days
+})
+
+// How many orders are already on the date the admin picked
+const selectedDateLoad = computed(() => {
+  if (!scheduleDate.value) return 0
+  return productionLoad.value[scheduleDate.value] || 0
+})
 defineExpose({ openReceiptModal })
 </script>
 

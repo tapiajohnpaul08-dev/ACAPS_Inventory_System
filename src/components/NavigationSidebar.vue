@@ -212,6 +212,7 @@ import {
 } from 'lucide-vue-next'
 import { adminAuthApi, adminDashboardApi } from '@/api/api'
 import { useAdminChat } from '@/composables/useAdminChat'
+import { useAdminSocket } from '@/composables/useAdminSocket'
 const {
   initSocket,
   // ✅ NEW
@@ -342,6 +343,31 @@ onMounted(() => {
 
   initSocket()
   loadPendingNegotiations()
+
+  // ── Realtime bridge: forward socket events to window events so any
+  //    page/composable can subscribe without touching the socket directly.
+  const socket = useAdminSocket();
+  if (socket.onOrderChanged) {
+    socket.onOrderChanged((data) => {
+      // Instant sidebar refresh (pending orders, low stock, unread, feedback)
+      fetchSidebarCounts({ force: true });
+
+      // ✅ ALSO refresh the pending-negotiations list.
+      //    A new order creates a new negotiation; a status/payment
+      //    change removes one. Neither is covered by fetchSidebarCounts
+      //    because that data comes from useAdminChat's own state.
+      loadPendingNegotiations();
+
+      // Forward to whoever is listening on the page
+      window.dispatchEvent(new CustomEvent('realtime:order-changed', { detail: data }));
+    });
+  }
+  if (socket.onInventoryChanged) {
+    socket.onInventoryChanged((data) => {
+      fetchSidebarCounts({ force: true });
+      window.dispatchEvent(new CustomEvent('realtime:inventory-changed', { detail: data }));
+    });
+  }
 
   document.addEventListener('click', handleClickOutside)
 
