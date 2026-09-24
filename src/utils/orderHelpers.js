@@ -112,6 +112,21 @@ export function transformOrder(order, getDisplayStatus) {
     // OwnCups fields
     dropOffStatus: order.dropOffStatus,
     dropOffStatusDate: order.fromCustomerToCompanyDeliveryDate,
+
+    // ✅ NEW — Photos of the customer's own item (own-cups orders).
+    // Stored as an array of Cloudinary URLs. Falls back to the
+    // per-item array if the top-level snapshot is empty (older orders
+    // saved before the top-level mirror was added).
+    itemPhotos: (() => {
+      if (Array.isArray(order.itemPhotos) && order.itemPhotos.length > 0) {
+        return order.itemPhotos.filter((u) => typeof u === 'string' && u.trim())
+      }
+      const perItem = (order.items || [])
+        .flatMap((it) => (Array.isArray(it.itemPhotos) ? it.itemPhotos : []))
+        .filter((u) => typeof u === 'string' && u.trim())
+      return perItem
+    })(),
+
      // ── Fees & totals (needed by Receipt + Detail modal) ──
   designFee: Number(order.designFee) || 0,
   shippingFee: Number(order.shippingFee) || 0,

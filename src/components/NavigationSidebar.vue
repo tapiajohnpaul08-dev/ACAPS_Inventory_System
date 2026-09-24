@@ -125,7 +125,7 @@
             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
         >
           <ChartColumn class="w-4.5 h-4.5 flex-shrink-0" style="width: 18px; height: 18px;" />
-          <span class="text-sm font-medium">Analytics</span>
+          <span class="text-sm font-medium">Summary Report</span>
         </router-link>
       </template>
 

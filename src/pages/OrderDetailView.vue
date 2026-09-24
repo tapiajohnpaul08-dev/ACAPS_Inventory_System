@@ -226,8 +226,8 @@
               isStatusCompleted(status) ||
               (status === 'Confirmed' && localPayment === 'Unpaid') ||
               (status === 'In Production' && productionLockedByOtherOrder) ||
-              (status === 'Scheduled' && needsDropOff && order.dropOffStatus === 'Pending') ||
-              (status === 'Ready to Pick up' || 'Out for Delivery' && order.deliveryMethod === 'Pick-up' && !codCollectedAdmin )
+              (status === 'Scheduled' && needsDropOff && order.dropOffStatus === 'Pending')
+              // (status === 'Ready to Pick up' || 'Out for Delivery' && order.deliveryMethod === 'Pick-up' && !codCollectedAdmin )
 
 
               "
@@ -389,104 +389,183 @@
 
 
 
-        <!-- Design Preview -->
-        <div v-if="hasDesignData" class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-          <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <p class="text-sm font-bold text-gray-900">Design Preview</p>
-              <span v-if="designSource"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                :class="designSourceBadgeClass">
-                {{ designSourceLabel }}
-              </span>
-            </div>
-            <div class="flex items-center gap-3 text-xs text-gray-500">
-              <span v-if="printSize">Size: <strong class="text-gray-700">{{ printSize }}</strong></span>
-              <span v-if="printPlacement">·</span>
-              <span v-if="printPlacement">Placement: <strong class="text-gray-700">{{ printPlacement }}</strong></span>
-            </div>
-          </div>
-          <div class="p-4 space-y-3">
-            <!-- Multiple design images: grid gallery (2 or more) -->
-            <div v-if="designImages.length > 1" class="grid grid-cols-2 md:grid-cols-3 gap-2">
-              <div v-for="(url, idx) in designImages" :key="url + idx"
-                class="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50 cursor-pointer group"
-                @click="previewDesignImage(url)">
-                <img :src="url" :alt="`Design ${idx + 1}`"
-                  class="w-full h-40 object-contain transition-opacity group-hover:opacity-95"
-                  @error="handleImageError" />
-                <span
-                  class="absolute top-1.5 left-1.5 bg-gray-900/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                  {{ idx + 1 }}
-                </span>
+        <!-- ✅ Design & Customer Item Preview — compact, side by side -->
+        <div
+          v-if="hasDesignData || hasCustomerItemPhotos"
+          class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
+        >
+          <div class="px-4 py-3">
+            <!-- Two columns: Design (left) + Customer Item (right) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <!-- ══════════ LEFT: Design ══════════ -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
+                    Design
+                    <span v-if="designImages.length > 1" class="text-gray-400 font-normal normal-case">
+                      ({{ designImages.length }})
+                    </span>
+                  </p>
+                  <div class="flex items-center gap-2 text-[10px] text-gray-400">
+                    <span v-if="printSize">{{ printSize }}</span>
+                    <span v-if="printSize && printPlacement">·</span>
+                    <span v-if="printPlacement">{{ printPlacement }}</span>
+                  </div>
+                </div>
+
+                <!-- Multiple / single design images — small square tiles -->
+                <div v-if="designImages.length > 0" class="flex flex-wrap gap-1.5">
+                  <div
+                    v-for="(url, idx) in designImages"
+                    :key="url + idx"
+                    class="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 cursor-pointer group shrink-0"
+                    @click="previewDesignImage(url)"
+                  >
+                    <img
+                      :src="url"
+                      :alt="`Design ${idx + 1}`"
+                      class="w-full h-full object-cover transition-opacity group-hover:opacity-90"
+                      @error="handleImageError"
+                    />
+                    <span
+                      v-if="designImages.length > 1"
+                      class="absolute top-0.5 left-0.5 bg-gray-900/70 text-white text-[8px] font-bold px-1 py-0.5 rounded"
+                    >
+                      {{ idx + 1 }}
+                    </span>
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/15 transition-colors pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" class="text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PDF / non-image design files — download chips -->
+                <div v-else-if="designFiles.length > 0" class="flex flex-wrap gap-1.5">
+                  <a
+                    v-for="(file, idx) in designFiles"
+                    :key="idx"
+                    :href="getFileUrl(file)"
+                    target="_blank"
+                    rel="noopener"
+                    download
+                    class="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold bg-gray-50 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    {{ file.name || 'Design file' }}
+                  </a>
+                </div>
+
+                <!-- Fallback: data exists but no renderable asset -->
+                <div
+                  v-else-if="hasDesignWithoutImage"
+                  class="flex items-center justify-center h-20 bg-amber-50 rounded-lg border border-amber-200"
+                >
+                  <p class="text-[10px] font-medium text-amber-700 text-center px-1">
+                    Design data present<br />but image missing
+                  </p>
+                </div>
+
+                <!-- Empty state -->
+                <div
+                  v-else
+                  class="flex items-center justify-center h-20 bg-gray-50 rounded-lg border border-dashed border-gray-200"
+                >
+                  <p class="text-[10px] text-gray-400">No design</p>
+                </div>
+
+                <!-- Notes below tiles (short, wraps) -->
+                <p v-if="designNotes" class="mt-2 text-[10px] text-amber-800 leading-snug line-clamp-2">
+                  <span class="font-bold">Notes:</span> {{ designNotes }}
+                </p>
+              </div>
+
+              <!-- ══════════ RIGHT: Customer's Item ══════════ -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
+                    Customer's Item
+                  </p>
+                  <span v-if="hasCustomerItemPhotos" class="text-[10px] text-gray-400">
+                    {{ customerItemPhotos.length }} photo{{ customerItemPhotos.length === 1 ? '' : 's' }}
+                  </span>
+                </div>
+
+                <!-- Item photo tiles — amber border to distinguish -->
+                <div v-if="hasCustomerItemPhotos" class="flex flex-wrap gap-1.5">
+                  <div
+                    v-for="(url, idx) in customerItemPhotos"
+                    :key="idx"
+                    class="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-amber-200 bg-amber-50 cursor-pointer group shrink-0"
+                    @click="previewCustomerItemPhoto(url)"
+                  >
+                    <img
+                      :src="url"
+                      :alt="`Customer item ${idx + 1}`"
+                      class="w-full h-full object-cover transition-opacity group-hover:opacity-90"
+                      @error="handleImageError"
+                    />
+                    <span
+                      class="absolute top-0.5 left-0.5 bg-amber-600/85 text-white text-[8px] font-bold px-1 py-0.5 rounded"
+                    >
+                      {{ idx + 1 }}
+                    </span>
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/15 transition-colors pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" class="text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Own-cups but no photos uploaded (legacy) -->
+                <div
+                  v-else-if="order.isProvided"
+                  class="flex items-center justify-center h-20 bg-gray-50 rounded-lg border border-dashed border-gray-200"
+                >
+                  <p class="text-[10px] text-gray-400">No item photo</p>
+                </div>
+
+                <!-- Company-supplied items — not applicable -->
+                <div
+                  v-else
+                  class="flex items-center justify-center h-20 bg-gray-50 rounded-lg border border-dashed border-gray-200"
+                >
+                  <p class="text-[10px] text-gray-400">Company-supplied items</p>
+                </div>
               </div>
             </div>
 
-            <!-- Single design image -->
-            <div v-else-if="designImageUrl"
-              class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 overflow-hidden relative cursor-pointer group"
-              @click="previewDesignImage(designImageUrl)">
-              <img :src="designImageUrl" alt="Design preview"
-                class="w-full h-auto max-h-96 object-contain transition-opacity group-hover:opacity-95 z-0"
-                @error="handleImageError" />
-              <div
-                class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none">
-                <span
-                  class="bg-white/90 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-md">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" class="text-gray-700">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                </span>
-              </div>
-            </div>
-
-            <!-- PDF / non-image design files: link to open, don't try to render as img -->
-            <div v-else-if="designFiles.length > 0" class="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-2">
-              <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Design File(s)</p>
-              <div class="flex flex-wrap gap-2">
-                <a v-for="(file, idx) in designFiles" :key="idx" :href="getFileUrl(file)" target="_blank" rel="noopener"
-                  download
-                  class="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  {{ file.name || 'Design file' }}
-                  <span class="text-gray-400 font-normal">{{ formatFileSize(file.size) }}</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Fallback: design data exists but no renderable image and no files -->
-            <div v-else-if="hasDesignWithoutImage"
-              class="flex flex-col items-center justify-center py-8 bg-amber-50 rounded-xl border border-amber-200">
-              <p class="text-sm font-medium text-amber-700">Design uploaded but image URL missing</p>
-              <p class="text-xs text-amber-600 mt-1">
-                Print Size: {{ printSize || 'N/A' }} · Placement: {{ printPlacement || 'N/A' }}
+            <!-- Attached files row (only when design image exists alongside files) -->
+            <div v-if="designFiles.length > 0 && designImageUrl" class="mt-3 pt-3 border-t border-gray-100">
+              <p class="text-[10px] font-medium text-gray-500 mb-1.5">
+                Attached Files ({{ designFiles.length }})
               </p>
-            </div>
-
-            <div v-if="designNotes" class="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <p class="text-xs font-bold text-amber-700 uppercase tracking-wide mb-1">Design Notes</p>
-              <p class="text-xs text-amber-900">{{ designNotes }}</p>
-            </div>
-
-            <div v-if="designFiles.length > 0">
-              <p class="text-xs font-medium text-gray-600 mb-1.5">Attached Files ({{ designFiles.length }})</p>
               <div class="flex flex-wrap gap-1.5">
-                <button v-for="(file, idx) in designFiles" :key="idx" @click="previewFile(file)"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                <button
+                  v-for="(file, idx) in designFiles"
+                  :key="idx"
+                  @click="previewFile(file)"
+                  class="inline-flex items-center gap-1 px-2 py-1 text-[10px] bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2">
                     <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
-                  <span class="max-w-[140px] truncate font-medium text-gray-700">{{ file.name || 'File ' + (idx + 1)
-                  }}</span>
-                  <span class="text-gray-400 text-[10px]">{{ formatFileSize(file.size) }}</span>
+                  <span class="max-w-[100px] truncate font-medium text-gray-700">
+                    {{ file.name || 'File ' + (idx + 1) }}
+                  </span>
                 </button>
               </div>
             </div>
@@ -1239,6 +1318,28 @@ const hasDesignWithoutImage = computed(() => !designImageUrl.value && (
   printSize.value || printPlacement.value
 ))
 
+// ✅ NEW — Photos of the customer's own physical item (own-cups orders).
+// Priority: top-level `itemPhotos` snapshot first (set by transformOrder),
+// then falls back to unwinding every item's `itemPhotos[]` so older
+// orders saved before the top-level mirror still render.
+const customerItemPhotos = computed(() => {
+  if (Array.isArray(props.order?.itemPhotos) && props.order.itemPhotos.length > 0) {
+    return props.order.itemPhotos.filter((u) => typeof u === 'string' && u.trim())
+  }
+
+  const flat = []
+  if (Array.isArray(props.order?.items)) {
+    for (const item of props.order.items) {
+      if (Array.isArray(item.itemPhotos)) {
+        flat.push(...item.itemPhotos.filter((u) => typeof u === 'string' && u.trim()))
+      }
+    }
+  }
+  return flat
+})
+
+const hasCustomerItemPhotos = computed(() => customerItemPhotos.value.length > 0)
+
 // ✅ NEW — Delay helpers
 const currentDelay = computed(() => {
   const h = props.order?.delayHistory || []
@@ -1342,6 +1443,12 @@ function previewDesignImage(url) {
   const target = url || designImageUrl.value
   if (!target) return
   previewFile({ name: 'Design Preview', url: target, type: 'image/jpeg' })
+}
+
+// ✅ NEW — Enlarge a customer item photo in the same lightbox
+function previewCustomerItemPhoto(url) {
+  if (!url) return
+  previewFile({ name: 'Customer Item Photo', url, type: 'image/jpeg' })
 }
 function closePreviewModal() { showPreviewModal.value = false; previewFileData.value = null }
 
