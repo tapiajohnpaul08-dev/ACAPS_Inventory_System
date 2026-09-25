@@ -113,6 +113,16 @@ export const adminManagementApi = {
     );
   },
 
+  // Super Admin only — resets another admin's password. The backend
+  // enforces the role check; the client just needs to send the payload.
+  async resetAdminPassword(adminId, newPassword) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/admin/admin/${adminId}/reset-password`, {
+        newPassword,
+      })
+    );
+  },
+
   async deleteAdmin(adminId) {
     return handleResponse(
       adminAxiosInstance.delete(`/admin/admin/${adminId}`)

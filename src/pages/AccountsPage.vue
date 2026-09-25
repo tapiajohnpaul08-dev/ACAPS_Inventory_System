@@ -62,6 +62,7 @@
       :account-type="activeTab === 'customers' ? 'customer' : activeTab"
       @close="closeEditModal"
       @update="handleUpdateAccount"
+      @resetPassword="handleResetPassword"
     />
 
     <!-- Edit Driver Modal -->
@@ -403,43 +404,90 @@ function closeEditModal() {
   editAccount.value = null
 }
 
+// Super Admin resets another admin's password via the Edit Account modal.
+// Called as a *sibling* event to handleUpdateAccount — the two fire
+// independently so a profile edit still saves even if the password
+// reset fails (and vice versa). The `_onComplete` resolver lets the
+// modal await the real backend result.
+async function handleResetPassword({ adminId, newPassword, _onComplete }) {
+  try {
+    const response = await adminManagementApi.resetAdminPassword(adminId, newPassword)
+    if (response.success) {
+      showToast('success', `Password for ${adminId} has been reset successfully.`)
+      _onComplete?.({ success: true, data: response.data })
+    } else {
+      showToast('error', response.message || 'Failed to reset password')
+      _onComplete?.({ success: false, message: response.message })
+    }
+  } catch (error) {
+    console.error('Error resetting admin password:', error)
+    showToast('error', 'Failed to reset password')
+    _onComplete?.({ success: false, message: error.message })
+  }
+}
+
 async function handleUpdateAccount(updatedAccount) {
+  // The modal attaches `_onComplete` so it can await the real backend
+  // result before closing. Strip it out of the payload so it doesn't
+  // get forwarded to the API.
+  const { _onComplete, ...payload } = updatedAccount
+
+  // The modal emits only the editable form fields — it deliberately
+  // doesn't carry the identifier because the parent already holds the
+  // full account object. Pull the ID from `editAccount.value` so we
+  // never accidentally send `/admin/admin/undefined`.
+  const accountId = editAccount.value?.userId
+  if (!accountId) {
+    showToast('error', 'Cannot update — missing account identifier')
+    _onComplete?.({ success: false, message: 'Missing account identifier' })
+    return
+  }
+
   loading.value = true
   try {
     if (activeTab.value === 'customers') {
-      const response = await adminCustomerApi.updateCustomer(updatedAccount.userId, {
-        firstName: updatedAccount.firstName,
-        middleName: updatedAccount.middleName || '',
-        lastName: updatedAccount.lastName,
-        phone: updatedAccount.phone
+      const response = await adminCustomerApi.updateCustomer(accountId, {
+        firstName: payload.firstName,
+        middleName: payload.middleName || '',
+        lastName: payload.lastName,
+        phone: payload.phone,
       })
-      
+
       if (response.success) {
         await loadData()
-        showToast('success', `Customer "${updatedAccount.name}" has been updated successfully!`)
-        closeEditModal()
+        showToast(
+          'success',
+          `Customer "${payload.firstName} ${payload.lastName}" has been updated successfully!`,
+        )
+        _onComplete?.({ success: true, data: response.data })
       } else {
         showToast('error', response.message || 'Failed to update customer')
+        _onComplete?.({ success: false, message: response.message })
       }
     } else {
-      const response = await adminManagementApi.updateAdmin(updatedAccount.userId, {
-        firstName: updatedAccount.firstName,
-        lastName: updatedAccount.lastName,
-        phone: updatedAccount.phone,
-        role: activeTab.value === 'sales' ? 'Sales' : activeTab.value === 'production' ? 'Production' : 'Super Admin'
+      const response = await adminManagementApi.updateAdmin(accountId, {
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        phone: payload.phone,
+        role: payload.role,
       })
-      
+
       if (response.success) {
         await loadData()
-        showToast('success', `Admin "${updatedAccount.name}" has been updated successfully!`)
-        closeEditModal()
+        showToast(
+          'success',
+          `Admin "${payload.firstName} ${payload.lastName}" has been updated successfully!`,
+        )
+        _onComplete?.({ success: true, data: response.data })
       } else {
         showToast('error', response.message || 'Failed to update admin')
+        _onComplete?.({ success: false, message: response.message })
       }
     }
   } catch (error) {
     console.error('Error updating account:', error)
     showToast('error', 'Failed to update account. Please try again.')
+    _onComplete?.({ success: false, message: error.message })
   } finally {
     loading.value = false
   }

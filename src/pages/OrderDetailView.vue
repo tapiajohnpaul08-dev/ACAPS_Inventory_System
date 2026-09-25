@@ -151,6 +151,19 @@
 
         <div class="flex items-center gap-2">
 
+          <!-- ✅ Message Customer — jumps to this order's conversation.
+               Always available; MessagePage handles the "no conversation
+               yet" case with a toast if the auto-link hasn't fired. -->
+          <button @click="goToOrderConversation"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+            title="Open this order's conversation with the customer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Message Customer
+          </button>
+
           <button v-if="needsDropOff && order.dropOffStatus === 'Pending'" @click="handleItemDropped"
             :disabled="isSaving"
             class="flex items-center gap-1.5 px-3 cursor-pointer py-1.5 text-xs font-semibold bg-blue-700 text-white hover:bg-white border hover:text-blue-700 hover:border-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
@@ -800,13 +813,33 @@
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeDelayModal" />
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="p-6">
+
+            <!-- ✅ Mandatory-mode banner: shown only when the delay was
+                 triggered by a schedule conflict, not a manual report. -->
+            <div v-if="delayModalMandatory"
+              class="mb-4 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2.5"
+                class="text-amber-600 flex-shrink-0 mt-0.5">
+                <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+              </svg>
+              <div class="text-xs">
+                <p class="font-bold text-amber-800">This order will be delayed.</p>
+                <p class="text-amber-700 mt-0.5">
+                  The production schedule you picked falls after the original delivery date.
+                  Please report the delay so the customer is notified immediately.
+                </p>
+              </div>
+            </div>
+
             <h3 class="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" class="text-amber-600">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              Report Order Delay
+              {{ delayModalMandatory ? 'Delay Required' : 'Report Order Delay' }}
             </h3>
             <p class="text-xs text-gray-500 mb-4">
               The customer will be notified automatically in their Messages.
@@ -857,10 +890,12 @@
 
             <div class="flex gap-3 mt-6">
               <button @click="confirmDelay" :disabled="!delayForm.reason.trim() || isSaving"
-                class="flex-1 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                class="py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                :class="delayModalMandatory ? 'w-full' : 'flex-1'">
                 {{ isSaving ? 'Reporting…' : 'Report Delay' }}
               </button>
-              <button @click="closeDelayModal"
+              <!-- Cancel is only offered for a voluntary delay report -->
+              <button v-if="!delayModalMandatory" @click="closeDelayModal"
                 class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
                 Cancel
               </button>
@@ -1120,6 +1155,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { h } from 'vue'
+import { useRouter } from 'vue-router'
 import { Truck, User, Phone, Car, Loader2, Check, Calendar, Toolbox } from 'lucide-vue-next'
 import { adminDriverApi } from '@/api/api'
 import ReceiptModal from '@/components/receipt/ReceiptModal.vue'
@@ -1132,6 +1168,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['statusUpdate', 'paymentUpdate', 'edit', 'dropOffUpdate', 'delayUpdate', 'notify'])
+
+const router = useRouter()
+
 const isSaving = ref(false)
 const localStatus = ref(props.order?.status || 'Pending')
 const localPayment = ref(props.order?.paymentStatus)
@@ -1158,6 +1197,10 @@ const scheduleDate = ref('')
 const scheduleNotes = ref('')
 const completeNotes = ref('')
 const driverNotes = ref('')
+
+// ── Mandatory delay flow (schedule vs expected-delivery conflict) ──
+const delayModalMandatory = ref(false)
+const pendingScheduleData = ref(null)
 
 // ── Driver assignment state ────────────────────────────────────────
 const availableDrivers = ref([])
@@ -1675,14 +1718,43 @@ function openDriverModal(status) {
 }
 
 // ── Status updates ─────────────────────────────────────────────────
-async function updateStatus(status, notes, productionSchedule = null) {
-  isSaving.value = true
-  localStatus.value = status
-  const payload = { orderId: props.order.id, status, notes: notes || '' }
-  if (productionSchedule) payload.productionSchedule = productionSchedule
-  if (status === 'Completed') payload.codCollected = codCollectedAdmin.value
-  emit('statusUpdate', payload)
-  setTimeout(() => { isSaving.value = false }, 1500)
+// Awaitable version: emits with a `_onComplete` resolver that the parent
+// (OrdersPage) calls once the backend request settles. Lets the caller
+// chain follow-up actions (e.g. open the delay modal) safely in sequence.
+function updateStatus(status, notes, productionSchedule = null) {
+  return new Promise((resolve) => {
+    isSaving.value = true
+    localStatus.value = status
+
+    // Every exit path goes through here, so `isSaving` is guaranteed
+    // to reset — whether the parent resolves, rejects via the error
+    // branch, or the safety timeout fires. Guarded so a late-arriving
+    // caller (e.g. parent resolves at 14.9s, timeout at 15s) can't
+    // flip isSaving back to true.
+    let finished = false
+    const finish = (result) => {
+      if (finished) return
+      finished = true
+      isSaving.value = false
+      resolve(result)
+    }
+
+    const payload = {
+      orderId: props.order.id,
+      status,
+      notes: notes || '',
+      _onComplete: finish,
+    }
+    if (productionSchedule) payload.productionSchedule = productionSchedule
+    if (status === 'Completed') payload.codCollected = codCollectedAdmin.value
+
+    emit('statusUpdate', payload)
+
+    // Safety net — if the parent never calls back (network hang,
+    // component unmount before the response lands), unstick the UI
+    // after 15s so the admin isn't locked out.
+    setTimeout(() => finish({ success: false, message: 'timeout' }), 15000)
+  })
 }
 
 function handleStatusClickWithPrompt(status) {
@@ -1793,6 +1865,41 @@ async function handlePaymentClick(paymentDisplayValue) {
 
 async function confirmSchedule() {
   if (!scheduleDate.value) return
+
+  // ── CONFLICT PATH ────────────────────────────────────────────
+  // Schedule is AFTER the promised delivery → the order is guaranteed
+  // to be late. Save the schedule first, THEN force a delay report.
+  if (scheduleConflictsWithDelivery.value) {
+    pendingScheduleData.value = {
+      status: pendingStatus.value,
+      notes: scheduleNotes.value,
+      scheduleDate: scheduleDate.value,
+    }
+
+    // Backend call #1 — awaited, so we know it landed before opening
+    // the delay modal. This also avoids the concurrent order.save()
+    // race that causes a Mongoose VersionError if both fire together.
+    const result = await updateStatus(
+      pendingStatus.value,
+      scheduleNotes.value,
+      scheduleDate.value,
+    )
+
+    closeScheduleModal()
+
+    if (!result.success) {
+      // Schedule save failed → don't push the admin into the delay
+      // modal. Let them retry from a clean state.
+      pendingScheduleData.value = null
+      return
+    }
+
+    // Schedule is persisted. Now open the mandatory delay modal.
+    openMandatoryDelayModal()
+    return
+  }
+
+  // ── NORMAL PATH ──────────────────────────────────────────────
   await updateStatus(pendingStatus.value, scheduleNotes.value, scheduleDate.value)
   closeScheduleModal()
 }
@@ -1847,13 +1954,44 @@ function openDelayModal() {
   showDelayModal.value = true
 }
 function closeDelayModal() {
+  if (delayModalMandatory.value) return
   showDelayModal.value = false
+}
+
+// Opens the delay modal in locked-down mode after a schedule conflict.
+// Seeds the form with a sensible default so the admin only needs to
+// hit Report Delay, but can still adjust before submitting.
+function openMandatoryDelayModal() {
+  const scheduleStr = pendingScheduleData.value?.scheduleDate
+
+  // Default the new ETA to the production date itself. The admin can
+  // push it further out if production spans multiple days.
+  const seedYMD = scheduleStr || (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 3)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  })()
+
+  delayForm.value = {
+    category: 'production_issue',
+    reason: 'Production schedule falls after the original delivery date',
+    notes: '',
+    newExpectedDelivery: seedYMD,
+  }
+
+  delayModalMandatory.value = true
+  showDelayModal.value = true
 }
 
 function confirmDelay() {
   if (!delayForm.value.reason.trim()) return
   isSaving.value = true
 
+  // Schedule is already saved (in the conflict path). Just fire the
+  // delay report — one backend call, no race condition, no chaining.
   emit('delayUpdate', {
     orderId: props.order.id,
     category: delayForm.value.category,
@@ -1862,7 +2000,11 @@ function confirmDelay() {
     newExpectedDelivery: delayForm.value.newExpectedDelivery || null,
   })
 
+  // Clean up the mandatory-flow state
+  pendingScheduleData.value = null
+  delayModalMandatory.value = false
   showDelayModal.value = false
+
   setTimeout(() => { isSaving.value = false }, 1500)
 }
 
@@ -2006,6 +2148,42 @@ const selectedDateLoad = computed(() => {
   if (!scheduleDate.value) return 0
   return productionLoad.value[scheduleDate.value] || 0
 })
+
+// True when the chosen production date is AFTER the order's
+// expected delivery date. Comparing YYYY-MM-DD strings lexically is
+// safe because both sides are normalized to that format and the
+// ordering matches chronological ordering.
+const scheduleConflictsWithDelivery = computed(() => {
+  if (!scheduleDate.value) return false
+
+  const expectedStr = props.order?.expectedDelivery
+  if (!expectedStr || expectedStr === 'N/A') return false
+
+  const expected = new Date(expectedStr)
+  if (Number.isNaN(expected.getTime())) return false
+
+  const yyyy = expected.getFullYear()
+  const mm = String(expected.getMonth() + 1).padStart(2, '0')
+  const dd = String(expected.getDate()).padStart(2, '0')
+  const expectedYMD = `${yyyy}-${mm}-${dd}`
+
+  return scheduleDate.value > expectedYMD
+})
+
+// Jump to the Messages page and auto-open the conversation bound to
+// this order. MessagePage reads ?order=<orderId> and resolves the
+// conversation locally — no extra API call required, since the
+// conversation list is already loaded there.
+function goToOrderConversation() {
+  const orderId = props.order?.orderId || props.order?.id
+  if (!orderId) return
+
+  router.push({
+    path: '/dashboard/messages',
+    query: { order: orderId },
+  })
+}
+
 defineExpose({ openReceiptModal })
 </script>
 

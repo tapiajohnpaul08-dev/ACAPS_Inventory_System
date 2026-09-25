@@ -315,7 +315,17 @@ function closeEditModal() {
 }
 
 // ── Status update — same as before ──────────────────────────────────
-async function handleStatusUpdate({ orderId, status, notes, productionSchedule, driverDetails, driverId, codCollected, dropOffStatus }) {  try {
+async function handleStatusUpdate(payloadArg) {
+  // The child (OrderDetailView) may attach a `_onComplete` resolver so it
+  // can await the backend result and sequence follow-up actions
+  // (e.g. open the delay modal after a successful schedule save).
+  const { _onComplete, ...incoming } = payloadArg || {}
+  const {
+    orderId, status, notes, productionSchedule,
+    driverDetails, driverId, codCollected, dropOffStatus,
+  } = incoming
+
+  try {
     const validStatuses = ['Pending', 'Confirmed', 'Scheduled', 'In Production', 'Out for Delivery', 'Completed', 'Cancelled']
     const normalizedStatus = validStatuses.find((s) => s.toLowerCase() === status.toLowerCase()) || status
 
@@ -337,12 +347,15 @@ async function handleStatusUpdate({ orderId, status, notes, productionSchedule, 
     if (response.success) {
       patchLocalOrder(orderId, transformOrder(response.data))
       showToast('success', `Status updated to "${normalizedStatus}"`)
+      _onComplete?.({ success: true, data: response.data })
     } else {
       showToast('error', response.message || 'Failed to update status')
+      _onComplete?.({ success: false, message: response.message })
     }
   } catch (e) {
     console.error('Status update error:', e)
     showToast('error', 'Failed to update status')
+    _onComplete?.({ success: false, message: e.message })
   }
 }
 
@@ -509,9 +522,10 @@ function handleRealtimeOrderChanged(e) {
 
 onMounted(async () => {
   applySearchQuery()
-  await loadOrders()
 
   window.addEventListener('realtime:order-changed', handleRealtimeOrderChanged)
+
+  await loadOrders()
 })
 
 onUnmounted(() => {

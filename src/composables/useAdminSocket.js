@@ -6,8 +6,7 @@ const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 let socketInstance = null
 let reconnectAttempts = 0
-const maxReconnectAttempts = 5
-
+const maxReconnectAttempts = Infinity
 export function useAdminSocket() {
   const isConnected = ref(false)
   const isConnecting = ref(false)
@@ -54,6 +53,34 @@ export function useAdminSocket() {
       console.error('Admin socket connection error:', error.message)
       isConnecting.value = false
       reconnectAttempts++
+
+      // Auth failure (expired/invalid token) is terminal — retrying with
+      // the same token will never succeed. Clear the session and send the
+      // admin to login so they get a fresh token on the next click.
+      const msg = (error?.message || '').toLowerCase()
+      const isAuthFailure =
+        msg.includes('authentication') ||
+        msg.includes('invalid token') ||
+        msg.includes('expired') ||
+        msg.includes('jwt')
+
+      if (isAuthFailure) {
+        console.warn('🔒 Socket auth failed — clearing admin session')
+        try {
+          socketInstance.disconnect()
+        } catch (_) {}
+
+        localStorage.removeItem('adminToken')
+        localStorage.removeItem('adminUser')
+        localStorage.removeItem('adminName')
+        localStorage.removeItem('adminEmail')
+        localStorage.removeItem('adminRole')
+
+        // Only redirect if not already on the login page
+        if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+          window.location.href = '/'
+        }
+      }
     })
     
     return socketInstance

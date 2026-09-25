@@ -536,6 +536,8 @@ function handleRealtimeInventoryChange(e) {
 // Initialize on mount
 onMounted(async () => {
   getUserRole()
+
+  window.addEventListener('realtime:inventory-changed', handleRealtimeInventoryChange)
   await loadAllData()
 
   // Read query params (from dashboard or other navigation sources)

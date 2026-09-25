@@ -357,14 +357,34 @@ onMounted(async () => {
   
   await loadConversations()
 
-  // ✅ NEW — Auto-open conversation from ?conv= query param
+  // ── Deep-link support ────────────────────────────────────────────
+  // ?conv=<conversationId>  → direct link (e.g. from Dashboard's
+  //                           Pending Negotiations widget)
+  // ?order=<orderId>        → from OrderDetailView's "Message Customer"
+  //                           button; we resolve the conversation locally
+  //                           by matching the loaded list's orderId.
   const targetConvId = route.query.conv
+  const targetOrderId = route.query.order
+
+  let match = null
   if (targetConvId) {
-    const match = conversations.value.find(
-      (c) => c.conversationId === targetConvId,
-    )
-    if (match) {
-      await handleSelectConversationWrapped(match)
+    match = conversations.value.find((c) => c.conversationId === targetConvId)
+  } else if (targetOrderId) {
+    match = conversations.value.find((c) => c.orderId === targetOrderId)
+  }
+
+  if (match) {
+    await handleSelectConversationWrapped(match)
+  } else if (targetOrderId) {
+    // The initial list might have been stale (a conversation created
+    // after our last load, or the auto-link on the backend hadn't
+    // finished yet). Refetch once and retry before giving up.
+    await loadConversations()
+    const retry = conversations.value.find((c) => c.orderId === targetOrderId)
+    if (retry) {
+      await handleSelectConversationWrapped(retry)
+    } else {
+      showToast('error', `No conversation found for order ${targetOrderId}`)
     }
   }
 
