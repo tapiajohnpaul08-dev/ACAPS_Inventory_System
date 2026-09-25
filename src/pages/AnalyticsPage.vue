@@ -4,7 +4,7 @@
     <!-- ── Header ──────────────────────────────────────────────────────── -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
-        <h1 class="text-2xl font-black text-gray-900 tracking-tight">Analytics</h1>
+        <h1 class="text-2xl font-black text-gray-900 tracking-tight">Summary Report</h1>
         <p class="text-sm text-gray-400 mt-0.5">
           Last updated {{ lastUpdated ? formatTime(lastUpdated) : '—' }}
         </p>
