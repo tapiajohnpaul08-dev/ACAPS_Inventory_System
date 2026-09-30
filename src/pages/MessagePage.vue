@@ -299,7 +299,11 @@ const handleOrderConfirmed = (updatedOrder) => {
   showToast('success', `Order ${updatedOrder.orderId} confirmed`)
 }
 
-
+function handleShowToastEvent(e) {
+  if (e.detail) {
+    showToast(e.detail.type, e.detail.message)
+  }
+}
 
 
 // ── Lifecycle ─────────────────────────────────────────
@@ -390,17 +394,12 @@ onMounted(async () => {
 
   window.addEventListener('open-image-viewer', handleImageViewerEvent)
   
-  // Listen for toast events from MessageDetail
-  window.addEventListener('show-toast', (e) => {
-    if (e.detail) {
-      showToast(e.detail.type, e.detail.message)
-    }
-  })
+  window.addEventListener('show-toast', handleShowToastEvent)
 })
 
 onUnmounted(() => {
   window.removeEventListener('open-image-viewer', handleImageViewerEvent)
-  window.removeEventListener('show-toast', () => {})
+  window.removeEventListener('show-toast', handleShowToastEvent)
   cleanup()
 })
 </script>

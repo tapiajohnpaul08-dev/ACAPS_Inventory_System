@@ -18,7 +18,8 @@ const pendingNegotiationsCount = computed(() => pendingNegotiations.value.length
 // shared, but per-tab transient — reset in cleanup
 let processedMessages = new Set()
 let pendingTempId = null
-let listenersAttached = false
+// NOTE: listenersAttached removed — we always re-bind on initSocket
+// and rely on setupSocketListeners() to remove old listeners first.
 
 // Single socket instance for the whole app
 const socket = useAdminSocket()
@@ -74,12 +75,29 @@ export function useAdminChat() {
   const initSocket = () => {
     const token = getToken()
     const adminId = getAdminId()
-    if (token) {
-      socket.connect(token, adminId, 'admin')
-     if (!listenersAttached) {
-       setupSocketListeners()
-      listenersAttached = true
-     }
+    if (!token) {
+      console.log('🔌 [useAdminChat] initSocket skipped — no token')
+      return
+    }
+
+    console.log('🔌 [useAdminChat] initSocket — connecting admin socket')
+    socket.connect(token, adminId, 'admin')
+
+    // Attach now — in case the socket is already connected (re-login,
+    // tab restore), setupSocketListeners is idempotent.
+    setupSocketListeners()
+
+    // ✅ ALSO attach every time a fresh socket connects. This is the
+    // safety net for the case where socket.connect() returns before the
+    // underlying connection is established, and the client's `connect`
+    // handler fires LATER on a *different* socket instance. Without
+    // this, the listeners end up bound to a socket that gets discarded
+    // when socket.io internally reconnects or replaces the transport.
+    if (socket.onConnect) {
+      socket.onConnect(() => {
+        console.log('🔌 [useAdminChat] socket connected — rebinding listeners')
+        setupSocketListeners()
+      })
     }
   }
 
@@ -91,7 +109,23 @@ export function useAdminChat() {
   }
 
   const setupSocketListeners = () => {
+    // ── Remove any listeners from a previous session FIRST ──
+    // Without this, logging out and back in would stack duplicate
+    // handlers on a reused socket instance (double toasts, double
+    // message appends, etc).
+    socket.off('new-message')
+    socket.off('message-sent')
+    socket.off('message-unsent')
+    socket.off('payment-request-updated')
+    socket.off('payment-proof-updated')
+    socket.off('user-typing')
+    socket.off('messages-read')
+    socket.off('conversation-order-linked')
+    socket.off('order-negotiation-updated')
+    socket.off('error')
+
     socket.onNewMessage(async (rawMessage) => {
+
       // Prevent duplicate processing
       if (processedMessages.has(rawMessage.messageId)) {
         console.log('📩 Message already processed, skipping')
@@ -161,6 +195,9 @@ conversations.value.sort((a, b) => {
       // ✅ Task 3 — dispatch a rich notification for the toast system.
       // Only for customer-originated messages, and only if the admin is
       // NOT currently looking at that exact conversation.
+
+
+
       if (message.senderType === 'customer') {
         const currentlyOpen =
           selectedConversation.value?.conversationId === message.conversationId
@@ -584,13 +621,43 @@ const sendReply = async (conversationId, content, attachments = [], replyToMessa
   // ─────────────────────────────────────────
   // Cleanup
   // ─────────────────────────────────────────
+  // Called when the admin LEAVES the Messages page. It cleans up
+  // page-scoped state ONLY — the socket is a module-level singleton
+  // shared with Dashboard, Orders, Inventory, etc., so it must keep
+  // running. Disconnect happens exclusively in NavigationSidebar's
+  // logout() → cleanupChat() flow.
   const cleanup = () => {
     processedMessages.clear()
     pendingTempId = null
     if (selectedConversation.value?.conversationId) {
       socket.leaveConversation(selectedConversation.value.conversationId)
     }
-    socket.disconnect()
+
+    // ✅ Clear page-scoped state so leaving Messages doesn't leave the
+    // app thinking a conversation is still "open". Without this, the
+    // notification gate in the socket handler permanently suppresses
+    // toasts for the last-viewed conversation.
+    selectedConversation.value = null
+    messages.value = []
+
+    console.log('🧹 [useAdminChat] page cleanup — socket left running')
+  }
+
+
+    // Called ONLY on logout. Tears down the socket so a fresh login
+  // (without a page refresh) opens a new connection with the new
+  // admin's token and re-binds listeners cleanly.
+  const disconnectSocket = () => {
+    try {
+      socket.disconnect()
+    } catch (e) {
+      console.warn('[useAdminChat] disconnectSocket failed:', e)
+    }
+    processedMessages.clear()
+    pendingTempId = null
+    selectedConversation.value = null
+    messages.value = []
+    console.log('🔌 [useAdminChat] socket torn down on logout')
   }
 
   // ─────────────────────────────────────────
@@ -646,6 +713,7 @@ const sendReply = async (conversationId, content, attachments = [], replyToMessa
     updateConversationStatus,
     resolveFileUrl,
     cleanup,
+    disconnectSocket,   // ← ADD
     formatDate,
     patchMessage
   }

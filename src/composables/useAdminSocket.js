@@ -1,5 +1,5 @@
 // Admin Side
-import { ref, onUnmounted, getCurrentInstance } from 'vue'
+import { ref } from 'vue'
 import io from 'socket.io-client'
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -82,17 +82,27 @@ export function useAdminSocket() {
         }
       }
     })
-    
+  
+
     return socketInstance
   }
   
   const disconnect = () => {
     if (socketInstance) {
+      // Remove every listener BEFORE tearing down so a fresh connect
+      // can't accidentally inherit stale callbacks from a previous
+      // login. Also prevents memory leaks across long-running tabs.
+      try {
+        socketInstance.removeAllListeners()
+      } catch (_) {}
       socketInstance.disconnect()
       socketInstance = null
     }
     isConnected.value = false
+    isConnecting.value = false   // ← reset this; it was never cleared on disconnect
     socketId.value = null
+    reconnectAttempts = 0
+    console.log('🔌 Admin socket fully disconnected and reset')
   }
   
   const joinConversation = (conversationId) => {
@@ -144,7 +154,10 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
   // Event listeners (same as customer)
   const onNewMessage = (callback) => {
     if (socketInstance) {
+      console.log('🧷 [useAdminSocket] onNewMessage attached to socket', socketInstance.id, '| connected:', socketInstance.connected)
       socketInstance.on('new-message', callback)
+    } else {
+      console.warn('🧷 [useAdminSocket] onNewMessage called with NO socketInstance — listener dropped')
     }
   }
   
@@ -195,28 +208,34 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
       socketInstance.on('error', callback)
     }
   }
+
+    // Fires on every successful connection (including reconnects after a
+  // network blip or a fresh login). Used by useAdminChat to rebind
+  // listeners to the current socket instance.
+  const onConnect = (callback) => {
+    if (socketInstance) {
+      socketInstance.on('connect', callback)
+    }
+  }
   
   const off = (event) => {
     if (socketInstance) {
       socketInstance.off(event)
     }
   }
-  
 
-  if (getCurrentInstance()) {
-    onUnmounted(() => {
-      disconnect()
-    })
-  }
 
-    // ── Realtime: order / inventory events ─────────────────────────────
+  // ── Realtime: order / inventory events ─────────────────────────────
+  // `off` before `on` so re-registration replaces rather than stacks.
   const onOrderChanged = (cb) => {
-    console.log('🔌 [useAdminSocket] registering order:changed listener. socketInstance:', !!socketInstance);
-    if (socketInstance) socketInstance.on('order:changed', cb);
+    if (!socketInstance) return
+    socketInstance.off('order:changed')
+    socketInstance.on('order:changed', cb)
   };
   const onInventoryChanged = (cb) => {
-    console.log('🔌 [useAdminSocket] registering inventory:changed listener. socketInstance:', !!socketInstance);
-    if (socketInstance) socketInstance.on('inventory:changed', cb);
+    if (!socketInstance) return
+    socketInstance.off('inventory:changed')
+    socketInstance.on('inventory:changed', cb)
   };
   
   return {
@@ -242,6 +261,7 @@ const sendMessage = (conversationId, content, attachments = [], replyToMessageId
     onMessagesRead,
     onConversationOrderLinked,
     onError,
+    onConnect,
     off
   }
 }

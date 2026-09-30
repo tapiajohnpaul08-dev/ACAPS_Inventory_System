@@ -56,30 +56,7 @@
       </div>
     </div>
 
-    <div v-if="order.status === 'Ready to Pick-up' && order?.receivingMode === 'Pick-up' && localPayment === 'Partial'"
-      class="flex items-center gap-3 p-3.5 bg-orange-50 border border-orange-200 rounded-2xl">
-      <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" class="text-orange-600">
-          <rect width="20" height="14" x="2" y="5" rx="2" />
-          <line x1="2" x2="22" y1="10" y2="10" />
-        </svg>
-      </div>
-      <div class="flex-1 items-start  min-w-0">
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" v-model="codCollectedAdmin" :disabled="isSaving"
-            class="mt-0.5 w-5 h-5 rounded border-orange-300 text-orange-600 focus:ring-orange-500 flex-shrink-0" />
-          <div >
-            <p class="font-bold text-orange-800 text-sm">
-              Collect {{ formatCurrency(getRemainingBalance()) }} in cash
-            </p>
-            <p class="text-xs text-orange-700 mt-0.5">
-              Check this only if the customer has paid the remaining balance at pickup.
-            </p>
-          </div>
-        </label>
-      </div>
-    </div>
+
 
     <!-- ═══════════════════════════════════════════════════════════════
          DELAY BANNER — only shown when the order is currently delayed
@@ -1076,29 +1053,58 @@
   <!-- Complete Order Confirmation Modal -->
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="showCompleteConfirmModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4"
-        @click.self="closeCompleteConfirmModal">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeCompleteConfirmModal" />
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
-          <div class="p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Complete Order</h3>
-            <p class="text-sm text-gray-600 mb-4">Confirm that the customer has picked up this order.</p>
-            <div class="mb-4">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
-              <textarea v-model="completeNotes" rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                placeholder="Add any completion notes..."></textarea>
-            </div>
-            <div class="flex gap-3">
-              <button @click="confirmComplete" :disabled="localPayment === 'Partial' && !codCollectedAdmin"
-                class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">Confirm
-                Complete</button>
-              <button @click="closeCompleteConfirmModal"
-                class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">Cancel</button>
-            </div>
+    <div v-if="showCompleteConfirmModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      @click.self="closeCompleteConfirmModal">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeCompleteConfirmModal" />
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-4">Complete Order</h3>
+          <p class="text-sm text-gray-600 mb-4">
+            Confirm that the customer has picked up this order.
+          </p>
+
+          <!-- ✅ COD collection checkbox — pick-up orders with an outstanding balance only -->
+          <div
+            v-if="isPickupOrder && localPayment === 'Partial'"
+            class="mb-4 p-3.5 bg-orange-50 border border-orange-200 rounded-xl"
+          >
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                v-model="codCollectedAdmin"
+                :disabled="isSaving"
+                class="mt-0.5 w-5 h-5 rounded border-orange-300 text-orange-600 focus:ring-orange-500 flex-shrink-0"
+              />
+              <div class="min-w-0">
+                <p class="font-bold text-orange-800 text-sm">
+                  Collect {{ formatCurrency(getRemainingBalance()) }} in cash
+                </p>
+                <p class="text-xs text-orange-700 mt-0.5">
+                  Check this only if the customer has paid the remaining balance at pickup.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
+            <textarea v-model="completeNotes" rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              placeholder="Add any completion notes..."></textarea>
+          </div>
+          <div class="flex gap-3">
+            <button
+              @click="confirmComplete"
+              :disabled="isSaving || (isPickupOrder && localPayment === 'Partial' && !codCollectedAdmin)"
+              class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+              Confirm Complete
+            </button>
+            <button @click="closeCompleteConfirmModal"
+              class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold">Cancel</button>
           </div>
         </div>
       </div>
+    </div>
     </Transition>
   </Teleport>
 
@@ -1415,6 +1421,10 @@ const productionLockedByOtherOrder = computed(() => {
   if (!props.inProductionOrderId) return false
   return props.inProductionOrderId !== props.order?.id
 })
+
+// Convenience — used by the Complete Order modal to decide whether to
+// show the COD collection checkbox.
+const isPickupOrder = computed(() => props.order?.receivingMode === 'Pick-up')
 
 // ═══════════════════════════════════════════════════════════════
 // ✅ Drop-off tracking — only for own-cups orders.
@@ -1794,16 +1804,6 @@ function handleStatusClickWithPrompt(status) {
     const isPickup = props.order?.receivingMode === 'Pick-up'
     const needsCod = localPayment.value === 'Partial'
 
-    // Pick-up + Partial balance → admin must first confirm the cash
-    // was collected (checkbox in the banner above).
-    if (isPickup && needsCod && !codCollectedAdmin.value) {
-      emit('notify', {
-        type: 'error',
-        message: `Please confirm the remaining balance of ${formatCurrency(getRemainingBalance())} has been collected before completing this order.`,
-      })
-      return
-    }
-
     // Delivery + Partial balance → the driver is the one who records
     // the cash on delivery. Block the admin and explain.
     if (!isPickup && needsCod) {
@@ -1813,6 +1813,10 @@ function handleStatusClickWithPrompt(status) {
       })
       return
     }
+
+    // Reset the COD checkbox every time the modal opens so the admin
+    // makes a fresh decision rather than inheriting a stale tick.
+    codCollectedAdmin.value = false
 
     pendingStatus.value = 'Completed'
     completeNotes.value = isPickup
@@ -1904,6 +1908,19 @@ async function confirmSchedule() {
   closeScheduleModal()
 }
 async function confirmComplete() {
+  const isPickup = props.order?.receivingMode === 'Pick-up'
+  const needsCod = localPayment.value === 'Partial'
+
+  // Safety net — the button is already disabled in this case, but
+  // this covers Enter-key submits and programmatic calls.
+  if (isPickup && needsCod && !codCollectedAdmin.value) {
+    emit('notify', {
+      type: 'error',
+      message: `Please confirm the remaining balance of ${formatCurrency(getRemainingBalance())} has been collected before completing this order.`,
+    })
+    return
+  }
+
   await updateStatus(pendingStatus.value, completeNotes.value || 'Customer picked up the order')
   closeCompleteConfirmModal()
 }

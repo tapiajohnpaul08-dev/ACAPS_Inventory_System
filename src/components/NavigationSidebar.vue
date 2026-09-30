@@ -246,9 +246,9 @@ import { useAdminChat } from '@/composables/useAdminChat'
 import { useAdminSocket } from '@/composables/useAdminSocket'
 const {
   initSocket,
-  // ✅ NEW
   pendingNegotiationsCount,
   loadPendingNegotiations,
+  disconnectSocket,   // ← ADD
 } = useAdminChat()
 
 
@@ -290,9 +290,15 @@ function isActive(path) {
 function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value
 }
-
 async function logout() {
   await adminAuthApi.logout()
+
+  try {
+    disconnectSocket()
+  } catch (e) {
+    console.warn('logout cleanup failed:', e)
+  }
+
   router.push('/')
   showUserMenu.value = false
 }

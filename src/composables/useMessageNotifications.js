@@ -1,4 +1,4 @@
-// src/composables/useMessageNotifications.js
+// src/composables/useMessageNotifications.js  (ADMIN)
 import { ref, computed } from 'vue'
 
 // ── Module-level singleton state ────────────────────────────────────
@@ -14,7 +14,7 @@ const TOAST_DURATION     = 6000      // auto-dismiss in 6s
 
 let flashInterval = null
 let flashState    = false
-let originalTitle = 'ACAPSHOP'
+let originalTitle = 'ACAPSHOP Admin'
 
 // ── Load persisted sound preference once ───────────────────────────
 try {
@@ -23,15 +23,22 @@ try {
 } catch {}
 
 // ── Sound — Web Audio API (no asset file needed) ────────────────────
+// Browsers block AudioContext until the user has interacted with the
+// page. We create it once at module load and resume it on the first
+// user gesture. After that, beeps play freely.
+let audioCtx = null
+
 function playBeep() {
   if (!enabled.value) return
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext
-    if (!AudioCtx) return
-    const ctx = new AudioCtx()
-    const now = ctx.currentTime
 
-    // Two-tone "ping" — friendly but short
+  // Only play if a running context exists. The context is created on
+  // the user's first real gesture (see createOnGesture below) — that's
+  // the only way Chrome lets us start playback without a warning.
+  if (!audioCtx || audioCtx.state !== 'running') return
+
+  try {
+    const ctx = audioCtx
+    const now = ctx.currentTime
     const tones = [
       { freq: 880,  start: 0,    dur: 0.08 },
       { freq: 1320, start: 0.09, dur: 0.10 },
@@ -48,32 +55,64 @@ function playBeep() {
       osc.start(now + start)
       osc.stop(now + start + dur + 0.02)
     })
-    setTimeout(() => { try { ctx.close() } catch {} }, 500)
   } catch (e) {
     console.warn('Sound playback failed:', e)
   }
 }
 
+// Create the AudioContext on the FIRST user gesture. Chrome only allows
+// a running AudioContext to start inside a real gesture handler, so we
+// wait for one. Deferring creation avoids the "AudioContext was not
+// allowed to start" warning that Chrome logs when we eagerly create it.
+if (typeof window !== 'undefined') {
+  const createOnGesture = () => {
+    // Already created and running — detach listeners and bail.
+    if (audioCtx && audioCtx.state === 'running') {
+      window.removeEventListener('click', createOnGesture)
+      window.removeEventListener('keydown', createOnGesture)
+      window.removeEventListener('touchstart', createOnGesture)
+      return
+    }
+
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+      audioCtx = new AudioCtx()
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {})
+      }
+      console.log('🔊 [admin useMessageNotifications] AudioContext ready')
+    } catch (e) {
+      console.warn('AudioContext init failed:', e)
+      audioCtx = null
+    }
+  }
+
+  window.addEventListener('click',      createOnGesture, { passive: true })
+  window.addEventListener('keydown',    createOnGesture, { passive: true })
+  window.addEventListener('touchstart', createOnGesture, { passive: true })
+}
+
 // ── Tab title flash ─────────────────────────────────────────────────
 function startTitleFlash() {
   if (flashInterval) return
-  originalTitle = document.title.replace(/^\(\d+\)\s*/, '') || 'ACAPSHOP'
+  originalTitle = document.title.replace(/^\(\d+\)\s*/, '') || 'ACAPSHOP Admin'
   flashInterval = setInterval(() => {
     const n = unreadSinceFocus.value
     if (n === 0) { stopTitleFlash(); return }
     flashState = !flashState
     document.title = flashState
-      ? `(${n}) New message — ACAPSHOP`
-      : `New message — ACAPSHOP`
+      ? `(${n}) New message — ACAPSHOP Admin`
+      : `New message — ACAPSHOP Admin`
   }, 1500)
-  document.title = `(${unreadSinceFocus.value}) New message — ACAPSHOP`
+  document.title = `(${unreadSinceFocus.value}) New message — ACAPSHOP Admin`
 }
 
 function stopTitleFlash() {
   if (flashInterval) { clearInterval(flashInterval); flashInterval = null }
   flashState = false
   unreadSinceFocus.value = 0
-  document.title = originalTitle || 'ACAPSHOP'
+  document.title = originalTitle || 'ACAPSHOP Admin'
 }
 
 // ── Composable ──────────────────────────────────────────────────────
@@ -82,7 +121,9 @@ export function useMessageNotifications() {
     get: () => enabled.value,
     set: (v) => {
       enabled.value = !!v
-      try { localStorage.setItem('messageSoundEnabled', enabled.value ? 'true' : 'false') } catch {}
+      try {
+        localStorage.setItem('messageSoundEnabled', enabled.value ? 'true' : 'false')
+      } catch {}
     },
   })
 

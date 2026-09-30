@@ -109,7 +109,7 @@
 </div>
 
 <div>
-  <label class="block text-sm font-medium text-gray-700 mb-2">Attachment (optional)</label>
+  <label class="block text-sm font-medium text-gray-700 mb-2">Attachment <span class="text-red-500">*</span> </label>
 
   <div v-if="imagePreview" class="relative mb-2 inline-block">
     <img :src="imagePreview" class="h-24 rounded-xl border border-gray-200 object-cover" />
@@ -162,7 +162,7 @@
                 </button>
                 <button
                   type="submit"
-                  :disabled="!isValid"
+                  :disabled="!isValid || uploadingImage || !imagePreview"
                   class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   :class="type === 'in' ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800' : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'"
                 >
