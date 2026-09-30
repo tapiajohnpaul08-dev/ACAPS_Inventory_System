@@ -213,6 +213,118 @@
               </div>
             </template>
 
+            <!-- ═══════════ STOCK MOVEMENT HISTORY ═══════════ -->
+<div class="border border-gray-200 rounded-xl overflow-hidden">
+  <button
+    type="button"
+    @click="showHistory = !showHistory"
+    class="w-full px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between hover:bg-gray-100 transition-colors"
+  >
+    <div class="flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2"
+        class="text-gray-500">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+        <path d="M8 16H3v5" />
+      </svg>
+      <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Stock Movement History</span>
+      <span v-if="movements.length > 0"
+        class="ml-1 px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">
+        {{ movements.length }}
+      </span>
+    </div>
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2.5"
+      class="text-gray-400 transition-transform"
+      :class="{ 'rotate-180': !showHistory }">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  </button>
+
+  <div v-show="showHistory" class="bg-white">
+    <!-- Loading -->
+    <div v-if="isLoadingMovements" class="px-4 py-6 flex items-center justify-center gap-2 text-sm text-gray-500">
+      <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+        fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+        <path class="opacity-75" fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+      Loading history…
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="movementsError" class="px-4 py-4 text-sm text-red-600 bg-red-50">
+      {{ movementsError }}
+    </div>
+
+    <!-- Empty -->
+    <div v-else-if="movements.length === 0" class="px-4 py-6 text-center text-sm text-gray-400">
+      No stock movements recorded yet.
+    </div>
+
+    <!-- Timeline -->
+    <div v-else class="divide-y divide-gray-100 max-h-72 overflow-y-auto">
+      <div v-for="(m, i) in movements" :key="m._id || i" class="px-4 py-3 hover:bg-gray-50 transition-colors">
+        <div class="flex items-start gap-3">
+
+          <!-- Direction badge -->
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+            :class="m.type === 'in' ? 'bg-green-100' : 'bg-red-100'">
+            <svg v-if="m.type === 'in'" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+              class="text-green-600">
+              <path d="M12 19V5" /><path d="m5 12 7-7 7 7" />
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+              class="text-red-600">
+              <path d="M12 5v14" /><path d="m19 12-7 7-7-7" />
+            </svg>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <!-- Line 1: qty + delta + size -->
+            <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5">
+              <span class="text-sm font-bold"
+                :class="m.type === 'in' ? 'text-green-700' : 'text-red-700'">
+                {{ m.type === 'in' ? '+' : '−' }}{{ (m.quantity || 0).toLocaleString() }}
+              </span>
+              <span class="text-xs text-gray-400">·</span>
+              <span class="text-xs text-gray-500">
+                {{ (m.previousStock || 0).toLocaleString() }} → {{ (m.newStock || 0).toLocaleString() }}
+              </span>
+              <span v-if="m.sizeName"
+                class="text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                {{ m.sizeName }}
+              </span>
+            </div>
+
+            <!-- Line 2: note -->
+            <p class="text-xs text-gray-700 mt-0.5 whitespace-pre-line break-words">
+              {{ m.note }}
+            </p>
+
+            <!-- Line 3: meta -->
+            <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-1 text-[10px] text-gray-400">
+              <span>{{ formatMovementDate(m.createdAt) }}</span>
+              <span v-if="m.performedBy">· {{ m.performedBy }}</span>
+            </div>
+          </div>
+
+          <!-- Image thumbnail -->
+          <button v-if="m.imageUrl" type="button" @click="openLightbox(m.imageUrl)"
+            class="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 hover:ring-2 hover:ring-blue-300 transition-all">
+            <img :src="m.imageUrl" class="w-full h-full object-cover" @error="e => e.target.style.display='none'" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
             <!-- Action Buttons -->
             <div class="flex gap-3 pt-2">
               <button 
@@ -250,6 +362,36 @@
     </div>
   </Teleport>
 
+  <!-- ═══════════ IMAGE LIGHTBOX ═══════════ -->
+<Teleport to="body">
+  <Transition name="lb-fade">
+    <div v-if="lightbox.show" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style="background: rgba(0,0,0,0.92);" @click.self="closeLightbox">
+      <div class="relative max-w-3xl max-h-full">
+        <img :src="lightbox.url" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+        <button @click="closeLightbox"
+          class="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          style="background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+          </svg>
+        </button>
+        <a :href="lightbox.url" download
+          class="absolute -bottom-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          style="background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </Transition>
+</Teleport>
+
   <!-- Toast Notification -->
   <!-- <div v-if="toast.show" class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-semibold max-w-sm bg-gray-900 text-white animate-slide-in-right">
     <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -263,8 +405,8 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { alertApi } from '@/api/api'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { alertApi, inventoryApi, adminProductApi } from '@/api/api'
 
 const props = defineProps({
   isOpen: { type: Boolean, required: true, default: false },
@@ -278,6 +420,65 @@ const emit = defineEmits(['close', 'edit', 'notify', 'stockIn', 'stockOut'])
 const toast = ref({ show: false, type: 'success', message: '' })
 const notifyingSupply = ref(false)
 const notifyingSize = ref(null) // Track which size is being notified
+
+// ── Movement history ──────────────────────────────────────────────
+const movements = ref([])
+const isLoadingMovements = ref(false)
+const movementsError = ref('')
+const showHistory = ref(true)     // collapsed/expanded toggle
+const lightbox = ref({ show: false, url: '' })
+
+async function loadMovements() {
+  if (!props.item) return
+  movements.value = []
+  movementsError.value = ''
+  isLoadingMovements.value = true
+
+  try {
+    const res = props.type === 'products'
+      ? await adminProductApi.getProductMovementHistory(props.item.id, 50)
+      : await inventoryApi.getMovementHistory(props.item.itemId || props.item.id, 50)
+
+    if (res.success) {
+      movements.value = Array.isArray(res.data) ? res.data : []
+    } else {
+      movementsError.value = res.message || 'Failed to load history'
+    }
+  } catch (err) {
+    console.error('loadMovements error:', err)
+    movementsError.value = err.response?.data?.message || err.message || 'Failed to load history'
+  } finally {
+    isLoadingMovements.value = false
+  }
+}
+
+// Reload whenever the modal opens for a different item
+watch(
+  () => [props.isOpen, props.item?.id, props.item?.itemId, props.type],
+  ([isOpen, id, itemId]) => {
+    if (isOpen && (id || itemId)) loadMovements()
+  },
+  { immediate: true },
+)
+
+function openLightbox(url) {
+  if (!url) return
+  lightbox.value = { show: true, url }
+}
+
+function closeLightbox() {
+  lightbox.value = { show: false, url: '' }
+}
+
+function formatMovementDate(d) {
+  if (!d) return ''
+  const date = new Date(d)
+  if (isNaN(date.getTime())) return ''
+  return date.toLocaleString('en-PH', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
 
 let toastTimeout = null
 
@@ -538,4 +739,7 @@ function handleEdit() {
 .animate-slide-in-right {
   animation: slideInRight 0.3s ease-out;
 }
+
+.lb-fade-enter-active, .lb-fade-leave-active { transition: opacity 0.2s ease; }
+.lb-fade-enter-from, .lb-fade-leave-to { opacity: 0; }
 </style>

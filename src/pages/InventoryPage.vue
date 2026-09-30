@@ -182,7 +182,7 @@ import AddSupplyModal from '@/modals/AddSupplyModal.vue'
 import AddProductModal from '@/modals/AddProductModal.vue'
 import FeedbackModal from '@/modals/FeedbackModal.vue'
 import ConfirmModal from '@/modals/ConfirmModal.vue'
-import { productApi, supplyApi, inventoryApi, alertApi } from '@/api/api'
+import { productApi, supplyApi, inventoryApi, alertApi, adminProductApi } from '@/api/api'
 import StockMovementModal from '@/modals/StockMovementModal.vue'
 
 const userRole = ref('')
@@ -675,97 +675,80 @@ function closeStockMovementModal() {
 }
 
 async function handleStockMovement(data) {
-  const { 
-    item, 
-    itemType, 
-    sizeName, 
-    quantity, 
-    type, 
-    reference,
-    newStock: newStockValue
+  const {
+    item, itemType, sizeName, quantity, type,
+    note, imageUrl, imagePublicId,
   } = data
-  
+
   if (!quantity || quantity <= 0) {
     showToast('error', 'Invalid quantity')
     closeStockMovementModal()
     return
   }
-  
+  if (!note || note.trim().length < 3) {
+    showToast('error', 'A reason is required for every stock adjustment')
+    closeStockMovementModal()
+    return
+  }
+
   try {
-    showToast('info', 'Updating stock...')
-    
+    showToast('info', 'Updating stock…')
+
+    let response
     if (itemType === 'product') {
-      if (!sizeName) {
-        showToast('error', 'Please select a size')
-        closeStockMovementModal()
-        return
-      }
-      
       const productCustomId = item.id
-      
       if (!productCustomId) {
         showToast('error', 'Invalid product ID')
         closeStockMovementModal()
         return
       }
-      
-      let response
-      if (type === 'in') {
-        response = await productApi.updateSizeStock(productCustomId, sizeName, newStockValue)
-      } else {
-        response = await productApi.reduceSizeStock(productCustomId, sizeName, quantity)
-      }
-      
-      if (response.success) {
-        await loadProducts()
-        showToast('success', `${type === 'in' ? 'Added' : 'Removed'} ${quantity} pcs from ${item.name} (${sizeName})`)
-        
-        const updatedProduct = products.value.find(p => p.id === productCustomId)
-        const updatedSize = updatedProduct?.sizes?.find(s => s.name === sizeName)
-        if (updatedSize && (updatedSize.stock === 0 || updatedSize.stock <= 100)) {
-          await alertApi.sendProductSizeAlert(productCustomId, sizeName).catch(err => console.error('Alert error:', err))
-        }
-      } else {
-        showToast('error', response.message || 'Failed to update stock')
-      }
+      response = await adminProductApi.recordSizeStockChange(productCustomId, sizeName, {
+        type,
+        quantity,
+        note,
+        imageUrl,
+        imagePublicId,
+      })
     } else {
       const itemId = item.itemId || item.id
-      const threshold = item.threshold || 100
-      
-      let newStatus = 'In Stock'
-      if (newStockValue <= 0) {
-        newStatus = 'Out of Stock'
-      } else if (newStockValue <= threshold) {
-        newStatus = 'Low Stock'
-      }
-      
-      const notes = reference 
-        ? `${type === 'in' ? 'Stock In' : 'Stock Out'}: ${reference}${item.notes ? '\n' + item.notes : ''}`
-        : item.notes
-      
-      const response = await inventoryApi.updateInventoryItem(itemId, {
-        stock: newStockValue,
-        unitCost: item.unitCost,
-        unit: item.unit,
-        threshold: threshold,
-        notes: notes,
-        status: newStatus
+      response = await inventoryApi.recordStockChange(itemId, {
+        type,
+        quantity,
+        note,
+        imageUrl,
+        imagePublicId,
       })
-      
-      if (response.success) {
-        await loadInventory()
-        showToast('success', `${type === 'in' ? 'Added' : 'Removed'} ${quantity} ${item.unit || 'units'} from ${item.name}`)
-        
-        if (newStatus === 'Low Stock' || newStatus === 'Out of Stock') {
-          await alertApi.sendItemAlert(itemId).catch(err => console.error('Alert error:', err))
-        }
-      } else {
-        showToast('error', response.message || 'Failed to update stock')
-      }
     }
-  } catch (error) {
-    console.error('Stock movement error:', error)
-    showToast('error', error.response?.data?.message || error.message || 'Failed to update stock')
+
+    if (response.success) {
+      await Promise.all([loadProducts(), loadInventory()])
+      showToast(
+        'success',
+        `${type === 'in' ? 'Added' : 'Removed'} ${quantity} from ${item.name}`,
+      )
+
+      // Fire low-stock alerts if the movement pushed the item below threshold
+      if (itemType === 'product') {
+        const updated = products.value.find(p => p.id === item.id)
+        const updatedSize = updated?.sizes?.find(s => s.name === sizeName)
+        if (updatedSize && (updatedSize.stock === 0 || updatedSize.stock <= 100)) {
+          await alertApi.sendProductSizeAlert(item.id, sizeName).catch(() => {})
+        }
+      } else if (
+        response.data?.status === 'Low Stock' ||
+        response.data?.status === 'Out of Stock'
+      ) {
+        await alertApi.sendItemAlert(item.itemId || item.id).catch(() => {})
+      }
+    } else {
+      showToast('error', response.message || 'Failed to update stock')
+    }
+  } catch (err) {
+    console.error('Stock movement error:', err)
+    showToast(
+      'error',
+      err.response?.data?.message || err.message || 'Failed to update stock',
+    )
   } finally {
     closeStockMovementModal()
   }

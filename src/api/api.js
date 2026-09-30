@@ -141,6 +141,18 @@ export const adminProductApi = {
     );
   },
 
+    async recordSizeStockChange(productId, sizeName, payload) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/product/${productId}/size/${sizeName}/movement`, payload),
+    );
+  },
+
+  async getProductMovementHistory(productId, limit = 50) {
+    return handleResponse(
+      adminAxiosInstance.get(`/product/${productId}/movements?limit=${limit}`),
+    );
+  },
+
   async getFeaturedProducts() {
     return handleResponse(
       adminAxiosInstance.get('/product/featured')
@@ -294,6 +306,31 @@ export const inventoryApi = {
   async getAllInventory() {
     return handleResponse(
       adminAxiosInstance.get('/inventory')
+    );
+  },
+
+    // ✅ New: audit-aware stock movement (required note + optional image)
+  async recordStockChange(itemId, payload) {
+    return handleResponse(
+      adminAxiosInstance.patch(`/inventory/${itemId}/movement`, payload),
+    );
+  },
+
+  async getMovementHistory(itemId, limit = 50) {
+    return handleResponse(
+      adminAxiosInstance.get(`/inventory/${itemId}/movements?limit=${limit}`),
+    );
+  },
+
+  // ✅ Explicit Content-Type — the admin axios default is application/json,
+  // which would prevent FormData from being sent correctly.
+  async uploadMovementImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    return handleResponse(
+      adminAxiosInstance.post('/inventory/upload-movement-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
     );
   },
 

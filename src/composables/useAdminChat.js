@@ -157,6 +157,25 @@ conversations.value.sort((a, b) => {
       window.dispatchEvent(new CustomEvent('newMessageReceived', { 
         detail: { conversationId: message.conversationId }
       }))
+
+      // ✅ Task 3 — dispatch a rich notification for the toast system.
+      // Only for customer-originated messages, and only if the admin is
+      // NOT currently looking at that exact conversation.
+      if (message.senderType === 'customer') {
+        const currentlyOpen =
+          selectedConversation.value?.conversationId === message.conversationId
+        if (!currentlyOpen) {
+          window.dispatchEvent(new CustomEvent('admin:new-message-notification', {
+            detail: {
+              conversationId: message.conversationId,
+              senderName: message.senderName || conv?.name || 'Customer',
+              content: message.content || '',
+              attachments: Array.isArray(message.attachments) ? message.attachments.length : 0,
+              createdAt: message.createdAt || new Date().toISOString(),
+            },
+          }))
+        }
+      }
     })
 
             if (socket.onConversationOrderLinked) {

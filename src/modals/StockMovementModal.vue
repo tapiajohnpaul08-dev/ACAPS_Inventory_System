@@ -89,15 +89,55 @@
                   </div>
                 </div>
 
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Reference (Optional)</label>
-                  <input
-                    v-model="reference"
-                    type="text"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    :placeholder="type === 'in' ? 'e.g., Purchase Order, Delivery, Production' : 'e.g., Sold, Damage, Quality Check'"
-                  />
-                </div>
+<div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">
+    Reason / Notes <span class="text-red-500">*</span>
+  </label>
+  <textarea
+    v-model="note"
+    rows="2"
+    required
+    minlength="3"
+    placeholder="e.g., Received from supplier PO-12345 / Damaged in storage / Pulled for production"
+    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none"
+    :class="{ 'border-red-300 ring-1 ring-red-200': noteTouched && !isNoteValid }"
+    @blur="noteTouched = true"
+  ></textarea>
+  <p v-if="noteTouched && !isNoteValid" class="text-xs text-red-500 mt-1">
+    Please enter at least 3 characters explaining this adjustment.
+  </p>
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">Attachment (optional)</label>
+
+  <div v-if="imagePreview" class="relative mb-2 inline-block">
+    <img :src="imagePreview" class="h-24 rounded-xl border border-gray-200 object-cover" />
+    <button
+      type="button"
+      @click="clearImage"
+      class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+    >
+      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <label
+    v-else
+    class="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-xl px-4 py-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
+  >
+    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+    <span class="text-sm font-medium text-gray-600">
+      {{ uploadingImage ? 'Uploading…' : 'Add a photo (receipt, damage, PO)' }}
+    </span>
+    <input type="file" accept="image/*" class="hidden" @change="handleImageUpload" :disabled="uploadingImage" />
+  </label>
+</div>
 
                 <!-- Preview New Stock -->
                 <div class="p-4 rounded-xl" :class="type === 'in' ? 'bg-green-50' : 'bg-red-50'">
@@ -143,42 +183,49 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { inventoryApi } from '@/api/api'
 
 const props = defineProps({
-  show: { type: Boolean, default: false },
-  item: { type: Object, default: null },
-  type: { type: String, default: 'in' },
-  itemType: { type: String, default: 'supply' } // 'product' or 'supply'
+  show:     { type: Boolean, default: false },
+  item:     { type: Object,  default: null },
+  type:     { type: String,  default: 'in' },
+  itemType: { type: String,  default: 'supply' },
 })
 
 const emit = defineEmits(['close', 'submit'])
 
 const quantity = ref(1)
-const reference = ref('')
+const note = ref('')
+const noteTouched = ref(false)
+const imageUrl = ref('')
+const imagePublicId = ref('')
+const imagePreview = ref('')
+const uploadingImage = ref(false)
 const isSubmitting = ref(false)
 const selectedSize = ref('')
 const selectedSizeStock = ref(0)
 
-// Watch for item changes to reset selected size
 watch(() => props.item, () => {
   selectedSize.value = ''
   selectedSizeStock.value = 0
   quantity.value = 1
-  reference.value = ''
+  note.value = ''
+  noteTouched.value = false
+  clearImage()
 }, { immediate: true, deep: true })
 
-// Watch for show to reset form
-watch(() => props.show, (newVal) => {
-  if (newVal) {
+watch(() => props.show, (v) => {
+  if (v) {
     selectedSize.value = ''
     selectedSizeStock.value = 0
     quantity.value = 1
-    reference.value = ''
+    note.value = ''
+    noteTouched.value = false
     isSubmitting.value = false
+    clearImage()
   }
 })
 
-// Update current stock when size is selected
 function updateCurrentStock() {
   if (props.itemType === 'product' && selectedSize.value && props.item?.sizes) {
     const size = props.item.sizes.find(s => s.name === selectedSize.value)
@@ -189,18 +236,20 @@ function updateCurrentStock() {
 const currentStock = computed(() => {
   if (props.itemType === 'product') {
     if (selectedSize.value && props.item?.sizes) {
-      const size = props.item.sizes.find(s => s.name === selectedSize.value)
-      return size?.stock || 0
+      return props.item.sizes.find(s => s.name === selectedSize.value)?.stock || 0
     }
     return 0
   }
   return props.item?.stock || 0
 })
 
+const isNoteValid = computed(() => note.value.trim().length >= 3)
+
 const isValid = computed(() => {
   if (!quantity.value || quantity.value <= 0) return false
   if (props.itemType === 'product' && !selectedSize.value) return false
   if (props.type === 'out' && currentStock.value < quantity.value) return false
+  if (!isNoteValid.value) return false
   return true
 })
 
@@ -212,56 +261,72 @@ const getPreviewColorClass = computed(() => {
   return 'text-green-600'
 })
 
-function formatNumber(value) {
-  return value?.toLocaleString() || '0'
+function formatNumber(v) { return v?.toLocaleString() || '0' }
+function formatPrice(v) {
+  if (v == null) return '0.00'
+  const n = typeof v === 'number' ? v : parseFloat(v)
+  return isNaN(n) ? '0.00' : n.toFixed(2)
 }
 
-function formatPrice(value) {
-  if (value === null || value === undefined) return '0.00'
-  const num = typeof value === 'number' ? value : parseFloat(value)
-  if (isNaN(num)) return '0.00'
-  return num.toFixed(2)
+async function handleImageUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  uploadingImage.value = true
+  try {
+    const res = await inventoryApi.uploadMovementImage(file)
+    if (res.success) {
+      imageUrl.value = res.url
+      imagePublicId.value = res.public_id
+      imagePreview.value = res.url
+    } else {
+      alert(res.message || 'Image upload failed')
+    }
+  } catch (err) {
+    console.error('Upload error:', err)
+    alert('Image upload failed')
+  } finally {
+    uploadingImage.value = false
+    e.target.value = ''
+  }
+}
+
+function clearImage() {
+  imageUrl.value = ''
+  imagePublicId.value = ''
+  imagePreview.value = ''
 }
 
 function close() {
   quantity.value = 1
-  reference.value = ''
+  note.value = ''
+  noteTouched.value = false
   selectedSize.value = ''
   selectedSizeStock.value = 0
   isSubmitting.value = false
+  clearImage()
   emit('close')
 }
 
-async function submit() {
+function submit() {
+  noteTouched.value = true
   if (!isValid.value) return
-  
   isSubmitting.value = true
-  
+
   let newStockValue
-  
-  if (props.itemType === 'product') {
-    if (props.type === 'in') {
-      newStockValue = currentStock.value + quantity.value
-    } else {
-      newStockValue = Math.max(0, currentStock.value - quantity.value)
-    }
-  } else {
-    if (props.type === 'in') {
-      newStockValue = currentStock.value + quantity.value
-    } else {
-      newStockValue = Math.max(0, currentStock.value - quantity.value)
-    }
-  }
-  
+  if (props.type === 'in') newStockValue = currentStock.value + quantity.value
+  else newStockValue = Math.max(0, currentStock.value - quantity.value)
+
   emit('submit', {
     item: props.item,
     itemType: props.itemType,
     sizeName: props.itemType === 'product' ? selectedSize.value : null,
     quantity: quantity.value,
     type: props.type,
-    reference: reference.value,
+    note: note.value.trim(),
+    imageUrl: imageUrl.value,
+    imagePublicId: imagePublicId.value,
     currentStock: currentStock.value,
-    newStock: newStockValue
+    newStock: newStockValue,
   })
 }
 </script>

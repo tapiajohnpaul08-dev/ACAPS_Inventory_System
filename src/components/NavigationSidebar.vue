@@ -184,6 +184,36 @@
             <p class="text-xs text-gray-400">{{ userDepartment }}</p>
             <p class="text-xs text-gray-400 mt-0.5">Role: {{ adminRole }}</p>
           </div>
+
+          <button
+  @click.stop="toggleSound"
+  class="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100"
+>
+  <div class="flex items-center gap-2">
+    <!-- Speaker-on icon -->
+    <svg v-if="soundEnabled" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </svg>
+    <!-- Speaker-off icon -->
+    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <line x1="23" y1="9" x2="17" y2="15" />
+      <line x1="17" y1="9" x2="23" y2="15" />
+    </svg>
+    <span>Message sound</span>
+  </div>
+  <span
+    class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+    :class="soundEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'"
+  >
+    {{ soundEnabled ? 'On' : 'Off' }}
+  </span>
+</button>
+
           <button @click="logout"
             class="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors">
             <LogOut class="w-4 h-4" />
@@ -198,6 +228,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useMessageNotifications } from '@/composables/useMessageNotifications'
 import { 
   LayoutDashboard, 
   Package, 
@@ -245,6 +276,12 @@ const userDepartment = computed(() => {
     default: return 'Staff'
   }
 })
+
+const { soundEnabled } = useMessageNotifications()
+
+function toggleSound() {
+  soundEnabled.value = !soundEnabled.value
+}
 
 function isActive(path) {
   return route.path === path
