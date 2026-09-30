@@ -32,6 +32,14 @@
       </div>
 
       <div class="flex items-center gap-2 flex-shrink-0">
+
+        <button
+  @click="showWalkInModal = true"
+  class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm"
+>
+  <Plus class="w-4 h-4" />
+  New Order
+</button>
         <!-- Print Receipt — detail view, near status flow -->
         <button
           v-if="detailOrder && ['Out for Delivery', 'Ready to Pick-up', 'Completed'].includes(detailOrder.status)"
@@ -118,6 +126,12 @@
       @saved="handleOrderSaved"
     />
 
+    <CreateWalkInOrderModal
+  :show="showWalkInModal"
+  @close="showWalkInModal = false"
+  @created="handleWalkInCreated"
+/>
+
     <ConfirmModal
       :show="confirmModal.show"
       :type="confirmModal.type"
@@ -161,6 +175,9 @@ import { adminOrderApi } from '@/api/api'
 import { transformOrder as sharedTransformOrder } from '@/utils/orderHelpers'
 import { getDisplayStatus } from '@/composables/useOrderStatus'
 
+import CreateWalkInOrderModal from '@/modals/CreateWalkInOrderModal.vue'
+import { Plus } from 'lucide-vue-next'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -173,7 +190,7 @@ const toast = ref({ show: false, type: 'success', message: '' })
 const confirmModal = ref({ show: false, type: 'danger', title: '', message: '', itemToDelete: null })
 const highlightedOrderId = ref(null)
 const detailViewRef = ref(null)
-
+const showWalkInModal = ref(false)
 // Delegate to the shared transform so the receipt, detail view and
 // table all see the exact same order shape.
 function transformOrder(order) {
@@ -310,6 +327,12 @@ const filteredOrders = computed(() => {
 function handleEdit(order) {
   editOrder.value = order
 }
+
+function handleWalkInCreated(order) {
+  showToast('success', `Order ${order.orderId || order.id} created successfully`)
+  loadOrders()
+}
+
 function closeEditModal() {
   editOrder.value = null
 }

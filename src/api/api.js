@@ -370,6 +370,13 @@ export const adminOrderApi = {
     );
   },
 
+    // ✅ Dedicated walk-in endpoint — used by CreateWalkInOrderModal
+  async createWalkInOrder(orderData) {
+    return handleResponse(
+      adminAxiosInstance.post('/order/admin/walkin', orderData)
+    );
+  },
+
   async getOrderById(orderId) {
     return handleResponse(
       adminAxiosInstance.get(`/order/admin/orders/${orderId}`)
@@ -665,6 +672,17 @@ export const adminChatApi = {
     );
   },
 
+    // ✅ Admin file upload — used for design images, stock movement
+  // attachments, and any admin-side file drop. Posts to /chat/upload
+  // which is verifyAdminToken-protected on the backend.
+  async uploadFiles(files) {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file))
+    return handleResponse(
+      adminAxiosInstance.post('/chat/upload', formData)
+    )
+  },
+
   async getMessages(conversationId, limit = 50, before = null) {
     let url = `/chat/admin/conversations/${conversationId}/messages?limit=${limit}`;
     if (before) url += `&before=${before}`;
@@ -760,6 +778,30 @@ export const adminChatApi = {
   },
 
   
+};
+
+// ─── Design Uploads (admin) ──────────────────────────────────────────
+export const designApi = {
+  /**
+   * Upload design files (images / PDFs / AI / PSD) as an admin.
+   * Used by CreateWalkInOrderModal and any admin-side design upload UI.
+   *
+   * NOTE: we explicitly set Content-Type to multipart/form-data.
+   * The admin axios instance defaults to application/json, which stops
+   * axios from auto-switching to multipart when a FormData body is
+   * passed — the request silently falls back to JSON and multer sees
+   * an empty req.files.
+   */
+  async uploadDesign(files) {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+
+    return handleResponse(
+      adminAxiosInstance.post('/designs/admin/upload-design', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    );
+  },
 };
 
 // =============================================================================
