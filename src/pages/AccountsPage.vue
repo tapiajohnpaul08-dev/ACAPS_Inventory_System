@@ -174,88 +174,102 @@ if (route.query.tab === 'sales') {
   activeTab.value = 'superadmin'
 }
 
-// Load data based on active tab
-const loadData = async () => {
+// ─────────────────────────────────────────────────────────────────
+// Loaders — one per data source, run in parallel on mount so every
+// tab badge shows the real count immediately (not just the tab you
+// happen to be viewing).
+// ─────────────────────────────────────────────────────────────────
+
+async function loadCustomers() {
+  const response = await adminCustomerApi.getAllCustomers()
+  if (response.success && response.data) {
+    customers.value = response.data.map(customer => ({
+      id: customer._id,
+      userId: customer.customerId,
+      name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      middleName: customer.middleName || '',
+      email: customer.email,
+      phone: customer.phone || 'N/A',
+      status: customer.status,
+      ordersCount: customer.orders?.length || 0,
+      totalSpent: customer.totalSpent,
+      lastActive: customer.lastLogin ? new Date(customer.lastLogin).toLocaleDateString() : 'N/A',
+      provider: customer.provider || 'local',
+      createdAt: customer.createdAt
+    }))
+  }
+}
+
+async function loadAdmins() {
+  const response = await adminManagementApi.getAllAdmins()
+  if (!response.success || !response.data) return
+
+  // Bucket every admin into the correct role list in one pass
+  const sales = []
+  const production = []
+  const superAdmin = []
+
+  for (const admin of response.data) {
+    const mapped = {
+      id: admin._id,
+      userId: admin.adminId,
+      name: `${admin.firstName || ''} ${admin.lastName || ''}`.trim(),
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      email: admin.email,
+      phone: admin.phone || 'N/A',
+      status: admin.status,
+      role: admin.role,
+      department:
+        admin.role === 'Sales' ? 'Sales Department'
+        : admin.role === 'Production' ? 'Production Department'
+        : 'Super Admin',
+      lastLogin: admin.lastLogin ? new Date(admin.lastLogin).toLocaleDateString() : 'N/A',
+      createdAt: admin.createdAt,
+    }
+
+    if (admin.role === 'Sales') sales.push(mapped)
+    else if (admin.role === 'Production') production.push(mapped)
+    else if (admin.role === 'Super Admin') superAdmin.push(mapped)
+  }
+
+  salesAdmins.value = sales
+  productionAdmins.value = production
+  superAdmins.value = superAdmin
+}
+
+async function loadDrivers() {
+  const response = await adminDriverApi.getAllDrivers()
+  if (response.success && response.data) {
+    drivers.value = response.data.map(driver => ({
+      id: driver._id,
+      driverId: driver.driverId,
+      firstName: driver.firstName,
+      middleName: driver.middleName || '',
+      lastName: driver.lastName,
+      name: `${driver.firstName || ''} ${driver.lastName || ''}`.trim(),
+      email: driver.email,
+      phoneNumber: driver.phoneNumber,
+      username: driver.username,
+      plateNumber: driver.plateNumber,
+      vehicleDescription: driver.vehicleDescription || '',
+      available: driver.available,
+      status: driver.available ? 'Available' : 'Unavailable',
+      assignedOrders: driver.assignedOrdersCount || 0,
+      lastLogin: driver.lastLogin ? new Date(driver.lastLogin).toLocaleDateString() : 'N/A',
+      createdAt: driver.createdAt
+    }))
+  }
+}
+
+// Load everything — three parallel requests, all tab badges populate
+// on the same tick.
+async function loadAllData() {
   loading.value = true
   try {
-    if (activeTab.value === 'customers') {
-      const response = await adminCustomerApi.getAllCustomers()
-      console.log('accounts response:', response)
-      if (response.success && response.data) {
-        customers.value = response.data.map(customer => ({
-          id: customer._id,
-          userId: customer.customerId,
-          name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
-          firstName: customer.firstName,
-          lastName: customer.lastName,
-          middleName: customer.middleName || '',
-          email: customer.email,
-          phone: customer.phone || 'N/A',
-          status: customer.status,
-          ordersCount: customer.orders?.length || 0,
-          totalSpent: customer.totalSpent,
-          lastActive: customer.lastLogin ? new Date(customer.lastLogin).toLocaleDateString() : 'N/A',
-          provider: customer.provider || 'local',
-          createdAt: customer.createdAt
-        }))
-      }
-    } else if (activeTab.value === 'sales' || activeTab.value === 'production' || activeTab.value === 'superadmin') {
-      const response = await adminManagementApi.getAllAdmins()
-      if (response.success && response.data) {
-        const roleMap = {
-          'sales': 'Sales',
-          'production': 'Production',
-          'superadmin': 'Super Admin'
-        }
-        const role = roleMap[activeTab.value]
-        const filteredAdmins = response.data.filter(admin => admin.role === role)
-        
-        const adminList = filteredAdmins.map(admin => ({
-          id: admin._id,
-          userId: admin.adminId,
-          name: `${admin.firstName || ''} ${admin.lastName || ''}`.trim(),
-          firstName: admin.firstName,
-          lastName: admin.lastName,
-          email: admin.email,
-          phone: admin.phone || 'N/A',
-          status: admin.status,
-          role: admin.role,
-          department: admin.role === 'Sales' ? 'Sales Department' : admin.role === 'Production' ? 'Production Department' : 'Super Admin',
-          lastLogin: admin.lastLogin ? new Date(admin.lastLogin).toLocaleDateString() : 'N/A',
-          createdAt: admin.createdAt
-        }))
-        
-        if (activeTab.value === 'sales') {
-          salesAdmins.value = adminList
-        } else if (activeTab.value === 'production') {
-          productionAdmins.value = adminList
-        } else if (activeTab.value === 'superadmin') {
-          superAdmins.value = adminList
-        }
-      }
-    } else if (activeTab.value === 'drivers') {
-      const response = await adminDriverApi.getAllDrivers()
-      if (response.success && response.data) {
-        drivers.value = response.data.map(driver => ({
-          id: driver._id,
-          driverId: driver.driverId,
-          firstName: driver.firstName,
-          middleName: driver.middleName || '',
-          lastName: driver.lastName,
-          name: `${driver.firstName || ''} ${driver.lastName || ''}`.trim(),
-          email: driver.email,
-          phoneNumber: driver.phoneNumber,
-          username: driver.username,
-          plateNumber: driver.plateNumber,
-          vehicleDescription: driver.vehicleDescription || '',
-          available: driver.available,
-          status: driver.available ? 'Available' : 'Unavailable',
-          assignedOrders: driver.assignedOrdersCount || 0,
-          lastLogin: driver.lastLogin ? new Date(driver.lastLogin).toLocaleDateString() : 'N/A',
-          createdAt: driver.createdAt
-        }))
-      }
-    }
+    await Promise.allSettled([loadCustomers(), loadAdmins(), loadDrivers()])
   } catch (error) {
     console.error('Error loading accounts:', error)
   } finally {
@@ -263,13 +277,25 @@ const loadData = async () => {
   }
 }
 
-// Watch for tab changes
-watch(activeTab, () => {
-  loadData()
-}, { immediate: true })
+// Refresh only the data source backing the currently-active tab.
+// Used after create / update / delete so we don't re-fetch everything
+// when only one list changed.
+async function refreshActiveTab() {
+  try {
+    if (activeTab.value === 'customers') await loadCustomers()
+    else if (activeTab.value === 'drivers') await loadDrivers()
+    else await loadAdmins()
+  } catch (error) {
+    console.error('Error refreshing active tab:', error)
+  }
+}
+
+// No per-tab refetch needed — every list is populated once on mount.
+// If you ever want a "refresh on focus" behaviour, add a listener for
+// `visibilitychange` here and call loadAllData().
 
 onMounted(() => {
-  loadData()
+  loadAllData()
 })
 
 // Get accounts based on active tab
@@ -329,7 +355,7 @@ async function handleAddUser(userData) {
       })
       
       if (response.success) {
-        await loadData()
+        await refreshActiveTab()
         showToast('success', `Customer "${userData.firstName} ${userData.lastName}" has been created successfully!`)
         closeAddModal()
       } else {
@@ -348,7 +374,7 @@ async function handleAddUser(userData) {
       })
       
       if (response.success) {
-        await loadData()
+        await refreshActiveTab()
         showToast('success', `Admin "${userData.firstName} ${userData.lastName}" has been created successfully!`)
         closeAddModal()
       } else {
@@ -369,7 +395,7 @@ async function handleAddDriver(driverData) {
     const response = await adminDriverApi.createDriver(driverData)
     
     if (response.success) {
-      await loadData()
+      await refreshActiveTab()
       showToast('success', `Driver "${driverData.firstName} ${driverData.lastName}" has been created successfully!`)
       closeAddModal()
     } else {
@@ -454,7 +480,7 @@ async function handleUpdateAccount(updatedAccount) {
       })
 
       if (response.success) {
-        await loadData()
+        await refreshActiveTab()
         showToast(
           'success',
           `Customer "${payload.firstName} ${payload.lastName}" has been updated successfully!`,
@@ -473,7 +499,7 @@ async function handleUpdateAccount(updatedAccount) {
       })
 
       if (response.success) {
-        await loadData()
+        await refreshActiveTab()
         showToast(
           'success',
           `Admin "${payload.firstName} ${payload.lastName}" has been updated successfully!`,
@@ -499,7 +525,7 @@ async function handleUpdateDriver(driverData) {
     const response = await adminDriverApi.updateDriver(editAccount.value.driverId, driverData)
     
     if (response.success) {
-      await loadData()
+      await refreshActiveTab()
       showToast('success', `Driver "${driverData.firstName} ${driverData.lastName}" has been updated successfully!`)
       closeEditModal()
     } else {
@@ -530,7 +556,7 @@ async function confirmDelete(account) {
     if (activeTab.value === 'customers') {
       const response = await adminCustomerApi.deleteCustomer(account.userId)
       if (response.success) {
-        await loadData()
+        await refreshActiveTab()
         showToast('success', `Customer "${account.name}" has been deleted successfully!`)
       } else {
         showToast('error', response.message || 'Failed to delete customer')
@@ -538,7 +564,7 @@ async function confirmDelete(account) {
     } else if (activeTab.value === 'drivers') {
       const response = await adminDriverApi.deleteDriver(account.driverId)
       if (response.success) {
-        await loadData()
+        await refreshActiveTab()
         showToast('success', `Driver "${account.firstName} ${account.lastName}" has been deleted successfully!`)
       } else {
         showToast('error', response.message || 'Failed to delete driver')
@@ -546,7 +572,7 @@ async function confirmDelete(account) {
     } else {
       const response = await adminManagementApi.deleteAdmin(account.userId)
       if (response.success) {
-        await loadData()
+        await refreshActiveTab()
         showToast('success', `Admin "${account.name}" has been deleted successfully!`)
       } else {
         showToast('error', response.message || 'Failed to delete admin')

@@ -9,7 +9,10 @@
             <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
           </svg>
         </div>
-        <h3 class="text-sm font-bold text-gray-900">Low Stock Alerts</h3>
+        <div class="flex flex-col leading-tight">
+          <h3 class="text-sm font-bold text-gray-900">Stock Alerts</h3>
+          <p class="text-[11px] text-gray-400">Low &amp; out-of-stock items</p>
+        </div>
         <span v-if="items.length > 0" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
           {{ items.length }}
         </span>
@@ -104,7 +107,7 @@
           <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
           <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
         </svg>
-        <p class="text-gray-400 text-sm">No low stock items</p>
+        <p class="text-gray-400 text-sm">No stock alerts</p>
         <p class="text-xs text-gray-400 mt-1">All inventory levels are healthy</p>
       </div>
     </div>
@@ -132,8 +135,15 @@ const props = defineProps({
 const emit = defineEmits(['notify', 'view-all', 'item-click'])
 
 function getStockBadgeClass(item) {
-  if (item.stock === 0) return 'bg-red-100 text-red-700'
-  if (item.stock <= item.threshold) return 'bg-yellow-100 text-yellow-700'
+  // Prefer the backend's status field when present — keeps the badge
+  // and the label text in agreement even if the threshold logic ever
+  // changes server-side.
+  if (item.status === 'Out of Stock' || item.stock === 0) {
+    return 'bg-red-100 text-red-700'
+  }
+  if (item.status === 'Low Stock' || item.stock <= item.threshold) {
+    return 'bg-yellow-100 text-yellow-700'
+  }
   return 'bg-green-100 text-green-700'
 }
 </script>

@@ -104,7 +104,7 @@
               </div>
 
               <!-- Customer Specific Fields -->
-              <div v-if="accountType === 'customers'" class="border border-gray-200 rounded-xl p-4">
+              <div v-if="accountType === 'customer'" class="border border-gray-200 rounded-xl p-4">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Customer Details</p>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-1">Company Name</label>
@@ -118,8 +118,8 @@
               </div>
 
               <!-- Admin Specific Fields -->
-              <div v-if="accountType !== 'customers'" class="border border-gray-200 rounded-xl p-4">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Employment Details</p>
+              <div v-if="accountType !== 'customer'" class="border border-gray-200 rounded-xl p-4">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Employment Details </p>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-1">Admin Role</label>
                   <select
@@ -226,7 +226,7 @@ import FeedbackModal from './FeedbackModal.vue'
 const props = defineProps({
   show: { type: Boolean, required: true },
   account: { type: Object, required: true },
-  accountType: { type: String, required: true } // 'customers', 'sales', 'production'
+  accountType: { type: String, required: true } // 'customer', 'sales', 'production'
 })
 
 const emit = defineEmits(['close', 'update'])
@@ -261,7 +261,7 @@ try {
 //      password and is the safer UX.
 const canResetPassword = computed(() => {
   if (currentAdminRole.value !== 'Super Admin') return false
-  if (props.accountType === 'customers') return false
+  if (props.accountType === 'customer') return false
   if (props.accountType === 'superadmin' && accountId.value === currentAdminId.value) return false
   return true
 })
@@ -282,7 +282,7 @@ const displayName = computed(() => {
 
 const accountTypeLabel = computed(() => {
   switch(props.accountType) {
-    case 'customers': return 'Customer'
+    case 'customer': return 'Customer'
     case 'sales': return 'Sales Admin'
     case 'production': return 'Production Admin'
     default: return 'Account'
@@ -400,7 +400,7 @@ async function handleSubmit() {
     phone: formData.value.phone,
   }
 
-  if (props.accountType === 'customers') {
+  if (props.accountType === 'customer') {
     updatedAccount.companyName = formData.value.companyName
   } else {
     updatedAccount.role = formData.value.role
